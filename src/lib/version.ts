@@ -4,7 +4,7 @@ import process from 'node:process';
 
 const require = createRequire(import.meta.url);
 export const KIT_VERSION: string =
-  (require('../package.json') as { version?: string }).version ?? '0.0.0';
+  (require('../../package.json') as { version?: string }).version ?? '0.0.0';
 
 export function assertNode20(): void {
   const major = Number(process.versions.node.split('.')[0]);
