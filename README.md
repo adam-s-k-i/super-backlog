@@ -47,7 +47,7 @@ Commands: `sbl init` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl
 
 `sbl dashboard` generates a single self-contained `dashboard.html` from your Backlog data: metric cards per status, milestone progress bars, an expandable task table, and a workflow cheat sheet. No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `--serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428 by default.
 
-<!-- ![Project Dashboard](docs/assets/dashboard.png) -->
+![Project Dashboard](docs/assets/dashboard.png)
 
 ## Uninstall guarantee
 

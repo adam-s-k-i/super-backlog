@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -31,9 +31,9 @@ describe('README doc-rot guard', () => {
     );
   });
 
-  it('keeps the screenshot as a placeholder comment, not an active broken link', () => {
-    expect(readme).toContain('<!-- ![Project Dashboard](docs/assets/dashboard.png) -->');
-    expect(readme).not.toMatch(/(^|\n)!\[Project Dashboard\]/);
+  it('shows the dashboard screenshot as an active link to a committed asset', () => {
+    expect(readme).toContain('![Project Dashboard](docs/assets/dashboard.png)');
+    expect(existsSync(join(dirname(fileURLToPath(import.meta.url)), '..', 'docs', 'assets', 'dashboard.png'))).toBe(true);
   });
 
   it('states requirements and the default serve port', () => {
