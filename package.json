@@ -1,7 +1,6 @@
 {
   "name": "super-backlog",
   "version": "0.1.0",
-  "private": true,
   "description": "One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard.",
   "license": "MIT",
   "type": "module",
