@@ -69,15 +69,18 @@ export function planInit(
     );
   }
 
-  if (!degradedAuto && state.pkgExists) {
-    if (opts.harnesses.includes('opencode')) {
-      try {
-        applyPluginEntry(state.opencodeConfig);
-        actions.push({ kind: 'merge-json', path: 'opencode.json', transform: 'plugin-entry' });
-      } catch (err) {
-        warnings.push(err instanceof Error ? err.message : String(err));
-      }
+  // opencode.json merge depends only on harness selection and applyPluginEntry
+  // not throwing a near-miss - never on package.json presence or PM detection
+  if (opts.harnesses.includes('opencode')) {
+    try {
+      applyPluginEntry(state.opencodeConfig);
+      actions.push({ kind: 'merge-json', path: 'opencode.json', transform: 'plugin-entry' });
+    } catch (err) {
+      warnings.push(err instanceof Error ? err.message : String(err));
     }
+  }
+
+  if (!degradedAuto && state.pkgExists) {
     actions.push({ kind: 'merge-json', path: 'package.json', transform: 'scripts-and-devdeps' });
   }
 

@@ -10,7 +10,7 @@ Superpowers and Backlog.md are strong on their own, but nothing wires them toget
 
 - Node >= 20
 - A package manager (npm, pnpm, or bun) for dependency installation
-- Works with **OpenCode** and **Claude Code** (both installed by default)
+- Works with **OpenCode** and **Claude Code** (both configured by default)
 
 ## Quickstart
 
@@ -18,6 +18,7 @@ Superpowers and Backlog.md are strong on their own, but nothing wires them toget
 npx super-backlog init        # install everything into the current project
 npm run board                 # open the Backlog.md kanban board
 sbl dashboard --serve         # live Project Dashboard on http://localhost:6428
+                              # (or: npx super-backlog dashboard --serve)
 ```
 
 `init` is idempotent — safe to re-run any time; re-running with a newer kit version is the upgrade path for all injected files.
@@ -29,7 +30,7 @@ sbl dashboard --serve         # live Project Dashboard on http://localhost:6428
 | `package.json` devDependencies | `backlog.md@latest` + `super-backlog@latest` | merged |
 | `backlog/` | created by `backlog init --defaults` (upstream owns it) | delegated |
 | `opencode.json` | `plugin[] += superpowers@git+https://github.com/obra/superpowers.git` | merged; other keys untouched |
-| `.claude/` | Superpowers via official marketplace (run automatically when the `claude` CLI is available, otherwise the exact command is printed) | instructed/delegated |
+| `.claude/` | Superpowers via official marketplace — init prints the exact command to paste (`/plugin install superpowers@claude-plugins-official`); file-based skills work immediately | instructed/delegated |
 | `AGENTS.md` | `<!-- SUPER-BACKLOG:x.y.z START -->` … `<!-- SUPER-BACKLOG END -->` workflow block | marker-scoped |
 | `CLAUDE.md` | one-line pointer to the AGENTS.md block | marker-scoped |
 | `.opencode/skill/spec-to-backlog/SKILL.md` | glue skill template | fingerprint header line |
@@ -53,7 +54,7 @@ super-backlog uninstall removes only provably owned artifacts and keeps your Bac
 ## Harness support
 
 - **OpenCode** — native: `opencode.json` plugin entry plus a file-based skill under `.opencode/skill/spec-to-backlog/`.
-- **Claude Code** — file-based skills under `.claude/skills/spec-to-backlog/` always work; the marketplace installation is attempted via the `claude` CLI or printed verbatim when unavailable.
+- **Claude Code** — file-based skills under `.claude/skills/spec-to-backlog/` always work immediately; the marketplace plugin cannot be installed from a script, so init prints the exact command to paste (`/plugin install superpowers@claude-plugins-official`) and exits with a warning (exit code 4).
 
 Details and matrix: [docs/harness-support.md](docs/harness-support.md).
 

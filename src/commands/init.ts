@@ -84,7 +84,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
       opencodeConfig = JSON.parse(readFileSync(opencodePath, 'utf8'));
     } catch {
       console.error('error: opencode.json is not valid JSON - fix it manually, then re-run');
-      return 2;
+      return 1; // detection failure, consistent with uninstall
     }
   }
 

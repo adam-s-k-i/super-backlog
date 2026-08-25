@@ -7,6 +7,27 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const CLI = join(__dirname, '..', '..', 'dist', 'cli.js'); // built by pretest step below
 
+interface InitResult {
+  out: string;
+  status: number;
+}
+
+function runInit(dir: string, args: string[]): InitResult {
+  try {
+    const out = execFileSync(process.execPath, [CLI, 'init', ...args], {
+      cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' }, encoding: 'utf8',
+    });
+    return { out, status: 0 };
+  } catch (err) {
+    const e = err as { status?: number | null; stdout?: string | Buffer };
+    const stdout = e.stdout ?? '';
+    return {
+      out: typeof stdout === 'string' ? stdout : stdout.toString('utf8'),
+      status: e.status ?? -1,
+    };
+  }
+}
+
 function scaffoldProject(): string {
   const dir = mkdtempSync(join(tmpdir(), 'sbl-e2e-'));
   writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'demo', version: '0.0.1' }));
@@ -20,9 +41,10 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('writes manifest artifacts and is idempotent', () => {
-    execFileSync(process.execPath, [CLI, 'init', '--pm', 'npm', '--guard', '--no-dashboard'], {
-      cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' },
-    });
+    const first = runInit(dir, ['--pm', 'npm', '--guard', '--no-dashboard']);
+    expect(first.status).toBe(4); // success with warnings: manual claude plugin step
+    expect(first.out).toContain('Claude Code: run /plugin install superpowers@claude-plugins-official inside Claude Code to enable the Superpowers plugin.');
+    expect(first.out).toContain('warning: claude plugin install must be run manually');
     const oc = JSON.parse(readFileSync(join(dir, 'opencode.json'), 'utf8'));
     expect(oc.plugin).toContain('superpowers@git+https://github.com/obra/superpowers.git');
     const agents = readFileSync(join(dir, 'agents.md').replace('agents', 'AGENTS'), 'utf8');
@@ -37,18 +59,16 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
     const hook = readFileSync(join(dir, '.git', 'hooks', 'pre-commit'), 'utf8');
     expect(hook).toContain('super-backlog guard');
 
-    // re-run: no duplication
-    execFileSync(process.execPath, [CLI, 'init', '--pm', 'npm', '--guard', '--no-dashboard'], {
-      cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' },
-    });
+    // re-run: no duplication; instruction still printed for the claude harness
+    const second = runInit(dir, ['--pm', 'npm', '--guard', '--no-dashboard']);
+    expect(second.out).toContain('/plugin install superpowers@claude-plugins-official');
     const oc2 = JSON.parse(readFileSync(join(dir, 'opencode.json'), 'utf8'));
     expect(oc2.plugin.filter(e => e.includes('superpowers'))).toHaveLength(1);
   });
 
   it('leaves the guard hook uninstalled unless --guard is passed', () => {
-    execFileSync(process.execPath, [CLI, 'init', '--no-dashboard'], {
-      cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' },
-    });
+    const { out } = runInit(dir, ['--no-dashboard']);
+    expect(out).toContain('/plugin install superpowers@claude-plugins-official');
     expect(existsSync(join(dir, '.git', 'hooks', 'pre-commit'))).toBe(false);
   });
 

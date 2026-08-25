@@ -36,7 +36,11 @@ export interface ExecuteResult {
 }
 
 const UPSTREAM_PKGS = ['backlog.md@latest', 'super-backlog@latest'];
-export const POINTER_HEADING_RE = /Workflow system \(managed by super-backlog\)/;
+export const POINTER_HEADING_RE = /^##\s+Workflow system \(managed by super-backlog\)\s*$/m;
+
+export const CLAUDE_PLUGIN_INSTRUCTION =
+  'Claude Code: run /plugin install superpowers@claude-plugins-official inside Claude Code to enable the Superpowers plugin.';
+export const CLAUDE_PLUGIN_WARNING = 'claude plugin install must be run manually';
 
 export function findGitDir(startDir: string): string | null {
   let dir = resolve(startDir);
@@ -183,6 +187,7 @@ export async function executeActions(
   const warnings: string[] = [];
   let applied = 0;
   let skipped = 0;
+  let claudeHarnessPlanned = false; // detected via the existing write-claude-pointer action path
 
   for (const action of actions) {
     switch (action.kind) {
@@ -198,6 +203,7 @@ export async function executeActions(
         break;
       case 'write-claude-pointer':
         applyClaudePointer(cwd) ? applied++ : skipped++;
+        claudeHarnessPlanned = true;
         break;
       case 'copy-skills':
         applyCopySkills(cwd, ctx.version) ? applied++ : skipped++;
@@ -221,6 +227,13 @@ export async function executeActions(
         applied++;
         break;
     }
+  }
+
+  // Spec §5.1: the marketplace plugin cannot be installed from a script - after
+  // writing skills, print the exact command and surface it as a warning (exit 4).
+  if (claudeHarnessPlanned) {
+    console.log(CLAUDE_PLUGIN_INSTRUCTION);
+    warnings.push(CLAUDE_PLUGIN_WARNING);
   }
 
   return { applied, skipped, warnings };

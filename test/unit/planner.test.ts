@@ -33,7 +33,16 @@ describe('planInit', () => {
       { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: false }, '1.0.0');
     expect(actions.map(a => a.kind)).not.toContain('upstream-install');
     expect(warnings.join(' ')).toMatch(/no package manager detected/i);
-    expect(actions.map(a => a.kind)).not.toContain('merge-json');
+    const jsonOps = actions.filter(a => a.kind === 'merge-json') as Array<{ kind: 'merge-json'; path: string }>;
+    expect(jsonOps.map(a => a.path)).toEqual(['opencode.json']);
+  });
+
+  it('still warns about near-miss entry without package.json present', () => {
+    const { actions, warnings } = planInit(
+      { ...base, detectedPm: null, pkgExists: false, opencodeConfig: { plugin: ['superpowers@git+https://example.com/fork.git'] } },
+      { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+    expect(actions.filter(a => a.kind === 'merge-json')).toHaveLength(0);
+    expect(warnings.join(' ')).toMatch(/refusing/i);
   });
 
   it('omits opencode merge on near-miss entry with warning', () => {
@@ -58,10 +67,11 @@ describe('planInit', () => {
     expect(actions.map(a => a.kind)).not.toContain('upstream-install');
   });
 
-  it('emits no merge-json actions when package.json is absent', () => {
+  it('merges only opencode.json when package.json is absent', () => {
     const { actions } = planInit({ ...base, detectedPm: 'npm', pkgExists: false },
       { harnesses: ['opencode', 'claude'], pm: 'skip', guard: false, dashboard: true, skipInstall: true }, '1.0.0');
-    expect(actions.filter(a => a.kind === 'merge-json')).toHaveLength(0);
+    const jsonOps = actions.filter(a => a.kind === 'merge-json') as Array<{ kind: 'merge-json'; path: string }>;
+    expect(jsonOps.map(a => a.path)).toEqual(['opencode.json']);
   });
 
   it('omits dashboard generation when dashboard is off', () => {

@@ -24,7 +24,7 @@ An automated check for this situation arrives with `sbl doctor` (v2 backlog).
 | `1` | usage/detection failure (bad flags, invalid JSON in files we must parse) |
 | `2` | ownership or merge refusal (a file cannot be attributed to the kit) |
 | `3` | upstream command failure (`npm`/`backlog init` failed) |
-| `4` | success with warnings (e.g., Claude CLI absent — instructions printed instead) |
+| `4` | success with warnings (e.g., manual steps required — Claude plugin install instructions printed) |
 
 ## Environment seams (for testing and CI)
 
