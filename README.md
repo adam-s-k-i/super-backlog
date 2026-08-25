@@ -1,0 +1,66 @@
+# super-backlog
+
+One command to equip any project with [Backlog.md](https://github.com/MrLesk/Backlog.md) + [Superpowers](https://github.com/obra/superpowers), plus a Project Dashboard.
+
+## What & why
+
+Superpowers and Backlog.md are strong on their own, but nothing wires them together: Superpowers defines *how* agents should work (brainstorming → plans → TDD → review), Backlog.md defines *what* is tracked (markdown tasks, Kanban board, browser UI). Connecting them today means hand-copying glue from project to project — workflow blocks in `AGENTS.md`, bridge skills like `spec-to-backlog`, npm scripts, plugin config. super-backlog is the glue orchestrator that installs and maintains all of it in one step, with a guaranteed-clean exit path (`sbl uninstall`).
+
+## Requirements
+
+- Node >= 20
+- A package manager (npm, pnpm, or bun) for dependency installation
+- Works with **OpenCode** and **Claude Code** (both installed by default)
+
+## Quickstart
+
+```bash
+npx super-backlog init        # install everything into the current project
+npm run board                 # open the Backlog.md kanban board
+sbl dashboard --serve         # live Project Dashboard on http://localhost:6428
+```
+
+`init` is idempotent — safe to re-run any time; re-running with a newer kit version is the upgrade path for all injected files.
+
+## What gets installed
+
+| Target | Content | Ownership model |
+|---|---|---|
+| `package.json` devDependencies | `backlog.md@latest` + `super-backlog@latest` | merged |
+| `backlog/` | created by `backlog init --defaults` (upstream owns it) | delegated |
+| `opencode.json` | `plugin[] += superpowers@git+https://github.com/obra/superpowers.git` | merged; other keys untouched |
+| `.claude/` | Superpowers via official marketplace (run automatically when the `claude` CLI is available, otherwise the exact command is printed) | instructed/delegated |
+| `AGENTS.md` | `<!-- SUPER-BACKLOG:x.y.z START -->` … `<!-- SUPER-BACKLOG END -->` workflow block | marker-scoped |
+| `CLAUDE.md` | one-line pointer to the AGENTS.md block | marker-scoped |
+| `.opencode/skill/spec-to-backlog/SKILL.md` | glue skill template | fingerprint header line |
+| `.claude/skills/spec-to-backlog/SKILL.md` | same template | fingerprint header line |
+| `package.json` scripts | `tasks` → `backlog task list`, `board` → `backlog board`, `browser` → `backlog browser`, `dashboard` → `super-backlog dashboard` (never overwrite existing values) | merged, add-only-if-absent |
+| `dashboard.html` | generated Project Dashboard | regenerated wholesale |
+| `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
+
+Commands: `sbl init` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--serve] [--port <n>] [--no-open] [--out <file>]`. See `sbl help` for every flag.
+
+## Project Dashboard
+
+`sbl dashboard` generates a single self-contained `dashboard.html` from your Backlog data: metric cards per status, milestone progress bars, an expandable task table, and a workflow cheat sheet. No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `--serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428 by default.
+
+<!-- ![Project Dashboard](docs/assets/dashboard.png) -->
+
+## Uninstall guarantee
+
+super-backlog uninstall removes only provably owned artifacts and keeps your Backlog task data unless you pass --with-backlog. Every removal decision is reported line by line as removed / kept / skipped; files whose ownership cannot be proven are left untouched.
+
+## Harness support
+
+- **OpenCode** — native: `opencode.json` plugin entry plus a file-based skill under `.opencode/skill/spec-to-backlog/`.
+- **Claude Code** — file-based skills under `.claude/skills/spec-to-backlog/` always work; the marketplace installation is attempted via the `claude` CLI or printed verbatim when unavailable.
+
+Details and matrix: [docs/harness-support.md](docs/harness-support.md).
+
+## Troubleshooting
+
+Windows OpenCode fallback, exit codes, and environment seams: [docs/troubleshooting.md](docs/troubleshooting.md). Architecture deep-dive: [docs/architecture.md](docs/architecture.md). Guard hook details: [docs/guard.md](docs/guard.md).
+
+## License
+
+[MIT](LICENSE)
