@@ -25,11 +25,17 @@ export interface ServeHandle {
 function openInBrowser(url: string): void {
   try {
     if (process.platform === 'win32') {
-      spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref();
+      spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' })
+        .on('error', () => {}) // async ENOENT must not become an uncaught throw
+        .unref();
     } else if (process.platform === 'darwin') {
-      spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
+      spawn('open', [url], { detached: true, stdio: 'ignore' })
+        .on('error', () => {})
+        .unref();
     } else {
-      spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
+      spawn('xdg-open', [url], { detached: true, stdio: 'ignore' })
+        .on('error', () => {})
+        .unref();
     }
   } catch {
     // best-effort only; a missing opener must never crash the server
@@ -62,7 +68,8 @@ export async function startServeServer(
 
   let watcher: FSWatcher | null = null;
   try {
-    watcher = watch(join(cwd, 'backlog'), { persistent: true }, debouncedRegenerate);
+    // recursive so subdirectory writes (e.g. backlog/tasks/*.md) fire on every platform
+    watcher = watch(join(cwd, 'backlog'), { persistent: true, recursive: true }, debouncedRegenerate);
     watcher.on('error', () => {}); // e.g. watched dir removed mid-session
   } catch {
     watcher = null; // no backlog dir -> no live reload; serving still works

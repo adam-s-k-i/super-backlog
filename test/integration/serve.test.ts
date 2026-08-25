@@ -98,6 +98,21 @@ describe('startServeServer', () => {
     expect(fired).toBe(true);
   });
 
+  it('watches task edits in the backlog/tasks subdirectory within 2s', async () => {
+    const dir = freshProject();
+    mkdirSync(join(dir, 'backlog', 'tasks'), { recursive: true });
+    const regenerate = vi.fn(async () => {});
+    const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
+    handles.push(handle);
+
+    // backlog.md stores tasks in backlog/tasks/*.md; the watcher must see
+    // subdirectory writes on every platform (recursive watch).
+    writeFileSync(join(dir, 'backlog', 'tasks', 'TASK-99.md'), '# TASK-99\n');
+
+    const fired = await until(2000, () => regenerate.mock.calls.length > 0);
+    expect(fired).toBe(true);
+  });
+
   it('answers 404 while dashboard.html has not been generated yet', async () => {
     const dir = freshProject();
     const handle = await startServeServer(dir, { port: 0, openBrowser: false });
