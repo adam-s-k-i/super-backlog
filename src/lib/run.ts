@@ -6,7 +6,10 @@ import process from 'node:process';
 export interface RunResult { status: number; stdout: string; stderr: string; }
 
 export function runCapture(cmd: string, args: string[], cwd: string): RunResult {
-  const r = spawnSync(cmd, args, { cwd, encoding: 'utf8', shell: false });
+  // shell on win32 — safe only because callers pass constant args; never pass user input here.
+  const winShell = process.platform === 'win32';
+  const file = winShell && /\s/.test(cmd) ? `"${cmd}"` : cmd;
+  const r = spawnSync(file, args, { cwd, encoding: 'utf8', shell: winShell });
   if (r.error && (r.status === null || r.status === undefined)) {
     return { status: 127, stdout: '', stderr: String(r.error.message) };
   }

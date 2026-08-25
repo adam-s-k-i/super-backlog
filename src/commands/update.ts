@@ -97,6 +97,8 @@ export async function runUpdate(cwd: string, _args: ParsedArgs): Promise<number>
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   let published: string | null = null;
   try {
+    // test seam: SBL_FORCE_OFFLINE makes e2e runs take the offline path deterministically
+    if (process.env.SBL_FORCE_OFFLINE) throw new Error('forced offline');
     const view = runCapture(npm, ['view', 'backlog.md', 'version'], cwd);
     if (view.status === 0) published = firstLine(view.stdout);
   } catch {

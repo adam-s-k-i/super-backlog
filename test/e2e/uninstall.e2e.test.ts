@@ -108,4 +108,58 @@ describe('sbl uninstall (SBL_SKIP_INSTALL)', () => {
     expect(JSON.stringify(oc)).not.toContain(PLUGIN_SPEC);
     expect(out).toMatch(/DATA DELETED/i); // prominent data-deleted notice
   });
+
+  it('keeps foreign content in every ownership-checked slot', () => {
+    const dir = scaffold();
+
+    // (a) plugin array with a foreign superpowers fork + our spec: only ours is removed
+    writeFileSync(
+      join(dir, 'opencode.json'),
+      `${JSON.stringify(
+        {
+          plugin: [
+            'superpowers@git+https://github.com/someone/fork.git',
+            PLUGIN_SPEC,
+          ],
+        },
+        null,
+        2,
+      )}\n`,
+    );
+
+    // (b) pre-commit hook holding foreign content plus our guard block
+    const hookPath = join(dir, '.git', 'hooks', 'pre-commit');
+    const guardBlock = readFileSync(hookPath, 'utf8').replace(/^#![^\n]*\n/, '');
+    writeFileSync(hookPath, `#!/bin/sh\necho foreign-check\n${guardBlock}`);
+
+    // (c) pinned devDependency stays without --with-backlog
+    const pkgPath = join(dir, 'package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+      devDependencies: Record<string, string>;
+    };
+    pkg.devDependencies['backlog.md'] = '^9.0.0';
+    writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+
+    // (d) skill dir without SKILL.md is not provably owned
+    mkdirSync(join(dir, '.claude', 'skills', 'someone-else'), { recursive: true });
+    writeFileSync(join(dir, '.claude', 'skills', 'someone-else', 'README.md'), 'not a skill\n');
+
+    runCli(dir, ['uninstall']);
+
+    const oc = JSON.parse(readFileSync(join(dir, 'opencode.json'), 'utf8')) as {
+      plugin: string[];
+    };
+    expect(oc.plugin).toEqual(['superpowers@git+https://github.com/someone/fork.git']);
+
+    const hookAfter = readFileSync(hookPath, 'utf8');
+    expect(hookAfter).toContain('echo foreign-check');
+    expect(hookAfter).not.toContain('super-backlog guard');
+
+    const after = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
+      devDependencies: Record<string, string | undefined>;
+    };
+    expect(after.devDependencies['backlog.md']).toBe('^9.0.0');
+
+    expect(existsSync(join(dir, '.claude', 'skills', 'someone-else', 'README.md'))).toBe(true);
+  });
 });

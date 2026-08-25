@@ -42,11 +42,12 @@ function removePointerSection(content: string): { content: string; removed: bool
 
 function uninstallPackageJson(
   cwd: string,
+  pkg: PkgJson | null,
   withBacklog: boolean,
   report: ReportLine[],
-): number {
+): void {
   const path = join(cwd, 'package.json');
-  if (!existsSync(path)) {
+  if (pkg === null) {
     for (const name of Object.keys(WANTED_SCRIPTS)) {
       report.push({ verdict: 'skipped', label: `npm script "${name}" (package.json not found)` });
     }
@@ -56,14 +57,7 @@ function uninstallPackageJson(
         label: `devDependency "${name}" (package.json not found)`,
       });
     }
-    return 0;
-  }
-  let pkg: PkgJson;
-  try {
-    pkg = JSON.parse(readFileSync(path, 'utf8')) as PkgJson;
-  } catch {
-    console.error('error: package.json is not valid JSON - fix it manually, then re-run');
-    return 1;
+    return;
   }
 
   let changed = false;
@@ -102,31 +96,27 @@ function uninstallPackageJson(
     }
   }
 
-  if (!changed) return 0;
+  if (!changed) return;
   const next: PkgJson = { ...pkg };
   if (hadScripts || Object.keys(scripts).length > 0) next.scripts = scripts;
   if (hadDeps || Object.keys(devDependencies).length > 0) next.devDependencies = devDependencies;
   atomicWrite(path, prettyJson(next));
-  return 0;
 }
 
-function uninstallPluginEntry(cwd: string, report: ReportLine[]): number {
+function uninstallPluginEntry(
+  cwd: string,
+  config: Record<string, unknown> | null,
+  report: ReportLine[],
+): void {
   const path = join(cwd, 'opencode.json');
-  if (!existsSync(path)) {
+  if (config === null) {
     report.push({ verdict: 'skipped', label: 'opencode.json plugin entry (file not found)' });
-    return 0;
-  }
-  let config: Record<string, unknown>;
-  try {
-    config = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
-  } catch {
-    console.error('error: opencode.json is not valid JSON - fix it manually, then re-run');
-    return 1;
+    return;
   }
   const raw = config.plugin;
   if (raw === undefined) {
     report.push({ verdict: 'skipped', label: 'opencode.json plugin entry (none)' });
-    return 0;
+    return;
   }
   const list: unknown[] = Array.isArray(raw) ? [...raw] : [raw];
   if (list.some((entry) => typeof entry === 'string' && entry === PLUGIN_SPEC)) {
@@ -143,12 +133,33 @@ function uninstallPluginEntry(cwd: string, report: ReportLine[]): number {
   } else {
     report.push({ verdict: 'skipped', label: 'opencode.json plugin entry (no kit entry)' });
   }
-  return 0;
 }
 
 export function runUninstall(cwd: string, args: ParsedArgs): number {
   const withBacklog = args.values['with-backlog'] === true;
   const report: ReportLine[] = [];
+
+  // validate both JSON files up front - no mutation happens unless parsing succeeds
+  let pkg: PkgJson | null = null;
+  const pkgPath = join(cwd, 'package.json');
+  if (existsSync(pkgPath)) {
+    try {
+      pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as PkgJson;
+    } catch {
+      console.error('error: package.json is not valid JSON - fix it manually, then re-run');
+      return 1;
+    }
+  }
+  let opencodeConfig: Record<string, unknown> | null = null;
+  const ocPath = join(cwd, 'opencode.json');
+  if (existsSync(ocPath)) {
+    try {
+      opencodeConfig = JSON.parse(readFileSync(ocPath, 'utf8')) as Record<string, unknown>;
+    } catch {
+      console.error('error: opencode.json is not valid JSON - fix it manually, then re-run');
+      return 1;
+    }
+  }
 
   const agentsPath = join(cwd, 'AGENTS.md');
   if (!existsSync(agentsPath)) {
@@ -196,11 +207,8 @@ export function runUninstall(cwd: string, args: ParsedArgs): number {
     }
   }
 
-  const pkgResult = uninstallPackageJson(cwd, withBacklog, report);
-  if (pkgResult !== 0) return pkgResult;
-
-  const pluginResult = uninstallPluginEntry(cwd, report);
-  if (pluginResult !== 0) return pluginResult;
+  uninstallPackageJson(cwd, pkg, withBacklog, report);
+  uninstallPluginEntry(cwd, opencodeConfig, report);
 
   const gitDir = findGitDir(cwd);
   if (!gitDir) {
