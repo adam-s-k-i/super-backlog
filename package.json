@@ -9,7 +9,7 @@
   "bin": { "sbl": "dist/cli.js", "super-backlog": "dist/cli.js" },
   "files": ["dist", "README.md"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-templates.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
