@@ -29,7 +29,7 @@
   "devDependencies": {
     "@types/node": "^20.14.0",
     "backlog.md": "^1.50.1",
-    "super-backlog": "file:",
+    "super-backlog": "file:.",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }
