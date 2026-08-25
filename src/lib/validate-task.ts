@@ -7,11 +7,12 @@ export function validateTaskMarkdown(filename: string, content: string): string[
     const fmMatch = new RegExp(`^${name}:\\s*(.*?)\\s*$`, 'm').exec(fm);
     return fmMatch ? fmMatch[1].replace(/^["']|["']$/g, '') : null;
   };
-  const expectedId = filename.replace(/\.md$/, '');
+  const stem = filename.replace(/\.md$/, '');
+  const base = stem.includes(' - ') ? stem.split(' - ')[0] : stem;
   const id = field('id');
   if (!id) errors.push(`backlog/tasks/${filename}: missing 'id' field`);
-  else if (id !== expectedId)
-    errors.push(`backlog/tasks/${filename}: id '${id}' does not match filename '${expectedId}'`);
+  else if (id.toLowerCase() !== base.toLowerCase())
+    errors.push(`backlog/tasks/${filename}: id '${id}' does not match filename stem '${base}'`);
   const title = field('title');
   if (!title) errors.push(`backlog/tasks/${filename}: empty or missing 'title'`);
   return errors;
