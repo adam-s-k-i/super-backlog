@@ -70,8 +70,7 @@ function skipInstallEnv(): boolean {
 }
 
 function fabricateBacklogConfig(cwd: string, projectName: string): void {
-  // JSON flow style so the stub is both valid YAML and trivially parseable.
-  atomicWrite(join(cwd, 'backlog', 'config.yml'), prettyJson({ project_name: projectName }));
+  atomicWrite(join(cwd, 'backlog', 'config.yml'), `project_name: ${projectName}\n`);
 }
 
 function runUpstreamInstall(cwd: string, op: UpstreamOp, ctx: ExecuteContext): void {

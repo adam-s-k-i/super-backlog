@@ -72,7 +72,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
   }
   const pm = rawPm as PM | 'auto' | 'skip';
 
-  const guard = args.values.guard !== false; // default on; --guard affirms explicitly
+  const guard = args.values.guard === true; // opt-in per spec D8
   const dashboard = args.values['no-dashboard'] !== true;
   const dryRun = args.values['dry-run'] === true;
   const projectName = args.positionals[0] ?? basename(resolve(cwd));

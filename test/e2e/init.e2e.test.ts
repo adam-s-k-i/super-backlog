@@ -20,7 +20,7 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('writes manifest artifacts and is idempotent', () => {
-    execFileSync(process.execPath, [CLI, 'init', '--pm', 'npm', '--no-dashboard'], {
+    execFileSync(process.execPath, [CLI, 'init', '--pm', 'npm', '--guard', '--no-dashboard'], {
       cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' },
     });
     const oc = JSON.parse(readFileSync(join(dir, 'opencode.json'), 'utf8'));
@@ -32,16 +32,24 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
     const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
     expect(pkg.scripts.board).toBe('backlog board');
     expect(pkg.devDependencies['backlog.md']).toBe('latest');
-    expect(JSON.parse(readFileSync(join(dir, 'backlog', 'config.yml'), 'utf8') || '{}')).toBeTruthy(); // fabricated stub exists
+    const cfg = readFileSync(join(dir, 'backlog', 'config.yml'), 'utf8');
+    expect(cfg).toMatch(/^project_name: /m); // fabricated flat-YAML stub
     const hook = readFileSync(join(dir, '.git', 'hooks', 'pre-commit'), 'utf8');
     expect(hook).toContain('super-backlog guard');
 
     // re-run: no duplication
-    execFileSync(process.execPath, [CLI, 'init', '--pm', 'npm', '--no-dashboard'], {
+    execFileSync(process.execPath, [CLI, 'init', '--pm', 'npm', '--guard', '--no-dashboard'], {
       cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' },
     });
     const oc2 = JSON.parse(readFileSync(join(dir, 'opencode.json'), 'utf8'));
     expect(oc2.plugin.filter(e => e.includes('superpowers'))).toHaveLength(1);
+  });
+
+  it('leaves the guard hook uninstalled unless --guard is passed', () => {
+    execFileSync(process.execPath, [CLI, 'init', '--no-dashboard'], {
+      cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' },
+    });
+    expect(existsSync(join(dir, '.git', 'hooks', 'pre-commit'))).toBe(false);
   });
 
   it('--dry-run changes nothing', () => {
