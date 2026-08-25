@@ -4,7 +4,7 @@ import { readFileSync as rf } from 'node:fs';
 import { dirname, join as j } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const GUARD_RE = /^# >>> super-backlog guard [\d.]+ >>>[\s\S]*?# <<< super-backlog guard <<<\n?/m;
+export const GUARD_RE = /^# >>> super-backlog guard [\d.]+ >>>[\s\S]*?# <<< super-backlog guard <<<\n?/m;
 
 function hookTemplate(): string {
   const here = dirname(fileURLToPath(import.meta.url)); // dist/lib at runtime, src/lib under vitest

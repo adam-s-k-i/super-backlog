@@ -4,6 +4,8 @@ import { parseArgs } from 'node:util';
 import process from 'node:process';
 
 import { runInit } from './commands/init.js';
+import { runUninstall } from './commands/uninstall.js';
+import { runUpdate } from './commands/update.js';
 import { assertNode20 } from './lib/version.js';
 
 const HELP = `super-backlog (sbl) - equip any project with Backlog.md + Superpowers
@@ -12,8 +14,8 @@ Usage: sbl <command> [options]
 
 Commands:
   init        Install the kit into the current project
-  uninstall   Remove kit-managed files (not implemented yet)
-  update      Refresh kit-managed files (not implemented yet)
+  uninstall   Remove kit-managed files (project data kept unless --with-backlog)
+  update      Refresh kit-managed files and report upstream versions
   dashboard   Serve the generated project dashboard (not implemented yet)
 
 init options:
@@ -22,6 +24,12 @@ init options:
   --guard                         Install the integrity pre-commit hook (opt-in)
   --no-dashboard                  Skip generating the project dashboard
   --dry-run                       Show what would be done without writing anything
+
+uninstall options:
+  --with-backlog                  Also permanently delete the backlog/ data directory
+
+update options:
+  (none)                          Refreshes injected files, skills, hook; prints upstream versions
 
 Exit codes:
   0 ok | 1 usage/detection failure | 2 ownership or merge refusal
@@ -53,10 +61,26 @@ async function main(argv: string[]): Promise<number> {
         positionals: parsed.positionals,
       });
     }
-    case 'uninstall':
-    case 'update':
+    case 'uninstall': {
+      const parsed = parseArgs({
+        args: rest,
+        allowPositionals: true,
+        options: { 'with-backlog': { type: 'boolean' } },
+      });
+      return runUninstall(process.cwd(), {
+        values: parsed.values as Record<string, string | boolean | undefined>,
+        positionals: parsed.positionals,
+      });
+    }
+    case 'update': {
+      const parsed = parseArgs({ args: rest, allowPositionals: true, options: {} });
+      return await runUpdate(process.cwd(), {
+        values: parsed.values as Record<string, string | boolean | undefined>,
+        positionals: parsed.positionals,
+      });
+    }
     case 'dashboard':
-      console.error(`"${command}" is not implemented yet in this version.\n`);
+      console.error(`"dashboard" is not implemented yet in this version.\n`);
       console.error(HELP);
       return 1;
     default:

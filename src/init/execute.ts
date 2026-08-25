@@ -36,7 +36,7 @@ export interface ExecuteResult {
 }
 
 const UPSTREAM_PKGS = ['backlog.md@latest', 'super-backlog@latest'];
-const POINTER_HEADING_RE = /Workflow system \(managed by super-backlog\)/;
+export const POINTER_HEADING_RE = /Workflow system \(managed by super-backlog\)/;
 
 export function findGitDir(startDir: string): string | null {
   let dir = resolve(startDir);
