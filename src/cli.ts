@@ -3,10 +3,11 @@
 import { parseArgs } from 'node:util';
 import process from 'node:process';
 
+import { runDashboard } from './commands/dashboard.js';
 import { runInit } from './commands/init.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
-import { assertNode20 } from './lib/version.js';
+import { assertNode20, KIT_VERSION } from './lib/version.js';
 
 const HELP = `super-backlog (sbl) - equip any project with Backlog.md + Superpowers
 
@@ -16,7 +17,7 @@ Commands:
   init        Install the kit into the current project
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
-  dashboard   Serve the generated project dashboard (not implemented yet)
+  dashboard   Generate the single-file project dashboard (--serve for live mode)
 
 init options:
   --pm <auto|npm|pnpm|bun|skip>   Package manager to use (default: auto)
@@ -31,12 +32,26 @@ uninstall options:
 update options:
   (none)                          Refreshes injected files, skills, hook; prints upstream versions
 
+dashboard options:
+  --serve                         Live mode: watch backlog/ and regenerate on changes
+  --port <n>                      Port for --serve (default: 6428)
+  --no-open                       With --serve: do not open the browser automatically
+  --out <file>                    Output file name or path (default: dashboard.html)
+
+Global options:
+  --version                       Print the super-backlog version and exit
+
 Exit codes:
   0 ok | 1 usage/detection failure | 2 ownership or merge refusal
   3 upstream command failure | 4 success with warnings`;
 
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
+
+  if (command === '--version' || command === '-v') {
+    console.log(KIT_VERSION);
+    return 0;
+  }
 
   if (command === undefined || command === 'help' || command === '--help' || command === '-h') {
     console.log(HELP);
@@ -79,10 +94,22 @@ async function main(argv: string[]): Promise<number> {
         positionals: parsed.positionals,
       });
     }
-    case 'dashboard':
-      console.error(`"dashboard" is not implemented yet in this version.\n`);
-      console.error(HELP);
-      return 1;
+    case 'dashboard': {
+      const parsed = parseArgs({
+        args: rest,
+        allowPositionals: true,
+        options: {
+          serve: { type: 'boolean' },
+          port: { type: 'string' },
+          'no-open': { type: 'boolean' },
+          out: { type: 'string' },
+        },
+      });
+      return await runDashboard(process.cwd(), {
+        values: parsed.values as Record<string, string | boolean | undefined>,
+        positionals: parsed.positionals,
+      });
+    }
     default:
       console.error(`Unknown command "${command}".\n`);
       console.error(HELP);

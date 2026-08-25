@@ -1,12 +1,12 @@
 // src/commands/dashboard.ts
-import { join } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 
 import { collectDashboardData } from '../dashboard/data.js';
 import { renderDashboard } from '../dashboard/render.js';
+import { DASHBOARD_PORT, startServeServer } from '../dashboard/server.js';
 import { atomicWrite } from '../lib/atomic.js';
 import { KIT_VERSION } from '../lib/version.js';
-
-const DASHBOARD_PORT = 6428;
+import type { ParsedArgs } from './init.js';
 
 async function regenerateInto(outPath: string, cwd: string): Promise<void> {
   const data = collectDashboardData(cwd, { kitVersion: KIT_VERSION });
@@ -25,7 +25,7 @@ export async function generateDashboard(cwd: string, o: { serve: boolean }): Pro
     // Dynamic import keeps init resilient if the serve module is unavailable.
     const specifier = '../dashboard/server.js';
     const mod = (await import(specifier)) as {
-      startServeServer?: (cwd: string, opts: Record<string, unknown>) => Promise<unknown>;
+      startServeServer?: typeof startServeServer;
     };
     if (typeof mod.startServeServer !== 'function') {
       throw new Error('serve module does not export startServeServer');
@@ -37,4 +37,42 @@ export async function generateDashboard(cwd: string, o: { serve: boolean }): Pro
     });
   }
   return outPath;
+}
+
+/** CLI entry for `sbl dashboard [--serve] [--port N] [--no-open] [--out FILE]`. */
+export async function runDashboard(cwd: string, args: ParsedArgs): Promise<number> {
+  const values = args.values;
+
+  let port = DASHBOARD_PORT;
+  if (values['port'] !== undefined) {
+    const parsed = Number(values['port']);
+    if (!Number.isInteger(parsed) || parsed < 0 || parsed > 65535) {
+      console.error(`error: invalid --port "${String(values['port'])}" (expected 0-65535)`);
+      return 1;
+    }
+    port = parsed;
+  }
+
+  const serve = values['serve'] === true;
+  const noOpen = values['no-open'] === true;
+  const outFile = values['out'] === undefined ? 'dashboard.html' : String(values['out']);
+  const outPath = isAbsolute(outFile) ? outFile : resolve(cwd, outFile);
+
+  try {
+    await regenerateInto(outPath, cwd);
+    console.log(`dashboard written: ${outPath}`);
+    if (serve) {
+      console.log(`serving dashboard at http://127.0.0.1:${port}/ (press Ctrl+C to stop)`);
+      await startServeServer(cwd, {
+        port,
+        file: outPath,
+        regenerate: () => regenerateInto(outPath, cwd),
+        openBrowser: !noOpen,
+      });
+    }
+    return 0;
+  } catch (err) {
+    console.error(`error: dashboard generation failed (${err instanceof Error ? err.message : String(err)})`);
+    return 1;
+  }
 }
