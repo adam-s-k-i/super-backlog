@@ -10,6 +10,7 @@
   "files": ["dist", "README.md"],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-templates.mjs",
+    "pretest": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
