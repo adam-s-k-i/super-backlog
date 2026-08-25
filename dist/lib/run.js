@@ -1,0 +1,32 @@
+import { existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { join } from 'node:path';
+import process from 'node:process';
+export function runCapture(cmd, args, cwd) {
+    // shell on win32 — safe only because callers pass constant args; never pass user input here.
+    const winShell = process.platform === 'win32';
+    const file = winShell && /\s/.test(cmd) ? `"${cmd}"` : cmd;
+    const r = spawnSync(file, args, { cwd, encoding: 'utf8', shell: winShell });
+    if (r.error && (r.status === null || r.status === undefined)) {
+        return { status: 127, stdout: '', stderr: String(r.error.message) };
+    }
+    return {
+        status: r.status ?? 1,
+        stdout: (r.stdout ?? '').toString(),
+        stderr: (r.stderr ?? '').toString(),
+    };
+}
+const EXT = process.platform === 'win32' ? '.cmd' : '';
+export function resolveBacklogBin(cwd) {
+    const local = join(cwd, 'node_modules', '.bin', `backlog${EXT}`);
+    if (existsSync(local))
+        return local;
+    const probe = process.platform === 'win32' ? 'where' : 'which';
+    const w = runCapture(probe, ['backlog'], cwd);
+    if (w.status === 0) {
+        const first = w.stdout.split(/\r?\n/).find(Boolean);
+        if (first)
+            return first.trim().replace(/\.ps1$/i, '.cmd');
+    }
+    return null;
+}

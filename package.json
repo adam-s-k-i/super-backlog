@@ -5,17 +5,31 @@
   "description": "One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard.",
   "license": "MIT",
   "type": "module",
-  "engines": { "node": ">=20" },
-  "bin": { "sbl": "dist/cli.js", "super-backlog": "dist/cli.js" },
-  "files": ["dist", "README.md"],
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "sbl": "dist/cli.js",
+    "super-backlog": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-templates.mjs",
     "pretest": "npm run build",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "tasks": "backlog task list",
+    "board": "backlog board",
+    "browser": "backlog browser",
+    "dashboard": "super-backlog dashboard"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "backlog.md": "^1.50.1",
+    "super-backlog": "file:",
     "typescript": "^5.6.0",
     "vitest": "^2.1.0"
   }
