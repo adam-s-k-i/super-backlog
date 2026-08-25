@@ -9,6 +9,7 @@ import { CLI_PATH, scaffoldAndInit } from './helpers.js';
 
 interface UpdateResult {
   out: string;
+  err: string;
   status: number;
 }
 
@@ -19,12 +20,14 @@ function runUpdate(dir: string): UpdateResult {
       env: { ...process.env, SBL_SKIP_INSTALL: '1', SBL_FORCE_OFFLINE: '1' },
       encoding: 'utf8',
     });
-    return { out, status: 0 };
+    return { out, err: '', status: 0 };
   } catch (err) {
-    const e = err as { status?: number | null; stdout?: string | Buffer };
+    const e = err as { status?: number | null; stdout?: string | Buffer; stderr?: string | Buffer };
     const stdout = e.stdout ?? '';
+    const stderr = e.stderr ?? '';
     return {
       out: typeof stdout === 'string' ? stdout : stdout.toString('utf8'),
+      err: typeof stderr === 'string' ? stderr : stderr.toString('utf8'),
       status: e.status ?? -1,
     };
   }
@@ -84,5 +87,27 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
     const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
     expect(agents.match(/SUPER-BACKLOG:\d+\.\d+\.\d+ START/g)).toHaveLength(1);
     expect(existsSync(join(dir, 'backlog', 'config.yml'))).toBe(true);
+  });
+
+  it('exits 1 naming opencode.json when it is malformed', () => {
+    freshScaffold();
+    writeFileSync(join(dir, 'opencode.json'), '{ not json');
+
+    const { err, status } = runUpdate(dir);
+
+    expect(status).toBe(1);
+    expect(err).toContain('opencode.json');
+    expect(err).toMatch(/not valid JSON/i);
+  });
+
+  it('exits 1 naming package.json when it is malformed', () => {
+    freshScaffold();
+    writeFileSync(join(dir, 'package.json'), '{ bad');
+
+    const { err, status } = runUpdate(dir);
+
+    expect(status).toBe(1);
+    expect(err).toContain('package.json');
+    expect(err).toMatch(/not valid JSON/i);
   });
 });

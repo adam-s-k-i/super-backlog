@@ -101,14 +101,22 @@ function runUpstreamInstall(cwd: string, op: UpstreamOp, ctx: ExecuteContext): v
   }
 }
 
-function parseJsonFile(path: string, label: string): unknown {
+export class InvalidJsonError extends Error {}
+
+/** Reads path and throws InvalidJsonError when present-but-unparseable. Missing/empty file passes. */
+export function validateJsonFile(path: string, label: string): void {
   const raw = readTextIfExists(path);
-  if (raw === null || raw.trim() === '') return {};
+  if (raw === null || raw.trim() === '') return;
   try {
-    return JSON.parse(raw);
+    JSON.parse(raw);
   } catch {
-    throw new RefusalError(`${label} is not valid JSON - fix it manually, then re-run`);
+    throw new InvalidJsonError(`${label} is not valid JSON - fix it manually, then re-run`);
   }
+}
+
+function parseJsonFile(path: string, label: string): unknown {
+  validateJsonFile(path, label);
+  return JSON.parse(readTextIfExists(path) as string);
 }
 
 function applyMergeJson(cwd: string, op: JsonOp): boolean {

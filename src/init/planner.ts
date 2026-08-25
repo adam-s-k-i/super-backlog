@@ -64,7 +64,7 @@ export function planInit(
   }
   if (degradedAuto && !opts.skipInstall) {
     warnings.push(
-      'no package manager detected - skipped dependency installation and JSON merges; ' +
+      'no package manager detected - dependency installation and package.json merge were skipped; ' +
       'install backlog.md and super-backlog manually, or re-run with --pm <npm|pnpm|bun>',
     );
   }

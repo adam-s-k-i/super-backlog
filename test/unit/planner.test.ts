@@ -33,6 +33,7 @@ describe('planInit', () => {
       { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: false }, '1.0.0');
     expect(actions.map(a => a.kind)).not.toContain('upstream-install');
     expect(warnings.join(' ')).toMatch(/no package manager detected/i);
+    expect(warnings.join(' ')).not.toMatch(/JSON merges/i); // opencode.json merge is NOT gated on PM
     const jsonOps = actions.filter(a => a.kind === 'merge-json') as Array<{ kind: 'merge-json'; path: string }>;
     expect(jsonOps.map(a => a.path)).toEqual(['opencode.json']);
   });

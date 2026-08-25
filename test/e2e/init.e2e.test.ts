@@ -9,6 +9,7 @@ const CLI = join(__dirname, '..', '..', 'dist', 'cli.js'); // built by pretest s
 
 interface InitResult {
   out: string;
+  err: string;
   status: number;
 }
 
@@ -17,12 +18,14 @@ function runInit(dir: string, args: string[]): InitResult {
     const out = execFileSync(process.execPath, [CLI, 'init', ...args], {
       cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' }, encoding: 'utf8',
     });
-    return { out, status: 0 };
+    return { out, err: '', status: 0 };
   } catch (err) {
-    const e = err as { status?: number | null; stdout?: string | Buffer };
+    const e = err as { status?: number | null; stdout?: string | Buffer; stderr?: string | Buffer };
     const stdout = e.stdout ?? '';
+    const stderr = e.stderr ?? '';
     return {
       out: typeof stdout === 'string' ? stdout : stdout.toString('utf8'),
+      err: typeof stderr === 'string' ? stderr : stderr.toString('utf8'),
       status: e.status ?? -1,
     };
   }
@@ -78,5 +81,15 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
     });
     expect(existsSync(join(dir, 'opencode.json'))).toBe(false);
     expect(existsSync(join(dir, 'AGENTS.md'))).toBe(false);
+  });
+
+  it('exits 1 when package.json is malformed', () => {
+    writeFileSync(join(dir, 'package.json'), '{ bad');
+
+    const { err, status } = runInit(dir, ['--pm', 'npm', '--no-dashboard']);
+
+    expect(status).toBe(1);
+    expect(err).toContain('package.json');
+    expect(err).toMatch(/not valid JSON/i);
   });
 });

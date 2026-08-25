@@ -5,7 +5,7 @@ import process from 'node:process';
 
 import { detectPackageManager } from '../lib/pm.js';
 import { KIT_VERSION } from '../lib/version.js';
-import { executeActions, RefusalError, UpstreamError } from '../init/execute.js';
+import { executeActions, InvalidJsonError, RefusalError, UpstreamError } from '../init/execute.js';
 import { planInit, type Action, type InitOptions, type InitState } from '../init/planner.js';
 import type { PM } from '../lib/pm.js';
 
@@ -124,6 +124,11 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
     if (err instanceof UpstreamError) {
       console.error(`error: upstream command failed: ${err.message}`);
       return 3;
+    }
+    if (err instanceof InvalidJsonError) {
+      // detection failure, not ownership refusal: exit 1 per contract
+      console.error(`error: ${err.message}`);
+      return 1;
     }
     if (err instanceof RefusalError) {
       console.error(`error: ${err.message}`);

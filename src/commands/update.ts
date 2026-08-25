@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import process from 'node:process';
 
-import { executeActions, findGitDir, RefusalError, UpstreamError } from '../init/execute.js';
+import { executeActions, findGitDir, InvalidJsonError, validateJsonFile, RefusalError, UpstreamError } from '../init/execute.js';
 import { planInit, type Action, type InitOptions, type InitState } from '../init/planner.js';
 import { GUARD_RE } from '../lib/hooks.js';
 import { detectPackageManager } from '../lib/pm.js';
@@ -36,6 +36,20 @@ function guardHookInstalled(cwd: string): boolean {
 }
 
 export async function runUpdate(cwd: string, _args: ParsedArgs): Promise<number> {
+  // Up-front detection-failure check (mirrors uninstall): refuse before mutating anything.
+  for (const f of ['package.json', 'opencode.json']) {
+    const p = join(cwd, f);
+    if (!existsSync(p)) continue;
+    try {
+      validateJsonFile(p, f);
+    } catch (err) {
+      if (err instanceof InvalidJsonError) {
+        console.error(`error: ${err.message}`);
+        return 1;
+      }
+      throw err;
+    }
+  }
   const state: InitState = {
     cwd,
     detectedPm: detectPackageManager(cwd),
