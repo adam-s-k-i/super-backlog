@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__PROJECT_NAME__ &middot; Project Dashboard</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #1a202c;
+    --muted: #5f6b7a;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --accent-soft: #dbeafe;
+    --ok: #16a34a;
+    --radius: 10px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1216;
+      --surface: #171c23;
+      --text: #e6e9ee;
+      --muted: #98a2b3;
+      --border: #262d38;
+      --accent: #60a5fa;
+      --accent-soft: #1e2937;
+      --ok: #4ade80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  main { max-width: 1100px; margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-6); }
+  header { border-bottom: 1px solid var(--border); background: var(--surface); }
+  .head-inner { max-width: 1100px; margin: 0 auto; padding: var(--space-5); }
+  h1 { margin: 0 0 var(--space-1); font-size: 24px; letter-spacing: -0.02em; }
+  .lede { margin: 0; color: var(--muted); }
+  .meta { margin: var(--space-2) 0 0; color: var(--muted); font-size: 13px; }
+  h2 { margin: 0 0 var(--space-4); font-size: 17px; letter-spacing: -0.01em; }
+  section { margin-top: var(--space-6); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-4); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4) var(--space-5); }
+  .card-num { font-size: 28px; font-weight: 650; line-height: 1.2; }
+  .card-label { color: var(--muted); font-size: 13px; margin-top: var(--space-1); }
+  .quick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-5); }
+  .q-label { color: var(--muted); font-size: 13px; }
+  code {
+    background: var(--accent-soft); color: var(--accent); border-radius: 6px;
+    padding: var(--space-1) var(--space-2); font-size: 13px;
+  }
+  .milestone { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); margin-bottom: var(--space-3); }
+  .ms-head { display: flex; justify-content: space-between; margin-bottom: var(--space-2); }
+  .ms-name { font-weight: 600; }
+  .ms-count { color: var(--muted); font-size: 13px; }
+  .bar { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--ok); border-radius: 999px; transition: width 200ms ease; }
+  .toolbar { display: flex; justify-content: flex-end; margin-bottom: var(--space-3); }
+  input[type="search"] {
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: var(--space-2) var(--space-3); min-width: 260px; font: inherit;
+  }
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th:last-child, td:last-child { border-bottom: none; }
+  tbody tr:last-child td { border-bottom: none; }
+  thead th { color: var(--muted); font-weight: 600; font-size: 12.5px; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+  thead th.sorted-asc::after { content: " \2191"; color: var(--accent); }
+  thead th.sorted-desc::after { content: " \2193"; color: var(--accent); }
+  .task-row { cursor: pointer; }
+  .task-row:hover td { background: var(--accent-soft); }
+  .task-row.expanded td { border-bottom-color: transparent; }
+  .cell-id { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cell-title { font-weight: 550; white-space: normal; min-width: 220px; }
+  .task-detail td { white-space: normal; background: var(--accent-soft); border-top: none; }
+  .detail-desc { margin: 0 0 var(--space-2); }
+  .detail-empty { margin: 0; color: var(--muted); }
+  .ac-list { margin: 0; padding: 0; list-style: none; }
+  .ac { display: flex; align-items: baseline; gap: var(--space-2); padding: 2px 0; }
+  .ac.done span { text-decoration: line-through; color: var(--muted); }
+  .phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3); }
+  .phase { display: flex; gap: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
+  .phase-n {
+    flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-weight: 650; font-size: 13px;
+  }
+  .phase-body { display: flex; flex-direction: column; gap: 2px; }
+  .phase-name { font-weight: 600; font-size: 14px; }
+  .phase-gate { color: var(--muted); font-size: 12.5px; }
+  .empty { color: var(--muted); margin: 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="head-inner">
+    <h1>__PROJECT_NAME__</h1>
+    <p class="lede">__PROJECT_DESC__</p>
+    <p class="meta">Generated __GENERATED_AT__ &middot; super-backlog v__KIT_VERSION__ &middot; <span id="source-badge"></span></p>
+  </div>
+</header>
+<main>
+  <section aria-labelledby="h-overview">
+    <h2 id="h-overview">Overview</h2>
+    <div class="cards" id="cards"></div>
+    <div class="quick">
+      <span class="q-label">Quick commands:</span>
+      <code>backlog browser</code>
+      <code>sbl dashboard --serve</code>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-milestones">
+    <h2 id="h-milestones">Milestones</h2>
+    <div id="milestones"></div>
+  </section>
+
+  <section aria-labelledby="h-tasks">
+    <h2 id="h-tasks">Tasks</h2>
+    <div class="toolbar">
+      <input id="filter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
+    </div>
+    <div class="table-wrap">
+      <table id="tasks-table">
+        <thead>
+          <tr>
+            <th data-key="id">ID</th>
+            <th data-key="title">Title</th>
+            <th data-key="status">Status</th>
+            <th data-key="milestone">Milestone</th>
+            <th data-key="priority">Priority</th>
+            <th data-key="assignee">Assignee</th>
+            <th data-key="updated">Updated</th>
+          </tr>
+        </thead>
+        <tbody id="task-rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-phases">
+    <h2 id="h-phases">Workflow cheat sheet</h2>
+    <div class="phases">
+          __PIPELINE_PHASES__
+    </div>
+  </section>
+</main>
+
+<script type="application/json" id="sbl-data">__SBL_DATA_JSON__</script>
+<script id="sbl-app">
+(function () {
+  'use strict';
+  var data = JSON.parse(document.getElementById('sbl-data').textContent);
+  function $(sel) { return document.querySelector(sel); }
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== '') node.textContent = text;
+    return node;
+  }
+
+  $('#source-badge').textContent =
+    data.source === 'fallback-empty' ? 'no live data' : 'live backlog data';
+
+  var cards = $('#cards');
+  if (data.statuses.length === 0) {
+    cards.appendChild(el('p', 'empty',
+      data.source === 'fallback-empty' ? 'No backlog data found.' : 'No tasks found yet.'));
+  } else {
+    data.statuses.forEach(function (s) {
+      var card = el('div', 'card');
+      card.appendChild(el('div', 'card-num', String(s.count)));
+      card.appendChild(el('div', 'card-label', s.status));
+      cards.appendChild(card);
+    });
+  }
+
+  var msRoot = $('#milestones');
+  if (data.milestones.length === 0) {
+    msRoot.appendChild(el('p', 'empty', 'No milestones yet.'));
+  } else {
+    data.milestones.forEach(function (m) {
+      var pct = m.total > 0 ? Math.round((m.done / m.total) * 100) : 0;
+      var row = el('div', 'milestone');
+      var head = el('div', 'ms-head');
+      head.appendChild(el('span', 'ms-name', m.name));
+      head.appendChild(el('span', 'ms-count', m.done + ' / ' + m.total + ' done'));
+      var bar = el('div', 'bar');
+      var fill = el('div', 'bar-fill');
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      row.appendChild(head);
+      row.appendChild(bar);
+      msRoot.appendChild(row);
+    });
+  }
+
+  var KEYS = ['id', 'title', 'status', 'milestone', 'priority', 'assignee', 'updated'];
+  var state = { key: 'id', dir: 1, query: '' };
+  function field(task, key) {
+    var v = task[key];
+    return v === undefined || v === null ? '' : String(v);
+  }
+  function matches(task) {
+    if (!state.query) return true;
+    var hit = KEYS.some(function (k) {
+      return field(task, k).toLowerCase().indexOf(state.query) !== -1;
+    });
+    return hit || task.acs.some(function (ac) {
+      return ac.text.toLowerCase().indexOf(state.query) !== -1;
+    });
+  }
+  var tbody = $('#task-rows');
+  function renderTasks() {
+    var rows = data.tasks
+      .filter(matches)
+      .sort(function (a, b) {
+        return field(a, state.key).localeCompare(field(b, state.key)) * state.dir;
+      });
+    tbody.textContent = '';
+    if (rows.length === 0) {
+      var emptyTr = el('tr');
+      var emptyTd = el('td', '', 'No matching tasks.');
+      emptyTd.colSpan = KEYS.length;
+      emptyTr.appendChild(emptyTd);
+      tbody.appendChild(emptyTr);
+      return;
+    }
+    rows.forEach(function (task) {
+      var tr = el('tr', 'task-row');
+      KEYS.forEach(function (k) {
+        tr.appendChild(el('td', 'cell-' + k, field(task, k)));
+      });
+      var detail = el('tr', 'task-detail');
+      var td = el('td');
+      td.colSpan = KEYS.length;
+      if (task.description) td.appendChild(el('p', 'detail-desc', task.description));
+      if (task.acs.length > 0) {
+        var list = el('ul', 'ac-list');
+        task.acs.forEach(function (ac) {
+          var li = el('li', ac.checked ? 'ac done' : 'ac');
+          var box = document.createElement('input');
+          box.type = 'checkbox';
+          box.checked = ac.checked;
+          box.disabled = true;
+          li.appendChild(box);
+          li.appendChild(document.createTextNode(ac.text));
+          list.appendChild(li);
+        });
+        td.appendChild(list);
+      } else {
+        td.appendChild(el('p', 'detail-empty', 'No acceptance criteria.'));
+      }
+      detail.style.display = 'none';
+      tr.addEventListener('click', function () {
+        var opening = detail.style.display === 'none';
+        detail.style.display = opening ? '' : 'none';
+        tr.classList.toggle('expanded', opening);
+      });
+      tbody.appendChild(tr);
+      tbody.appendChild(detail);
+    });
+  }
+  document.querySelectorAll('#tasks-table th').forEach(function (th) {
+    th.addEventListener('click', function () {
+      var key = th.getAttribute('data-key');
+      if (!key) return;
+      if (state.key === key) {
+        state.dir = -state.dir;
+      } else {
+        state.key = key;
+        state.dir = 1;
+      }
+      document.querySelectorAll('#tasks-table th').forEach(function (other) {
+        other.classList.remove('sorted-asc', 'sorted-desc');
+        other.removeAttribute('aria-sort');
+      });
+      th.classList.add(state.dir === 1 ? 'sorted-asc' : 'sorted-desc');
+      th.setAttribute('aria-sort', state.dir === 1 ? 'ascending' : 'descending');
+      renderTasks();
+    });
+  });
+  $('#filter').addEventListener('input', function (event) {
+    state.query = event.target.value.trim().toLowerCase();
+    renderTasks();
+  });
+  renderTasks();
+})();
+</script>
+</body>
+</html>
