@@ -62,14 +62,14 @@ export function planInit(
       actions.push({ kind: 'upstream-install', pm: opts.pm });
     }
   }
-  if (degradedAuto) {
+  if (degradedAuto && !opts.skipInstall) {
     warnings.push(
       'no package manager detected - skipped dependency installation and JSON merges; ' +
       'install backlog.md and super-backlog manually, or re-run with --pm <npm|pnpm|bun>',
     );
   }
 
-  if (!degradedAuto) {
+  if (!degradedAuto && state.pkgExists) {
     if (opts.harnesses.includes('opencode')) {
       try {
         applyPluginEntry(state.opencodeConfig);
@@ -78,9 +78,7 @@ export function planInit(
         warnings.push(err instanceof Error ? err.message : String(err));
       }
     }
-    if (state.pkgExists) {
-      actions.push({ kind: 'merge-json', path: 'package.json', transform: 'scripts-and-devdeps' });
-    }
+    actions.push({ kind: 'merge-json', path: 'package.json', transform: 'scripts-and-devdeps' });
   }
 
   if (opts.harnesses.length > 0) {

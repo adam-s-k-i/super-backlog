@@ -19,7 +19,7 @@ Commands:
 init options:
   --pm <auto|npm|pnpm|bun|skip>   Package manager to use (default: auto)
   --harness <opencode|claude>     Target harness; repeatable or comma-separated (default: both)
-  --guard                         Install the pre-commit guard hook (default: on)
+  --guard                         Install the integrity pre-commit hook (opt-in)
   --no-dashboard                  Skip generating the project dashboard
   --dry-run                       Show what would be done without writing anything
 
