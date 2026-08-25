@@ -39,7 +39,8 @@ export function injectBlock(content: string, version: string, block: string): In
 export function stripOwned(content: string): { content: string; removed: boolean } {
   const span = ownedSpan(content);
   if (!span) return { content, removed: false };
-  let out = content.slice(0, span.start) + content.slice(span.end);
-  out = out.replace(/\n{3,}/g, '\n\n'); // collapse gaps left by removal
-  return { content: out, removed: true };
+  const before = content.slice(0, span.start);
+  let after = content.slice(span.end);
+  if (before.endsWith('\n') && after.startsWith('\n')) after = after.slice(1);
+  return { content: before + after, removed: true };
 }

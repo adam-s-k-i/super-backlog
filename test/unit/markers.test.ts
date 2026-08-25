@@ -54,4 +54,10 @@ describe('stripOwned', () => {
   it('reports removed=false when absent', () => {
     expect(stripOwned('# plain\n').removed).toBe(false);
   });
+  it('leaves unrelated blank-line runs elsewhere untouched', () => {
+    const doc = injectBlock('# H\n\n\n\nkept spacing', '1.0.0', BLOCK).content;
+    const r = stripOwned(doc);
+    expect(r.removed).toBe(true);
+    expect(r.content).toContain('# H\n\n\n\nkept spacing');
+  });
 });
