@@ -1,7 +1,7 @@
 // test/integration/serve.test.ts
 import { createHash } from 'node:crypto';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { get as httpGet } from 'node:http';
+import { get as httpGet, request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -58,6 +58,21 @@ afterEach(async () => {
 const nodeMajor = Number(process.versions.node.split('.')[0]);
 const skipWatcherTests = process.platform === 'win32' && !Number.isNaN(nodeMajor) && nodeMajor >= 24;
 const watcherIt = skipWatcherTests ? it.skip : it;
+
+function fetchApi(port: number, path: string): Promise<{ status: number; body: string }> {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const req = request({ host: '127.0.0.1', port, path, method: 'GET' }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk: string) => {
+        body += chunk;
+      });
+      res.on('end', () => resolvePromise({ status: res.statusCode ?? 0, body }));
+    });
+    req.on('error', rejectPromise);
+    req.end();
+  });
+}
 
 describe('startServeServer', () => {
   it('serves latest dashboard bytes on an ephemeral port and regenerates on demand', async () => {
@@ -134,6 +149,23 @@ describe('startServeServer', () => {
       req.end();
     });
     expect(status).toBe(404);
+  });
+
+  it('mounts model API in serve mode without breaking the static file handler', async () => {
+    const { generateDashboard } = await import('../../src/commands/dashboard.js');
+    const dir = freshProject();
+    await generateDashboard(dir, { serve: false });
+
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    const apiRes = await fetchApi(handle.port, '/api/models');
+    expect(apiRes.status).toBe(200);
+    expect(JSON.parse(apiRes.body).config).toHaveProperty('enabled');
+
+    const staticRes = await fetchApi(handle.port, '/');
+    expect(staticRes.status).toBe(200);
+    expect(staticRes.body.startsWith('<!doctype html>')).toBe(true);
   });
 
   it('never opens a browser when openBrowser is false', async () => {

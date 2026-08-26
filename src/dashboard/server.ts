@@ -6,6 +6,8 @@ import { createServer, type Server } from 'node:http';
 import { isAbsolute, join } from 'node:path';
 import process from 'node:process';
 
+import { createModelApiHandler } from '../models/dashboard-api.js';
+
 export const DASHBOARD_PORT = 6428;
 
 export function recursiveWatchSupported(platform: string, nodeVersion: string): boolean {
@@ -89,7 +91,14 @@ export async function startServeServer(
     );
   }
 
+  const modelApi = createModelApiHandler();
+
   const server: Server = createServer((req, res) => {
+    if (req.url?.startsWith('/api/')) {
+      void modelApi(req, res);
+      return;
+    }
+
     const url = req.url ?? '/';
     const method = req.method ?? 'GET';
     if (method !== 'GET' || !(url === '/' || url === '/index.html')) {
