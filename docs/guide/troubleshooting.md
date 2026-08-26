@@ -37,6 +37,10 @@ To check whether the restriction came from a specific scope:
 Get-ExecutionPolicy -List
 ```
 
+## Windows + Node 24: `sbl dashboard --serve` disables live reload
+
+Node 24 on Windows has a libuv bug that crashes the process when watching directories recursively. If you run `sbl dashboard --serve` on Windows under Node 24, super-backlog starts the server but disables live reload and prints a warning. The dashboard still serves and regenerates on manual refresh. Live reload works again on Node 22 or on Linux/macOS. This guard will be removed once Node ships a fix.
+
 ## Windows: OpenCode fails to resolve the git-backed plugin spec
 
 OpenCode on Windows can fail to cache git-backed plugin specs. If the Superpowers plugin does not load after `sbl init`, install it into OpenCode's config directory directly:

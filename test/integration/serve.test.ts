@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { startServeServer } from '../../src/dashboard/server.js';
+import { startServeServer, recursiveWatchSupported } from '../../src/dashboard/server.js';
 
 let dirs: string[] = [];
 const handles: Array<{ close(): Promise<void> }> = [];
@@ -55,6 +55,10 @@ afterEach(async () => {
   dirs.length = 0;
 });
 
+const nodeMajor = Number(process.versions.node.split('.')[0]);
+const skipWatcherTests = process.platform === 'win32' && !Number.isNaN(nodeMajor) && nodeMajor >= 24;
+const watcherIt = skipWatcherTests ? it.skip : it;
+
 describe('startServeServer', () => {
   it('serves latest dashboard bytes on an ephemeral port and regenerates on demand', async () => {
     const { generateDashboard } = await import('../../src/commands/dashboard.js');
@@ -86,7 +90,7 @@ describe('startServeServer', () => {
     expect(body).toContain('renamed-demo');
   });
 
-  it('watches <cwd>/backlog and triggers debounced regeneration within 2s', async () => {
+  watcherIt('watches <cwd>/backlog and triggers debounced regeneration within 2s', async () => {
     const dir = freshProject();
     const regenerate = vi.fn(async () => {});
     const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
@@ -98,7 +102,7 @@ describe('startServeServer', () => {
     expect(fired).toBe(true);
   });
 
-  it('watches task edits in the backlog/tasks subdirectory within 2s', async () => {
+  watcherIt('watches task edits in the backlog/tasks subdirectory within 2s', async () => {
     const dir = freshProject();
     mkdirSync(join(dir, 'backlog', 'tasks'), { recursive: true });
     const regenerate = vi.fn(async () => {});
