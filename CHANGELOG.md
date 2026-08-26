@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.4.0...v0.5.0) (2026-08-26)
+
+
+### Features
+
+* **models:** add discovery helper for opencode model tiers ([42faf22](https://github.com/adam-s-k-i/super-backlog/commit/42faf22a3c9b549747d98d062a3f88b9032c59e9))
+
 ## [0.4.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.4...v0.4.0) (2026-08-26)
 
 
