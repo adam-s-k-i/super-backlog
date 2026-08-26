@@ -197,6 +197,25 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   .step-label b { display: block; color: var(--text); font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .step.gate .step-label b { color: var(--warn); }
 
+  /* ---------- Dependency graph ---------- */
+  .sub-head {
+    font-size: .78rem; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--dim); margin: 30px 0 12px; font-weight: 600;
+  }
+  .depgraph-wrap {
+    overflow-x: auto; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px;
+  }
+  .depgraph { display: block; min-width: 640px; }
+  .depgraph .edge { fill: none; stroke: var(--line-strong); stroke-width: 1.4; transition: stroke .15s ease, stroke-width .15s ease; }
+  .depgraph .edge.hot { stroke: var(--accent); stroke-width: 2.2; }
+  .depgraph .node { cursor: pointer; outline: none; }
+  .depgraph .node-box { fill: var(--surface-2); stroke: var(--line-strong); transition: stroke .15s ease, filter .15s ease; }
+  .depgraph .node:hover .node-box, .depgraph .node:focus .node-box { stroke: var(--accent); filter: drop-shadow(0 0 8px rgba(92,200,255,.35)); }
+  .depgraph .node-id { fill: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+  .depgraph .node-title { fill: var(--text); font-size: 11px; }
+  .depgraph .node-status { font-family: var(--mono); font-size: 9px; letter-spacing: .6px; }
+
   @media (max-width:900px) {
     .layout { grid-template-columns: 1fr; }
     .sbl-side {
@@ -286,6 +305,8 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 <section id="sec-05">
   <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; human gates included</span></div>
   <div id="stepper" class="mount"></div>
+  <h3 class="sub-head">Dependency flow</h3>
+  <div id="depgraph" class="mount"></div>
 </section>
 
 <section id="sec-06">
@@ -613,6 +634,151 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   if ($('#bars')) renderBars($('#bars'), data.milestones);
   if ($('#stepper')) renderStepper($('#stepper'), phases);
   if ($('#spark')) renderSparkline($('#spark'), data.activity);
+
+  /* ---------- Dependency graph (mirrors src/dashboard/layering.ts semantics) ---------- */
+  window.__sblOpenDetail = window.__sblOpenDetail || function () {};
+  function assignLayers(nodes, deps) {
+    var nodeSet = {};
+    nodes.forEach(function (n) { nodeSet[n] = true; });
+    var prereqs = {};
+    nodes.forEach(function (n) { prereqs[n] = []; });
+    deps.forEach(function (d) {
+      if (!nodeSet[d.from] || !nodeSet[d.to]) return; // dangling ref
+      if (prereqs[d.from].indexOf(d.to) === -1) prereqs[d.from].push(d.to);
+    });
+    var layers = {};
+    var remaining = {};
+    nodes.forEach(function (n) { remaining[n] = true; });
+    var left = nodes.length;
+    var current = 0;
+    function take(n) {
+      layers[n] = current;
+      delete remaining[n];
+      left -= 1;
+    }
+    while (left > 0) {
+      var ready = nodes.filter(function (n) {
+        if (!remaining[n]) return false;
+        return prereqs[n].every(function (p) { return !remaining[p]; });
+      });
+      current += 1;
+      if (ready.length === 0) {
+        // stalled behind a cycle: append self-reachable members to this layer
+        nodes.forEach(function (start) {
+          if (!remaining[start]) return;
+          var seen = {};
+          var stack = prereqs[start].filter(function (p) { return remaining[p]; });
+          while (stack.length > 0) {
+            var cur = stack.pop();
+            if (cur === start) { take(start); return; }
+            if (seen[cur]) continue;
+            seen[cur] = true;
+            stack = stack.concat(prereqs[cur].filter(function (p) { return remaining[p]; }));
+          }
+        });
+        if (Object.keys(remaining).length === left) break; // unreachable safety net
+        continue;
+      }
+      ready.forEach(take);
+    }
+    var out = {};
+    nodes.forEach(function (n) { out[n] = layers[n] || 1; });
+    return out;
+  }
+
+  function hotEdges(id, on) {
+    document.querySelectorAll('.depgraph .edge').forEach(function (edge) {
+      var hit = edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id;
+      edge.classList.toggle('hot', on && hit);
+    });
+  }
+
+  function renderDepGraph(mount, tasks, deps) {
+    mount.textContent = '';
+    if (tasks.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No tasks to graph.'));
+      return;
+    }
+    var ids = tasks.map(function (t) { return t.id; });
+    var layers = assignLayers(ids, deps);
+    var byId = {};
+    tasks.forEach(function (t) { byId[t.id] = t; });
+    var maxLayer = 1;
+    ids.forEach(function (id) { if (layers[id] > maxLayer) maxLayer = layers[id]; });
+    var cols = [];
+    for (var i = 0; i < maxLayer; i++) cols.push([]);
+    ids.forEach(function (id) { cols[layers[id] - 1].push(byId[id]); });
+    var CHIP_W = 172, CHIP_H = 40, GAP_X = 84, GAP_Y = 14, PAD = 18;
+    var rows = 1;
+    cols.forEach(function (c) { if (c.length > rows) rows = c.length; });
+    var width = PAD * 2 + cols.length * CHIP_W + (cols.length - 1) * GAP_X;
+    var height = PAD * 2 + Math.max(rows, 1) * CHIP_H + (Math.max(rows, 1) - 1) * GAP_Y;
+    var wrap = el('div', 'depgraph-wrap');
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + width + ' ' + height, width: width, height: height,
+      'class': 'depgraph', role: 'img', 'aria-label': 'Task dependency graph'
+    });
+    var defs = svgEl('defs');
+    var marker = svgEl('marker', { id: 'sbl-arrow', markerWidth: '9', markerHeight: '7', refX: '8.5', refY: '3.5', orient: 'auto' });
+    marker.appendChild(svgEl('polygon', { points: '0 0, 9 3.5, 0 7', fill: 'var(--line-strong)' }));
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+    var pos = {};
+    cols.forEach(function (col, ci) {
+      col.forEach(function (t, ri) {
+        pos[t.id] = {
+          x: PAD + ci * (CHIP_W + GAP_X),
+          y: PAD + ri * (CHIP_H + GAP_Y)
+        };
+      });
+    });
+    deps.forEach(function (d) {
+      if (!pos[d.from] || !pos[d.to] || d.from === d.to) return;
+      var a = pos[d.from];
+      var b = pos[d.to];
+      var x1 = a.x + CHIP_W, y1 = a.y + CHIP_H / 2, x2 = b.x, y2 = b.y + CHIP_H / 2;
+      var mx = (x1 + x2) / 2;
+      var path = svgEl('path', {
+        'class': 'edge', 'data-from': d.from, 'data-to': d.to,
+        d: 'M ' + x1 + ' ' + y1 + ' C ' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2,
+        'marker-end': 'url(#sbl-arrow)'
+      });
+      svg.appendChild(path);
+    });
+    cols.forEach(function (col) {
+      col.forEach(function (t) {
+        var p = pos[t.id];
+        var tone = toneOf(t.status);
+        var g = svgEl('g', { 'class': 'node', 'data-id': t.id, tabindex: '0', role: 'button', 'aria-label': t.id + ': ' + t.title });
+        attachTitle(g, t.id + ' \\u2014 ' + t.title + ' (' + t.status + ')' + (t.milestone ? ' [' + t.milestone + ']' : ''));
+        g.appendChild(svgEl('rect', { x: p.x, y: p.y, width: CHIP_W, height: CHIP_H, rx: 9, 'class': 'node-box' }));
+        g.appendChild(svgEl('rect', { x: p.x, y: p.y + 6, width: 4, height: CHIP_H - 12, rx: 2, fill: TONE_VAR[tone] }));
+        var idText = svgEl('text', { x: p.x + 13, y: p.y + 17, 'class': 'node-id' });
+        idText.textContent = t.id;
+        g.appendChild(idText);
+        var st = svgEl('text', { x: p.x + CHIP_W - 10, y: p.y + 16, 'text-anchor': 'end', 'class': 'node-status', fill: TONE_VAR[tone] });
+        st.textContent = String(t.status).toUpperCase();
+        g.appendChild(st);
+        var title = svgEl('text', { x: p.x + 13, y: p.y + 31, 'class': 'node-title' });
+        title.textContent = String(t.title).length > 26 ? String(t.title).slice(0, 25) + '\\u2026' : t.title;
+        g.appendChild(title);
+        g.addEventListener('mouseenter', function () { hotEdges(t.id, true); });
+        g.addEventListener('mouseleave', function () { hotEdges(t.id, false); });
+        g.addEventListener('click', function () { window.__sblOpenDetail(t.id); });
+        g.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            window.__sblOpenDetail(t.id);
+          }
+        });
+        svg.appendChild(g);
+      });
+    });
+    wrap.appendChild(svg);
+    mount.appendChild(wrap);
+  }
+
+  renderDepGraph($('#depgraph'), data.tasks, data.deps);
 })();
 </script>
 </body>

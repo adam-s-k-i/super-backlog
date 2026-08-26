@@ -271,6 +271,30 @@ describe('client diagrams: donut, bars, sparkline, stepper', () => {
   });
 });
 
+describe('client dependency graph', () => {
+  it('provides a #depgraph mount inside the feature cycle section', () => {
+    const sec5 = /<section id="sec-05">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    expect(sec5).toContain('id="depgraph"');
+  });
+
+  it('ships an inline layered layout mirroring src/dashboard/layering.ts', () => {
+    const app = appScript();
+    expect(app).toContain('function assignLayers(');
+    expect(app).toContain("getElementById('sbl-data')");
+  });
+
+  it('renders task chips as .node groups and edges as paths with hover/click wiring', () => {
+    const app = appScript();
+    expect(app).toContain('function renderDepGraph(');
+    expect(app).toContain("'node'");
+    expect(app).toContain("'edge'");
+    expect(app).toContain('data-from');
+    expect(app).toContain('data-to');
+    expect(app).toContain("toggle('hot'");
+    expect(app).toContain('__sblOpenDetail');
+  });
+});
+
 describe('PIPELINE_PHASES', () => {
   it('has exactly nine phases in workflow order', () => {
     expect(PIPELINE_PHASES).toHaveLength(9);
