@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
 import { atomicWrite } from '../lib/atomic.js';
-import { installGuardHook } from '../lib/hooks.js';
+import { installGuardHook, installRefreshHook } from '../lib/hooks.js';
 import { injectBlock } from '../lib/markers.js';
 import { applyPluginEntry } from '../lib/opencode.js';
 import { OwnershipError, renderSkill } from '../lib/ownership.js';
@@ -227,6 +227,17 @@ export async function executeActions(
           skipped++;
         } else {
           installGuardHook(gitDir, ctx.version);
+          applied++;
+        }
+        break;
+      }
+      case 'install-refresh-hook': {
+        const gitDir = findGitDir(cwd);
+        if (!gitDir) {
+          warnings.push('no .git directory found - dashboard refresh hook not installed');
+          skipped++;
+        } else {
+          installRefreshHook(gitDir, ctx.version);
           applied++;
         }
         break;

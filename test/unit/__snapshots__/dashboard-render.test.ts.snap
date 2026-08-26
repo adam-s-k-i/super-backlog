@@ -717,7 +717,8 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     return glossary[key] === undefined ? '' : target.getAttribute('data-term') + ': ' + glossary[key];
   }
   function tipShow(text, x, y) {
-    if (!tip || !text) return;
+    if (!tip) return;
+    if (!text) { tip.hidden = true; return; }
     tip.textContent = text;
     tip.hidden = false;
     var rect = tip.getBoundingClientRect();

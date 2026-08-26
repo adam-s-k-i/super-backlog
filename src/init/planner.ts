@@ -11,9 +11,10 @@ export interface InjectOp { kind: 'inject-agents-block' }
 export interface PointerOp { kind: 'write-claude-pointer' }
 export interface SkillsOp { kind: 'copy-skills' }
 export interface HookOp { kind: 'install-guard-hook' }
+export interface RefreshHookOp { kind: 'install-refresh-hook' }
 export interface UpstreamOp { kind: 'upstream-install'; pm: PM | 'none' } // skipped when SBL_SKIP_INSTALL
 export interface DashboardOp { kind: 'generate-dashboard' }
-export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | UpstreamOp | DashboardOp;
+export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | RefreshHookOp | UpstreamOp | DashboardOp;
 
 export interface InitOptions {
   projectName?: string;
@@ -21,6 +22,7 @@ export interface InitOptions {
   pm: PM | 'auto' | 'skip';
   guard: boolean;
   dashboard: boolean;
+  refreshHook?: boolean; // default true; CLI passes --no-refresh-hook as false
   skipInstall: boolean;
 }
 
@@ -90,6 +92,7 @@ export function planInit(
   }
   if (opts.harnesses.includes('claude')) actions.push({ kind: 'write-claude-pointer' });
   if (opts.guard) actions.push({ kind: 'install-guard-hook' });
+  if (opts.refreshHook ?? true) actions.push({ kind: 'install-refresh-hook' });
   if (opts.dashboard) actions.push({ kind: 'generate-dashboard' });
 
   return { actions, warnings };

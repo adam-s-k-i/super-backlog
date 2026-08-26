@@ -24,6 +24,7 @@ init options:
   --harness <opencode|claude>     Target harness; repeatable or comma-separated (default: both)
   --guard                         Install the integrity pre-commit hook (opt-in)
   --no-dashboard                  Skip generating the project dashboard
+  --no-refresh-hook               Skip the post-commit dashboard freshness hook
   --dry-run                       Show what would be done without writing anything
 
 uninstall options:
@@ -68,6 +69,7 @@ async function main(argv: string[]): Promise<number> {
           harness: { type: 'string', multiple: true },
           guard: { type: 'boolean' },
           'no-dashboard': { type: 'boolean' },
+          'no-refresh-hook': { type: 'boolean' },
           'dry-run': { type: 'boolean' },
         },
       });

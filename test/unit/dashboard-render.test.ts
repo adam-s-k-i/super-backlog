@@ -370,3 +370,25 @@ describe('PIPELINE_PHASES', () => {
     expect(tableNames).toEqual(PIPELINE_PHASES.map((p) => p.name));
   });
 });
+
+describe('carried Batch B review fixes', () => {
+  it('tipShow hides the stale tooltip when term text resolves to empty (unresolved [data-term])', () => {
+    const app = appScript();
+    // falsy text must hide the tooltip instead of silently keeping the previous one visible
+    expect(app).toMatch(
+      /function tipShow\(text, x, y\) \{\s*if \(!tip\) return;\s*if \(!text\) \{ tip\.hidden = true; return; \}/,
+    );
+  });
+
+  it('pins the dep-graph hover mechanism: CSS :hover on chips, JS .hot class on edges', () => {
+    // chosen mechanism: chip box highlight is pure CSS (:hover/:focus); edge
+    // highlighting is the JS-toggled .hot class. Either half going missing is a regression.
+    expect(html).toMatch(/\.depgraph \.node:hover \.node-box/);
+    expect(html).toMatch(/\.depgraph \.edge\.hot \{/);
+    const app = appScript();
+    expect(app).toContain('function hotEdges(');
+    expect(app).toContain("edge.classList.toggle('hot'");
+    expect(app).toMatch(/addEventListener\('mouseenter', function \(\) \{ hotEdges\(/);
+    expect(app).toMatch(/addEventListener\('mouseleave', function \(\) \{ hotEdges\(/);
+  });
+});
