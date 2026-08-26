@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.4](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.3...v0.3.4) (2026-08-26)
+
+
+### Bug Fixes
+
+* **ci:** checkout repo before reading package.json in release verification step ([bc60720](https://github.com/adam-s-k-i/super-backlog/commit/bc607206583d856073a784379c55cff3258e8a0f))
+* **ci:** pass repository secrets to publish reusable workflow ([156ba63](https://github.com/adam-s-k-i/super-backlog/commit/156ba63f743ed97b57ce392147428e2580f1b7bc))
+
 ## [0.3.3](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.2...v0.3.3) (2026-08-26)
 
 
