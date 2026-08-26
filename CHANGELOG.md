@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.3](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.2...v0.3.3) (2026-08-26)
+
+
+### Bug Fixes
+
+* **ci:** verify release exists before deciding to run Publish job ([9e3ce9f](https://github.com/adam-s-k-i/super-backlog/commit/9e3ce9f3f5b45ddce02d6620ee9cc944af3f04c5))
+
 ## [0.3.2](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.1...v0.3.2) (2026-08-26)
 
 
