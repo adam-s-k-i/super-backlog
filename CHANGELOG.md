@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.4.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.4...v0.4.0) (2026-08-26)
+
+
+### Features
+
+* **models:** add shared config, family tables and tier resolver ([110428d](https://github.com/adam-s-k-i/super-backlog/commit/110428de1d7fedf422d4c65902ae783174f01ce3))
+
 ## [0.3.4](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.3...v0.3.4) (2026-08-26)
 
 
