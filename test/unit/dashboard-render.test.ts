@@ -41,6 +41,9 @@ const SAMPLE: DashboardData = {
     },
   ],
   source: 'backlog-json',
+  deps: [],
+  activity: [],
+  glossary: [],
 };
 
 const html = renderDashboard(SAMPLE);

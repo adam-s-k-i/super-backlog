@@ -33,6 +33,21 @@ export interface DashboardMilestone {
   total: number;
 }
 
+export interface DashboardDep {
+  from: string;
+  to: string;
+}
+
+export interface DashboardActivityBucket {
+  date: string;
+  count: number;
+}
+
+export interface DashboardGlossaryEntry {
+  term: string;
+  definition: string;
+}
+
 export interface DashboardData {
   project: { name: string; description: string };
   generatedAt: string;
@@ -40,6 +55,9 @@ export interface DashboardData {
   statuses: DashboardStatusCount[];
   milestones: DashboardMilestone[];
   tasks: DashboardTask[];
+  deps: DashboardDep[];
+  activity: DashboardActivityBucket[];
+  glossary: DashboardGlossaryEntry[];
   source: 'backlog-json' | 'fallback-empty';
 }
 
@@ -125,6 +143,134 @@ export function computeMilestones(tasks: DashboardTask[]): DashboardMilestone[] 
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/**
+ * Extract dependency edges from raw task JSON. Accepts `dependsOn` or `deps`
+ * as an array of string ids; anything else contributes nothing. Dangling `to`
+ * ids are kept (the graph filters later), malformed entries are dropped.
+ */
+export function computeDeps(rawTasks: RawTask[]): DashboardDep[] {
+  const out: DashboardDep[] = [];
+  for (const t of rawTasks) {
+    const from = asString(t['id']);
+    if (!from) continue;
+    for (const field of ['dependsOn', 'deps'] as const) {
+      const value = t[field];
+      if (!Array.isArray(value)) continue;
+      for (const entry of value) {
+        if (typeof entry !== 'string') continue;
+        const to = entry.trim();
+        if (to.length === 0) continue;
+        out.push({ from, to });
+      }
+      break;
+    }
+  }
+  return out;
+}
+
+function isoDay(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(value.trim());
+  if (m) return m[1];
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString().slice(0, 10);
+}
+
+function shiftDay(day: string, deltaDays: number): string {
+  const [y, mo, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, mo - 1, d) + deltaDays * 86400000).toISOString().slice(0, 10);
+}
+
+/** Bucket tasks into exactly 30 UTC daily buckets ending at `today`, oldest first. */
+export function computeActivity(rawTasks: RawTask[], today: string): DashboardActivityBucket[] {
+  const counts = new Map<string, number>();
+  for (const t of rawTasks) {
+    const day =
+      isoDay(asString(t['updated_at']) ?? asString(t['updated'])) ??
+      isoDay(asString(t['created_at'])) ??
+      today;
+    counts.set(day, (counts.get(day) ?? 0) + 1);
+  }
+  const start = shiftDay(today, -29);
+  const out: DashboardActivityBucket[] = [];
+  for (let i = 0; i < 30; i++) {
+    const date = shiftDay(start, i);
+    out.push({ date, count: counts.get(date) ?? 0 });
+  }
+  return out;
+}
+
+export const BUILT_IN_GLOSSARY: readonly DashboardGlossaryEntry[] = [
+  { term: 'AC', definition: 'Acceptance criterion — one checkable condition a task must satisfy before it can be done.' },
+  { term: 'DoD', definition: 'Definition of Done — the shared bar every task must clear before moving to Done.' },
+  { term: 'Milestone', definition: 'A named delivery waypoint that groups tasks and tracks done/total progress.' },
+  { term: 'Review Gate', definition: 'A human checkpoint where specs, plans or code are reviewed before work proceeds.' },
+  { term: 'TDD', definition: 'Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN).' },
+  { term: 'Brainstorming', definition: 'Structured exploration of intent, requirements and design before any creative work.' },
+  { term: 'Design Gate', definition: 'The point where a human approves the design document before decomposition.' },
+  { term: 'Spec-to-Backlog', definition: 'Decomposing an approved design into reviewed backlog tasks with acceptance criteria.' },
+  { term: 'Plan-before-Code', definition: 'Implementation starts only after a written implementation plan is approved.' },
+  { term: 'Draft', definition: 'An unapproved Backlog.md task proposal awaiting promotion to the board.' },
+  { term: 'Worktree', definition: 'An isolated git checkout (e.g. .worktrees/<branch>) used for feature work.' },
+  { term: 'Backlog.md', definition: 'File-based task management CLI owning specs, statuses and history under backlog/.' },
+  { term: 'Superpowers', definition: 'The methodology skill set that decides HOW the work is done.' },
+  { term: 'Pipeline', definition: 'The nine workflow phases from Idea to Merge & archive.' },
+  { term: 'Freshness Hook', definition: 'A post-commit git hook that regenerates dashboard.html when commits touch backlog/.' },
+];
+
+/** Split `## Term` headings plus their following non-heading block into entries; empty sections are skipped. */
+export function parseGlossaryMarkdown(content: string): DashboardGlossaryEntry[] {
+  const out: DashboardGlossaryEntry[] = [];
+  let term: string | undefined;
+  let buffer: string[] = [];
+  const flush = (): void => {
+    if (term !== undefined) {
+      const definition = buffer.join('\n').trim();
+      if (definition.length > 0) out.push({ term, definition });
+    }
+    term = undefined;
+    buffer = [];
+  };
+  for (const line of content.split(/\r?\n/)) {
+    const heading = /^##\s+(.+?)\s*$/.exec(line);
+    if (heading) {
+      flush();
+      term = heading[1].trim();
+      continue;
+    }
+    if (term !== undefined) buffer.push(line);
+  }
+  flush();
+  return out;
+}
+
+/** Built-in terms first; project terms override case-insensitively in place, new terms append. */
+export function mergeGlossary(projectEntries: readonly DashboardGlossaryEntry[]): DashboardGlossaryEntry[] {
+  const out = BUILT_IN_GLOSSARY.map((e) => ({ ...e }));
+  const indexByTerm = new Map<string, number>(out.map((e, i) => [e.term.toLowerCase(), i]));
+  for (const entry of projectEntries) {
+    const key = entry.term.toLowerCase();
+    const existing = indexByTerm.get(key);
+    if (existing !== undefined) {
+      out[existing] = { term: out[existing].term, definition: entry.definition };
+    } else {
+      indexByTerm.set(key, out.length);
+      out.push({ term: entry.term, definition: entry.definition });
+    }
+  }
+  return out;
+}
+
+function readProjectGlossary(cwd: string): DashboardGlossaryEntry[] {
+  try {
+    const path = join(cwd, 'backlog', 'docs', 'glossary.md');
+    if (!existsSync(path)) return [];
+    return parseGlossaryMarkdown(readFileSync(path, 'utf8'));
+  } catch {
+    return [];
+  }
+}
+
 function readProjectIdentity(cwd: string): { name: string; description: string } {
   const cfg = readSimpleKeys(join(cwd, 'backlog', 'config.yml'), [
     'project_name',
@@ -149,7 +295,14 @@ function readProjectIdentity(cwd: string): { name: string; description: string }
   return { name, description };
 }
 
-export function collectDashboardData(cwd: string, opts: { kitVersion: string }): DashboardData {
+export function collectDashboardData(
+  cwd: string,
+  opts: { kitVersion: string; today?: string },
+): DashboardData {
+  const today =
+    opts.today && /^\d{4}-\d{2}-\d{2}$/.test(opts.today.trim())
+      ? opts.today.trim()
+      : new Date().toISOString().slice(0, 10);
   const base: DashboardData = {
     project: readProjectIdentity(cwd),
     generatedAt: new Date().toISOString(),
@@ -157,6 +310,9 @@ export function collectDashboardData(cwd: string, opts: { kitVersion: string }):
     statuses: [],
     milestones: [],
     tasks: [],
+    deps: [],
+    activity: computeActivity([], today),
+    glossary: mergeGlossary(readProjectGlossary(cwd)),
     source: 'fallback-empty',
   };
   try {
@@ -164,12 +320,15 @@ export function collectDashboardData(cwd: string, opts: { kitVersion: string }):
     if (!bin) return base;
     const res = runCapture(bin, ['task', 'list', '--json'], cwd);
     if (res.status !== 0) return base;
-    const tasks = normalizeTasks(parseTasksJson(res.stdout));
+    const rawTasks = parseTasksJson(res.stdout);
+    const tasks = normalizeTasks(rawTasks);
     return {
       ...base,
       tasks,
       statuses: computeStatuses(tasks),
       milestones: computeMilestones(tasks),
+      deps: computeDeps(rawTasks),
+      activity: computeActivity(rawTasks, today),
       source: 'backlog-json',
     };
   } catch {

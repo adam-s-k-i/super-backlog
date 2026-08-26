@@ -5,7 +5,12 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { collectDashboardData, parseTasksJson } from '../../src/dashboard/data.js';
+import {
+  BUILT_IN_GLOSSARY,
+  collectDashboardData,
+  parseGlossaryMarkdown,
+  parseTasksJson,
+} from '../../src/dashboard/data.js';
 
 let dirs: string[] = [];
 
@@ -183,5 +188,176 @@ describe('collectDashboardData', () => {
 
     expect(data2.project.name).toBe('pkg-name-2');
     expect(data2.project.description).toBe('');
+  });
+});
+
+const DEPS_JSON =
+  '{"tasks":[' +
+  '{"id":"A","title":"Alpha","status":"To Do"},' +
+  '{"id":"B","title":"Beta","status":"To Do","dependsOn":["A"]},' +
+  '{"id":"C","title":"Gamma","status":"To Do","deps":["A","B",42,{"id":"X"}]},' +
+  '{"id":"D","title":"Delta","status":"Done","deps":["Zzz"]},' +
+  '{"id":"E","title":"Epsilon","status":"To Do","dependsOn":"B"},' +
+  '{"id":"F","title":"Zeta","status":"To Do","dependsOn":["A"],"deps":["B"]},' +
+  '{"title":"NoId","status":"To Do","deps":["A"]}' +
+  ']}';
+
+const ACTIVITY_JSON =
+  '{"tasks":[' +
+  '{"id":"T1","title":"a","status":"Done","updated_at":"2026-08-26"},' +
+  '{"id":"T2","title":"b","status":"To Do","updated_at":"2026-08-01"},' +
+  '{"id":"T3","title":"c","status":"Done","created_at":"2026-07-28"},' +
+  '{"id":"T4","title":"d","status":"To Do"},' +
+  '{"id":"T5","title":"e","status":"In Progress","updated_at":"2026-08-26"}' +
+  ']}';
+
+describe('collector v2: deps', () => {
+  it('parses dependsOn/deps array-of-ids, drops malformed entries, keeps dangling refs', () => {
+    const dir = freshDir();
+    writeBacklogConfig(dir, 'project_name: deps-demo\n');
+    fabricateBacklogBin(dir, DEPS_JSON);
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    expect(data.source).toBe('backlog-json');
+    expect(data.deps).toEqual([
+      { from: 'B', to: 'A' },
+      { from: 'C', to: 'A' },
+      { from: 'C', to: 'B' },
+      { from: 'D', to: 'Zzz' },
+      { from: 'F', to: 'A' },
+    ]);
+  });
+
+  it('yields no deps for tasks without dependency fields or unknown shapes', () => {
+    const dir = freshDir();
+    writeBacklogConfig(dir, 'project_name: deps-empty\n');
+    fabricateBacklogBin(dir, HAPPY_JSON);
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    expect(data.deps).toEqual([]);
+  });
+});
+
+describe('collector v2: activity', () => {
+  it('builds exactly 30 UTC daily buckets oldest→newest ending at the injected today', () => {
+    const dir = freshDir();
+    writeBacklogConfig(dir, 'project_name: activity-demo\n');
+    fabricateBacklogBin(dir, ACTIVITY_JSON);
+
+    const data = collectDashboardData(dir, { kitVersion: 'v', today: '2026-08-26' });
+
+    expect(data.activity).toHaveLength(30);
+    expect(data.activity[0]).toEqual({ date: '2026-07-28', count: 1 });
+    expect(data.activity[4]).toEqual({ date: '2026-08-01', count: 1 });
+    expect(data.activity[29]).toEqual({ date: '2026-08-26', count: 3 });
+    for (let i = 1; i < 30; i++) {
+      expect(data.activity[i]?.date).not.toBe(data.activity[i - 1]?.date);
+    }
+    // every non-event day sums to zero; total counts match task count
+    const total = data.activity.reduce((sum, b) => sum + b.count, 0);
+    expect(total).toBe(5);
+  });
+
+  it('defaults today to the real current date when not injected', () => {
+    const dir = freshDir();
+    writeBacklogConfig(dir, 'project_name: activity-now\n');
+    fabricateBacklogBin(dir, ACTIVITY_JSON);
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    expect(data.activity).toHaveLength(30);
+    expect(data.activity[29]?.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(data.activity[29]?.count).toBeGreaterThanOrEqual(3);
+  });
+
+  it('still emits 30 zero buckets in fallback-empty mode', () => {
+    const dir = freshDir();
+
+    const data = collectDashboardData(dir, { kitVersion: 'v', today: '2026-08-26' });
+
+    expect(data.source).toBe('fallback-empty');
+    expect(data.activity).toHaveLength(30);
+    expect(data.activity.every((b) => b.count === 0)).toBe(true);
+    expect(data.activity[29]).toEqual({ date: '2026-08-26', count: 0 });
+    expect(data.deps).toEqual([]);
+  });
+});
+
+describe('collector v2: glossary', () => {
+  it('ships built-in kit terms even without a project glossary file', () => {
+    const dir = freshDir();
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    const terms = data.glossary.map((g) => g.term);
+    for (const t of ['AC', 'DoD', 'Milestone', 'Review Gate', 'TDD']) {
+      expect(terms).toContain(t);
+    }
+    expect(data.glossary.length).toBeGreaterThanOrEqual(BUILT_IN_GLOSSARY.length);
+    expect(BUILT_IN_GLOSSARY.length).toBeGreaterThanOrEqual(15);
+    expect(data.glossary.every((g) => g.term && g.definition)).toBe(true);
+  });
+
+  it('lets backlog/docs/glossary.md override terms case-insensitively and add new ones', () => {
+    const dir = freshDir();
+    mkdirSync(join(dir, 'backlog', 'docs'), { recursive: true });
+    writeFileSync(
+      join(dir, 'backlog', 'docs', 'glossary.md'),
+      [
+        '# Project Glossary',
+        '',
+        '## ac',
+        'Project-specific acceptance criterion rules.',
+        '',
+        '## Custom Term',
+        'A brand new concept introduced by this project.',
+        '',
+        '## Empty Heading',
+        '## Another',
+        'Second term body.',
+        '',
+      ].join('\n'),
+    );
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    const ac = data.glossary.find((g) => g.term === 'AC');
+    expect(ac?.definition).toBe('Project-specific acceptance criterion rules.');
+    expect(data.glossary.filter((g) => g.term.toLowerCase() === 'ac')).toHaveLength(1);
+
+    const custom = data.glossary.find((g) => g.term === 'Custom Term');
+    expect(custom?.definition).toBe('A brand new concept introduced by this project.');
+
+    const another = data.glossary.find((g) => g.term === 'Another');
+    expect(another?.definition).toBe('Second term body.');
+    expect(data.glossary.find((g) => g.term === 'Empty Heading')).toBeUndefined();
+
+    // built-in order preserved first, project-only terms appended after
+    const tddIdx = data.glossary.findIndex((g) => g.term === 'TDD');
+    const customIdx = data.glossary.findIndex((g) => g.term === 'Custom Term');
+    expect(customIdx).toBeGreaterThan(tddIdx);
+  });
+
+  it('falls back to built-in only when the glossary path is corrupt', () => {
+    const dir = freshDir();
+    mkdirSync(join(dir, 'backlog', 'docs', 'glossary.md'), { recursive: true });
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    expect(data.glossary).toEqual([...BUILT_IN_GLOSSARY]);
+  });
+});
+
+describe('parseGlossaryMarkdown', () => {
+  it('splits ## headings into term/definition pairs, skipping empty sections', () => {
+    const entries = parseGlossaryMarkdown(
+      '# Title\n\n## Alpha\nFirst body.\n\n## Beta\nLine one.\nLine two.\n\n## Gamma\n',
+    );
+    expect(entries).toEqual([
+      { term: 'Alpha', definition: 'First body.' },
+      { term: 'Beta', definition: 'Line one.\nLine two.' },
+    ]);
   });
 });
