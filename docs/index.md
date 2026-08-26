@@ -3,13 +3,16 @@ layout: page
 ---
 
 <div class="landing">
-  <img class="landing-logo" src="./assets/super-backlog-logo.jpg" alt="super-backlog logo" width="190" height="190" />
+  <img class="landing-logo" src="./assets/super-backlog-logo.jpg" alt="super-backlog logo" />
 
   <h1>super-backlog</h1>
 
+  <p class="landing-text">
+    Backlog.md + Superpowers, one command
+  </p>
+
   <p class="landing-tagline">
-    Backlog.md + Superpowers, one command — install, maintain, and visualize a
-    structured agent workflow in any project.
+    Install, maintain, and visualize a structured agent workflow in any project.
   </p>
 
   <p class="landing-actions">
@@ -34,20 +37,66 @@ layout: page
 </div>
 
 <style>
-.landing { max-width: 960px; margin: 0 auto; padding: 48px 24px 64px; text-align: center; }
-.landing-logo { border-radius: 24px; box-shadow: var(--vp-shadow-2); }
-.landing h1 { font-size: 46px; line-height: 1.1; margin: 22px 0 10px; letter-spacing: -0.5px; border: none; padding: 0; }
-.landing-tagline { font-size: 20px; color: var(--vp-c-text-2); max-width: 640px; margin: 0 auto; }
+.landing { max-width: 1152px; margin: 0 auto; padding: 40px 24px 64px; text-align: center; }
+
+.landing-logo {
+  display: block;
+  width: min(800px, 100%);
+  height: auto;
+  margin: 0 auto 8px;
+  border-radius: 24px;
+}
+
+/* Hero-equivalent typography (mirrors VitePress home hero) */
+.landing h1,
+.landing-text {
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  font-size: 32px;
+}
+@media (min-width: 768px) {
+  .landing h1, .landing-text { font-size: 44px; }
+}
+@media (min-width: 960px) {
+  .landing h1, .landing-text { font-size: 52px; }
+}
+
+.landing h1 {
+  margin: 10px 0 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--vp-c-brand-1);
+}
+
+.landing-text {
+  margin: 0;
+  color: var(--vp-c-text-1);
+}
+
+.landing-tagline {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--vp-c-text-2);
+  max-width: 720px;
+  margin: 14px auto 0;
+}
+@media (min-width: 768px) {
+  .landing-tagline { font-size: 20px; }
+}
+@media (min-width: 960px) {
+  .landing-tagline { font-size: 22px; }
+}
+
 .landing-actions { margin-top: 30px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .landing-btn { display: inline-block; padding: 9px 22px; border-radius: 8px; font-weight: 600; border: 1px solid var(--vp-c-divider); color: var(--vp-c-text-1); transition: border-color 0.15s, background-color 0.15s; }
 .landing-btn:hover { border-color: var(--vp-c-brand-1); color: var(--vp-c-brand-1); }
 .landing-btn.primary { background: var(--vp-c-brand-1); border-color: var(--vp-c-brand-1); color: #fff; }
 .landing-btn.primary:hover { background: var(--vp-c-brand-2); color: #fff; }
+
 .landing-features { margin-top: 64px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; text-align: left; }
 .feature { padding: 18px 20px; border: 1px solid var(--vp-c-divider); border-radius: 10px; }
 .feature h3 { margin: 0 0 8px; font-size: 17px; border: none; padding: 0; }
 .feature p { color: var(--vp-c-text-2); margin: 0; font-size: 14.5px; }
-@media (max-width: 640px) {
-  .landing h1 { font-size: 34px; }
-}
 </style>
