@@ -5,11 +5,11 @@ super-backlog v1 supports two agent harnesses (design decision D1): **OpenCode**
 ## OpenCode — native
 
 - `opencode.json` gets a merged plugin entry: `"plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]`. Existing keys and other plugin entries are untouched; the entry is only added if the exact kit spec string is absent.
-- The glue skill is installed as a file at `.opencode/skill/spec-to-backlog/SKILL.md`.
+- The glue skills (spec-to-backlog, backlog-status-report, task-review-gate) are installed as files at `.opencode/skill/<skill>/SKILL.md`.
 
 ## Claude Code — file-based skills + marketplace
 
-- The same glue skill is installed file-based at `.claude/skills/spec-to-backlog/SKILL.md` — this always works, with or without CLI scripting support.
+- The same glue skills are installed file-based at `.claude/skills/<skill>/SKILL.md` — this always works, with or without CLI scripting support.
 - A one-line pointer section is written to `CLAUDE.md` referencing the managed block in `AGENTS.md`.
 - Marketplace installation: init does not run `claude` commands. After writing skills, it prints the exact command to paste inside Claude Code: `/plugin install superpowers@claude-plugins-official`. Because this step must be run manually, init pushes a warning (`claude plugin install must be run manually`) and finishes as success-with-warnings (exit code 4). File-based skills work immediately either way.
 

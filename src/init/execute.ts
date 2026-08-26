@@ -162,10 +162,14 @@ function applyClaudePointer(cwd: string): boolean {
   return true;
 }
 
+const GLUE_SKILLS = ['spec-to-backlog', 'backlog-status-report', 'task-review-gate'] as const;
+
 function applyCopySkills(cwd: string, version: string): boolean {
-  const rendered = renderSkill(readTemplate('skill-spec-to-backlog.md'), version);
-  atomicWrite(join(cwd, '.opencode', 'skill', 'spec-to-backlog', 'SKILL.md'), rendered);
-  atomicWrite(join(cwd, '.claude', 'skills', 'spec-to-backlog', 'SKILL.md'), rendered);
+  for (const skill of GLUE_SKILLS) {
+    const rendered = renderSkill(readTemplate(`skill-${skill}.md`), version);
+    atomicWrite(join(cwd, '.opencode', 'skill', skill, 'SKILL.md'), rendered);
+    atomicWrite(join(cwd, '.claude', 'skills', skill, 'SKILL.md'), rendered);
+  }
   return true;
 }
 

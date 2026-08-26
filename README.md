@@ -35,8 +35,8 @@ sbl dashboard --serve         # live Project Dashboard on http://localhost:6428
 | `.claude/` | Superpowers via official marketplace — init prints the exact command to paste (`/plugin install superpowers@claude-plugins-official`); file-based skills work immediately | instructed/delegated |
 | `AGENTS.md` | `<!-- SUPER-BACKLOG:x.y.z START -->` … `<!-- SUPER-BACKLOG END -->` workflow block | marker-scoped |
 | `CLAUDE.md` | one-line pointer to the AGENTS.md block | marker-scoped |
-| `.opencode/skill/spec-to-backlog/SKILL.md` | glue skill template | fingerprint header line |
-| `.claude/skills/spec-to-backlog/SKILL.md` | same template | fingerprint header line |
+| `.opencode/skill/<skill>/SKILL.md` (3 glue skills) | skill templates | fingerprint header line |
+| `.claude/skills/<skill>/SKILL.md` | same templates | fingerprint header line |
 | `package.json` scripts | `tasks` → `backlog task list`, `board` → `backlog board`, `browser` → `backlog browser`, `dashboard` → `super-backlog dashboard` (never overwrite existing values) | merged, add-only-if-absent |
 | `dashboard.html` | generated Project Dashboard | regenerated wholesale |
 | `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
@@ -55,8 +55,8 @@ super-backlog uninstall removes only provably owned artifacts and keeps your Bac
 
 ## Harness support
 
-- **OpenCode** — native: `opencode.json` plugin entry plus a file-based skill under `.opencode/skill/spec-to-backlog/`.
-- **Claude Code** — file-based skills under `.claude/skills/spec-to-backlog/` always work immediately; the marketplace plugin cannot be installed from a script, so init prints the exact command to paste (`/plugin install superpowers@claude-plugins-official`) and exits with a warning (exit code 4).
+- **OpenCode** — native: `opencode.json` plugin entry plus file-based skills under `.opencode/skill/` (spec-to-backlog, backlog-status-report, task-review-gate).
+- **Claude Code** — file-based skills under `.claude/skills/` always work immediately; the marketplace plugin cannot be installed from a script, so init prints the exact command to paste (`/plugin install superpowers@claude-plugins-official`) and exits with a warning (exit code 4).
 
 Details and matrix: [docs/harness-support.md](docs/harness-support.md).
 

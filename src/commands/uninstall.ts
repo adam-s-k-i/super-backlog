@@ -18,7 +18,14 @@ interface ReportLine {
   label: string;
 }
 
-const OWNED_SKILL_DIRS = ['.opencode/skill/spec-to-backlog', '.claude/skills/spec-to-backlog'];
+const OWNED_SKILL_DIRS = [
+  '.opencode/skill/spec-to-backlog',
+  '.opencode/skill/backlog-status-report',
+  '.opencode/skill/task-review-gate',
+  '.claude/skills/spec-to-backlog',
+  '.claude/skills/backlog-status-report',
+  '.claude/skills/task-review-gate',
+];
 
 // ownership probe: the kit's generated dashboard carries both markers
 function isKitDashboard(content: string): boolean {
