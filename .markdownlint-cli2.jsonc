@@ -13,6 +13,7 @@
     "**/backlog/**",
     "**/.superpowers/**",
     "**/.worktrees/**",
-    "**/docs/superpowers/plans/**"
+    "**/docs/superpowers/plans/**",
+    "**/CHANGELOG.md"
   ]
 }
