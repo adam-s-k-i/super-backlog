@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-import { readdirSync, readFileSync } from 'node:fs';
+﻿import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const USES = /^\s*(?:-\s+)?uses:\s*([^\s@]+)@(\S+)/;

@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-const PATTERN = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([\w./-]+\))?!?: \S.+/;
+﻿const PATTERN = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([\w./-]+\))?!?: \S.+/;
 
 export function isValidTitle(title) {
   return PATTERN.test(title);

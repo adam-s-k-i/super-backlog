@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-export function findUnexpectedFiles(entries, allowed) {
+﻿export function findUnexpectedFiles(entries, allowed) {
   const roots = allowed.filter((a) => !a.endsWith('/**'));
   const prefixes = allowed.filter((a) => a.endsWith('/**')).map((p) => p.slice(0, -2));
   return entries
