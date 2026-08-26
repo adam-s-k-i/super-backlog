@@ -50,26 +50,22 @@ export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
     ]);
   }
 
-  // check 2: PowerShell execution policy (win32 only)
-  if (platform !== 'win32') {
-    emit('skip', 'PowerShell execution policy check (only applies on Windows)');
+  // check 2: PowerShell execution policy (win32 only, fakeable via SBL_FAKE_POLICY)
+  const policy = getEffectiveExecutionPolicy({ platform, executor: deps.executor });
+  if (policy === null) {
+    emit('skip', 'PowerShell execution policy check (not Windows or undetectable)');
+  } else if (isBlockingExecutionPolicy(policy)) {
+    emit(
+      'warn',
+      `PowerShell execution policy "${policy}" blocks .ps1 shims - direct npm/npx/sbl calls in PowerShell will fail`,
+      [
+        'fix: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned',
+        'alt: call the .cmd shims explicitly (npx.cmd, sbl.cmd) or run from cmd.exe',
+        'note: "npm run ..." scripts are unaffected (they execute via cmd.exe)',
+      ],
+    );
   } else {
-    const policy = getEffectiveExecutionPolicy({ platform, executor: deps.executor });
-    if (policy === null) {
-      emit('skip', 'PowerShell execution policy could not be detected');
-    } else if (isBlockingExecutionPolicy(policy)) {
-      emit(
-        'warn',
-        `PowerShell execution policy "${policy}" blocks .ps1 shims - direct npm/npx/sbl calls in PowerShell will fail`,
-        [
-          'fix: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned',
-          'alt: call the .cmd shims explicitly (npx.cmd, sbl.cmd) or run from cmd.exe',
-          'note: "npm run ..." scripts are unaffected (they execute via cmd.exe)',
-        ],
-      );
-    } else {
-      emit('ok', `PowerShell execution policy: ${policy}`);
-    }
+    emit('ok', `PowerShell execution policy: ${policy}`);
   }
 
   // check 3: backlog binary resolvability
