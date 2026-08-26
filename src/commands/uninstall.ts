@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { findGitDir, POINTER_HEADING_RE } from '../init/execute.js';
 import { atomicWrite } from '../lib/atomic.js';
-import { removeGuardHook } from '../lib/hooks.js';
+import { removeGuardHook, removeRefreshHook } from '../lib/hooks.js';
 import { stripOwned } from '../lib/markers.js';
 import { PLUGIN_SPEC } from '../lib/opencode.js';
 import { isOwnedSkillFile } from '../lib/ownership.js';
@@ -233,6 +233,19 @@ export function runUninstall(cwd: string, args: ParsedArgs): number {
     report.push({
       verdict: 'kept',
       label: 'git pre-commit hook (no super-backlog guard block)',
+    });
+  }
+
+  if (!gitDir) {
+    report.push({ verdict: 'skipped', label: 'git post-commit dashboard-refresh hook (no .git directory)' });
+  } else if (!existsSync(join(gitDir, 'hooks', 'post-commit'))) {
+    report.push({ verdict: 'skipped', label: 'git post-commit dashboard-refresh hook (not installed)' });
+  } else if (removeRefreshHook(gitDir)) {
+    report.push({ verdict: 'removed', label: 'git post-commit dashboard-refresh hook' });
+  } else {
+    report.push({
+      verdict: 'kept',
+      label: 'git post-commit hook (no super-backlog dashboard-refresh block)',
     });
   }
 

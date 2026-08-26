@@ -5,7 +5,7 @@ import process from 'node:process';
 
 import { executeActions, findGitDir, InvalidJsonError, validateJsonFile, RefusalError, UpstreamError } from '../init/execute.js';
 import { planInit, type Action, type InitOptions, type InitState } from '../init/planner.js';
-import { GUARD_RE } from '../lib/hooks.js';
+import { GUARD_RE, REFRESH_RE } from '../lib/hooks.js';
 import { detectPackageManager } from '../lib/pm.js';
 import { resolveBacklogBin, runCapture } from '../lib/run.js';
 import { KIT_VERSION } from '../lib/version.js';
@@ -16,6 +16,7 @@ const REFRESH_KINDS: ReadonlySet<Action['kind']> = new Set([
   'write-claude-pointer',
   'copy-skills',
   'install-guard-hook',
+  'install-refresh-hook',
   'generate-dashboard',
 ]);
 
@@ -33,6 +34,14 @@ function guardHookInstalled(cwd: string): boolean {
   const hookPath = join(gitDir, 'hooks', 'pre-commit');
   if (!existsSync(hookPath)) return false;
   return GUARD_RE.test(readFileSync(hookPath, 'utf8'));
+}
+
+function refreshHookInstalled(cwd: string): boolean {
+  const gitDir = findGitDir(cwd);
+  if (!gitDir) return false;
+  const hookPath = join(gitDir, 'hooks', 'post-commit');
+  if (!existsSync(hookPath)) return false;
+  return REFRESH_RE.test(readFileSync(hookPath, 'utf8'));
 }
 
 export async function runUpdate(cwd: string, _args: ParsedArgs): Promise<number> {
@@ -65,6 +74,7 @@ export async function runUpdate(cwd: string, _args: ParsedArgs): Promise<number>
     harnesses: ['opencode', 'claude'],
     pm: 'auto',
     guard: guardHookInstalled(cwd),
+    refreshHook: refreshHookInstalled(cwd),
     dashboard: existsSync(join(cwd, 'dashboard.html')),
     skipInstall: false,
   };

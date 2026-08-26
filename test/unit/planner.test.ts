@@ -93,4 +93,24 @@ describe('planInit', () => {
     expect(with_.actions.some(a => a.kind === 'install-guard-hook')).toBe(true);
     expect(without.actions.some(a => a.kind === 'install-guard-hook')).toBe(false);
   });
+
+  it('plans the refresh hook by default and omits it under --no-refresh-hook', () => {
+    const def = planInit(base,
+      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+    expect(def.actions.some(a => a.kind === 'install-refresh-hook')).toBe(true);
+    const off = planInit(base,
+      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true, refreshHook: false }, '1.0.0');
+    expect(off.actions.some(a => a.kind === 'install-refresh-hook')).toBe(false);
+    // explicit true behaves like the default
+    const on = planInit(base,
+      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true, refreshHook: true }, '1.0.0');
+    expect(on.actions.some(a => a.kind === 'install-refresh-hook')).toBe(true);
+  });
+
+  it('keeps install-refresh-hook independent of dashboard generation', () => {
+    const noDash = planInit(base,
+      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+    expect(noDash.actions.some(a => a.kind === 'generate-dashboard')).toBe(false);
+    expect(noDash.actions.some(a => a.kind === 'install-refresh-hook')).toBe(true);
+  });
 });

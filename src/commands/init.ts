@@ -37,6 +37,8 @@ function describeAction(action: Action): string {
       return 'copy-skills (.opencode/skill + .claude/skills)';
     case 'install-guard-hook':
       return 'install-guard-hook .git/hooks/pre-commit';
+    case 'install-refresh-hook':
+      return 'install-refresh-hook .git/hooks/post-commit';
     case 'generate-dashboard':
       return 'generate-dashboard';
     case 'write':
@@ -74,6 +76,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
 
   const guard = args.values.guard === true; // opt-in per spec D8
   const dashboard = args.values['no-dashboard'] !== true;
+  const refreshHook = args.values['no-refresh-hook'] !== true; // default on, opt-out flag
   const dryRun = args.values['dry-run'] === true;
   const projectName = args.positionals[0] ?? basename(resolve(cwd));
 
@@ -98,7 +101,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
     pkgExists: existsSync(join(cwd, 'package.json')),
   };
 
-  const opts: InitOptions = { projectName, harnesses, pm, guard, dashboard, skipInstall: false };
+  const opts: InitOptions = { projectName, harnesses, pm, guard, dashboard, refreshHook, skipInstall: false };
   const plan = planInit(state, opts, KIT_VERSION);
 
   if (dryRun) {

@@ -12,17 +12,19 @@ const FULL_PLAN: Action[] = [
   { kind: 'write-claude-pointer' },
   { kind: 'copy-skills' },
   { kind: 'install-guard-hook' },
+  { kind: 'install-refresh-hook' },
   { kind: 'generate-dashboard' },
   { kind: 'write', path: 'backlog/config.yml', contents: 'project_name: demo\n' },
 ];
 
 describe('refreshActions', () => {
-  it('keeps exactly the five refresh kinds in plan order', () => {
+  it('keeps exactly the six refresh kinds in plan order', () => {
     expect(refreshActions(FULL_PLAN).map((a) => a.kind)).toEqual([
       'inject-agents-block',
       'write-claude-pointer',
       'copy-skills',
       'install-guard-hook',
+      'install-refresh-hook',
       'generate-dashboard',
     ]);
   });
