@@ -27,13 +27,13 @@
     "dashboard": "super-backlog dashboard"
   },
   "devDependencies": {
-    "@types/node": "^20.14.0",
+    "@types/node": "^26.2.0",
     "backlog.md": "^1.50.1",
     "cspell": "^10.1.1",
     "markdownlint-cli2": "^0.23.2",
     "super-backlog": "file:.",
-    "typescript": "^5.6.0",
+    "typescript": "^7.0.2",
     "vitepress": "^1.6.4",
-    "vitest": "^2.1.0"
+    "vitest": "^4.1.11"
   }
 }
