@@ -247,7 +247,11 @@ export async function executeActions(
         (await applyGenerateDashboard(cwd, warnings)) ? applied++ : skipped++;
         break;
       case 'install-model-router': {
+        const { installOpenCodeAdapter } = await import('../models/opencode.js');
         writeRouterConfig(cwd, action.enabled);
+        if (action.enabled) {
+          installOpenCodeAdapter(cwd);
+        }
         applied++;
         break;
       }
