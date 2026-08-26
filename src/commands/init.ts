@@ -4,6 +4,11 @@ import { basename, join, resolve } from 'node:path';
 import process from 'node:process';
 
 import { detectPackageManager } from '../lib/pm.js';
+import {
+  getEffectiveExecutionPolicy,
+  isBlockingExecutionPolicy,
+  policyWarningLines,
+} from '../lib/powershell.js';
 import { KIT_VERSION } from '../lib/version.js';
 import { executeActions, InvalidJsonError, RefusalError, UpstreamError } from '../init/execute.js';
 import { planInit, type Action, type InitOptions, type InitState } from '../init/planner.js';
@@ -43,6 +48,15 @@ function describeAction(action: Action): string {
       return 'generate-dashboard';
     case 'write':
       return `write ${action.path}`;
+  }
+}
+
+function maybePrintPolicyWarning(): void {
+  const policy = getEffectiveExecutionPolicy();
+  if (isBlockingExecutionPolicy(policy)) {
+    for (const line of policyWarningLines(policy!)) {
+      console.log(line);
+    }
   }
 }
 
@@ -108,6 +122,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
     console.log(`dry-run for "${projectName}": ${plan.actions.length} action(s) planned, nothing written`);
     for (const action of plan.actions) console.log(`  - ${describeAction(action)}`);
     for (const warning of plan.warnings) console.log(`warning: ${warning}`);
+    maybePrintPolicyWarning();
     return plan.warnings.length > 0 ? 4 : 0;
   }
 
@@ -122,6 +137,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
       `super-backlog init complete - planned ${plan.actions.length}, applied ${result.applied}, skipped ${result.skipped}`,
     );
     for (const warning of warnings) console.log(`warning: ${warning}`);
+    maybePrintPolicyWarning();
     return warnings.length > 0 ? 4 : 0;
   } catch (err) {
     if (err instanceof UpstreamError) {
