@@ -281,6 +281,12 @@ describe('client dependency graph', () => {
     const app = appScript();
     expect(app).toContain('function assignLayers(');
     expect(app).toContain("getElementById('sbl-data')");
+    // cyclic set is snapshotted against pristine `remaining` before any take()
+    expect(app).toContain('var cycleSnap');
+    // tautological guard (take() decrements left and remaining in lockstep) is gone
+    expect(app).not.toContain('Object.keys(remaining).length === left');
+    // safety net is progress-based, mirroring cyclic.size === 0 in layering.ts
+    expect(app).toContain('if (cycleSnap.length === 0) break;');
   });
 
   it('renders task chips as .node groups and edges as paths with hover/click wiring', () => {

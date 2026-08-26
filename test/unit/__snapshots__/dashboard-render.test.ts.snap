@@ -879,20 +879,25 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
       });
       current += 1;
       if (ready.length === 0) {
-        // stalled behind a cycle: append self-reachable members to this layer
+        // stalled behind a cycle: snapshot self-reachable members first, then
+        // append them as one group (mirrors cycleMembers() in layering.ts)
+        var cycleSnap = [];
         nodes.forEach(function (start) {
           if (!remaining[start]) return;
           var seen = {};
           var stack = prereqs[start].filter(function (p) { return remaining[p]; });
-          while (stack.length > 0) {
+          var found = false;
+          while (stack.length > 0 && !found) {
             var cur = stack.pop();
-            if (cur === start) { take(start); return; }
+            if (cur === start) { found = true; break; }
             if (seen[cur]) continue;
             seen[cur] = true;
             stack = stack.concat(prereqs[cur].filter(function (p) { return remaining[p]; }));
           }
+          if (found) cycleSnap.push(start);
         });
-        if (Object.keys(remaining).length === left) break; // unreachable safety net
+        cycleSnap.forEach(take);
+        if (cycleSnap.length === 0) break; // unreachable safety net
         continue;
       }
       ready.forEach(take);
