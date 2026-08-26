@@ -52,7 +52,7 @@ function installSettingsHook(cwd: string): void {
             {
               type: 'command',
               command: 'node',
-              args: ['node_modules/super-backlog/dist/models/cc-session-hook.js'],
+              args: ['node_modules/super-backlog/dist/templates/cc-session-hook.js'],
             },
           ],
         },
