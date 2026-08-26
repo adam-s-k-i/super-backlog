@@ -14,7 +14,8 @@ export interface HookOp { kind: 'install-guard-hook' }
 export interface RefreshHookOp { kind: 'install-refresh-hook' }
 export interface UpstreamOp { kind: 'upstream-install'; pm: PM | 'none' } // skipped when SBL_SKIP_INSTALL
 export interface DashboardOp { kind: 'generate-dashboard' }
-export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | RefreshHookOp | UpstreamOp | DashboardOp;
+export interface ModelRouterOp { kind: 'install-model-router'; enabled: boolean }
+export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | RefreshHookOp | UpstreamOp | DashboardOp | ModelRouterOp;
 
 export interface InitOptions {
   projectName?: string;
@@ -24,6 +25,7 @@ export interface InitOptions {
   dashboard: boolean;
   refreshHook?: boolean; // default true; CLI passes --no-refresh-hook as false
   skipInstall: boolean;
+  models?: boolean; // undefined = no router installation
 }
 
 export interface InitState {
@@ -94,6 +96,7 @@ export function planInit(
   if (opts.guard) actions.push({ kind: 'install-guard-hook' });
   if (opts.refreshHook ?? true) actions.push({ kind: 'install-refresh-hook' });
   if (opts.dashboard) actions.push({ kind: 'generate-dashboard' });
+  if (opts.models === true) actions.push({ kind: 'install-model-router', enabled: true });
 
   return { actions, warnings };
 }

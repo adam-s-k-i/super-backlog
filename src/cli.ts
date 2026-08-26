@@ -6,6 +6,7 @@ import process from 'node:process';
 import { runDashboard } from './commands/dashboard.js';
 import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
+import { runModels } from './commands/models.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
 import { assertNode20, KIT_VERSION } from './lib/version.js';
@@ -19,12 +20,15 @@ Commands:
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
   dashboard   Generate the single-file project dashboard (--serve for live mode)
+  models      Manage the model router (show, enable, disable, discover)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
 
 init options:
   --pm <auto|npm|pnpm|bun|skip>   Package manager to use (default: auto)
   --harness <opencode|claude>     Target harness; repeatable or comma-separated (default: both)
   --guard                         Install the integrity pre-commit hook (opt-in)
+  --models                        Install the model router config during init (opt-in)
+  --no-models                     Explicitly opt out of the model router
   --no-dashboard                  Skip generating the project dashboard
   --no-refresh-hook               Skip the post-commit dashboard freshness hook
   --dry-run                       Show what would be done without writing anything
@@ -73,6 +77,8 @@ async function main(argv: string[]): Promise<number> {
           pm: { type: 'string' },
           harness: { type: 'string', multiple: true },
           guard: { type: 'boolean' },
+          models: { type: 'boolean' },
+          'no-models': { type: 'boolean' },
           'no-dashboard': { type: 'boolean' },
           'no-refresh-hook': { type: 'boolean' },
           'dry-run': { type: 'boolean' },
@@ -113,6 +119,13 @@ async function main(argv: string[]): Promise<number> {
         },
       });
       return await runDashboard(process.cwd(), {
+        values: parsed.values as Record<string, string | boolean | undefined>,
+        positionals: parsed.positionals,
+      });
+    }
+    case 'models': {
+      const parsed = parseArgs({ args: rest, allowPositionals: true, options: {} });
+      return await runModels(process.cwd(), {
         values: parsed.values as Record<string, string | boolean | undefined>,
         positionals: parsed.positionals,
       });

@@ -92,6 +92,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
   const dashboard = args.values['no-dashboard'] !== true;
   const refreshHook = args.values['no-refresh-hook'] !== true; // default on, opt-out flag
   const dryRun = args.values['dry-run'] === true;
+  const models = args.values.models === true ? true : args.values['no-models'] === true ? false : undefined;
   const projectName = args.positionals[0] ?? basename(resolve(cwd));
 
   let opencodeConfig: unknown | undefined;
@@ -115,7 +116,7 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
     pkgExists: existsSync(join(cwd, 'package.json')),
   };
 
-  const opts: InitOptions = { projectName, harnesses, pm, guard, dashboard, refreshHook, skipInstall: false };
+  const opts: InitOptions = { projectName, harnesses, pm, guard, dashboard, refreshHook, skipInstall: false, models };
   const plan = planInit(state, opts, KIT_VERSION);
 
   if (dryRun) {

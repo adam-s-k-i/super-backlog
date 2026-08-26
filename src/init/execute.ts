@@ -9,6 +9,7 @@ import { installGuardHook, installRefreshHook } from '../lib/hooks.js';
 import { injectBlock } from '../lib/markers.js';
 import { applyPluginEntry } from '../lib/opencode.js';
 import { OwnershipError, renderSkill } from '../lib/ownership.js';
+import { writeRouterConfig } from '../models/install.js';
 import {
   addDevDependencies,
   mergeScripts,
@@ -245,6 +246,11 @@ export async function executeActions(
       case 'generate-dashboard':
         (await applyGenerateDashboard(cwd, warnings)) ? applied++ : skipped++;
         break;
+      case 'install-model-router': {
+        writeRouterConfig(cwd, action.enabled);
+        applied++;
+        break;
+      }
       case 'write':
         atomicWrite(join(cwd, action.path), action.contents);
         applied++;
