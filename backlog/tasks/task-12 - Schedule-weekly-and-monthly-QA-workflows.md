@@ -1,9 +1,11 @@
 ---
 id: TASK-12
 title: Schedule weekly and monthly QA workflows
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@ox-alpha'
 created_date: '2026-08-26 02:03'
+updated_date: '2026-08-26 04:09'
 labels:
   - ci
   - qa
@@ -28,3 +30,9 @@ qa-weekly.yml (Mondays ~04:00 UTC): full windows/ubuntu x Node 20/22 matrix, npm
 - [ ] #4 Monthly job packs, extracts the tarball to a temp dir, smoke-tests cli.js --version and --help, and regenerates the dashboard
 - [ ] #5 Monthly healthcheck requires HTTP 200 plus a keyword from the live Pages URL and opens an issue on failure
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Per plan Task 6: report-audit.mjs + report-health.mjs wrappers on report-to-issue core; qa-weekly.yml cron Mon 04:00 UTC (matrix 20/22 both OS, audit issue, Dependency Health issue); qa-monthly.yml cron 1st (tarball smoke, dashboard regen, Pages healthcheck).
+<!-- SECTION:PLAN:END -->

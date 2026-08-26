@@ -1,0 +1,59 @@
+name: Monthly deep check
+
+on:
+  schedule:
+    - cron: "0 5 1 * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  Package-smoke:
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.2.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Pack and smoke-test the tarball
+        run: |
+          npm pack --json > pack.json
+          TGZ=$(node -p "JSON.parse(require('fs').readFileSync('pack.json','utf8'))[0].filename")
+          mkdir "$RUNNER_TEMP/pkg" && tar -xzf "$TGZ" -C "$RUNNER_TEMP/pkg"
+          node "$RUNNER_TEMP/pkg/package/dist/cli.js" --version
+          node "$RUNNER_TEMP/pkg/package/dist/cli.js" --help
+      - name: Regenerate dashboard and sanity-check output
+        run: |
+          node dist/cli.js dashboard --no-open --out "$RUNNER_TEMP/dashboard.html"
+          SIZE=$(wc -c < "$RUNNER_TEMP/dashboard.html")
+          echo "dashboard bytes: $SIZE"
+          test "$SIZE" -gt 1000
+
+  Pages-healthcheck:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - id: probe
+        continue-on-error: true
+        run: |
+          CODE=$(curl -fsS -o page.html -w "%{http_code}" https://adam-s-k-i.github.io/super-backlog/)
+          grep -qi "super-backlog" page.html
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+      - name: Report failure
+        if: steps.probe.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          {
+            printf 'Docs site healthcheck failed on %s.\n\n' "$(date -u +%F)"
+            printf '<details><summary>probe headers</summary>\n\n```text\n'
+            curl -sSI https://adam-s-k-i.github.io/super-backlog/ || true
+            printf '\n```\n</details>\n'
+          } > body.md
+          node scripts/report-to-issue.mjs --title "Pages healthcheck failing" --body-file body.md --label ci-failure
