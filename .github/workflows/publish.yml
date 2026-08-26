@@ -31,6 +31,8 @@ jobs:
           node scripts/verify-release.mjs "$TAG"
       - run: npm pack --dry-run --json | node scripts/check-pack-list.mjs
       - name: Publish to npm (OIDC provenance)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npm install -g npm@latest
           npm publish --provenance --access public
@@ -39,4 +41,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           node scripts/extract-changelog.mjs body.md
-          gh release create "$TAG" --notes-file body.md --title "$TAG" --verify-tag
+          gh release view "$TAG" > /dev/null 2>&1 || gh release create "$TAG" --notes-file body.md --title "$TAG" --verify-tag
