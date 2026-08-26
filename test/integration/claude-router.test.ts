@@ -1,6 +1,6 @@
 // test/integration/claude-router.test.ts
 import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync, rmSync, mkdirSync } from 'node:fs';
+import { readFileSync, rmSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { installClaudeAdapter, syncClaudeAgents } from '../../src/models/claude.js';
