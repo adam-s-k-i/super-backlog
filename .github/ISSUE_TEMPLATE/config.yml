@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Backlog.md upstream issues
+    url: https://github.com/MrLesk/Backlog.md/issues
+    about: Problems inside backlog itself (board, task format)
+  - name: Superpowers upstream issues
+    url: https://github.com/obra/superpowers/issues
+    about: Problems inside superpowers skills

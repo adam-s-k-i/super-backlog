@@ -25,7 +25,7 @@ project combines Superpowers + Backlog.md + a project dashboard + cheat sheet.
 
 One command equips any project — new or existing — with the combined workflow:
 
-```
+```bash
 npx super-backlog init
 ```
 
@@ -58,7 +58,7 @@ existing projects into divergent paths and contradicts the one-command goal.
 orchestrates existing tools and injects templates. It never forks upstream code;
 it pins nothing and therefore always pulls current versions at run time.
 
-```
+```text
 ┌──────────────┐   detects    ┌─────────────────────────────┐
 │   sbl init   │─────────────▶│ PM (npm/pnpm/bun), existing │
 └──────┬───────┘              │ backlog/, AGENTS.md,        │
@@ -226,7 +226,7 @@ and git checkout flows.
 
 ## 9. Repository Layout
 
-```
+```text
 super-backlog/
 ├─ src/
 │  ├─ commands/        # init · uninstall · update · dashboard

@@ -1,6 +1,7 @@
 # super-backlog
 
 [![CI](https://github.com/adam-s-k-i/super-backlog/actions/workflows/ci.yml/badge.svg)](https://github.com/adam-s-k-i/super-backlog/actions/workflows/ci.yml)
+[![Docs](https://img.shields.io/badge/docs-adam--s--k--i.github.io%2Fsuper--backlog-blue)](https://adam-s-k-i.github.io/super-backlog/)
 
 ![Super Backlog](docs/assets/super-backlog-logo.jpg)
 
@@ -62,11 +63,19 @@ super-backlog uninstall removes only provably owned artifacts and keeps your Bac
 - **OpenCode** — native: `opencode.json` plugin entry plus file-based skills under `.opencode/skill/` (spec-to-backlog, backlog-status-report, task-review-gate).
 - **Claude Code** — file-based skills under `.claude/skills/` always work immediately; the marketplace plugin cannot be installed from a script, so init prints the exact command to paste (`/plugin install superpowers@claude-plugins-official`) and exits with a warning (exit code 4).
 
-Details and matrix: [docs/harness-support.md](docs/harness-support.md).
+Details and matrix: [docs/guide/harness-support.md](docs/guide/harness-support.md).
 
 ## Troubleshooting
 
-Windows OpenCode fallback, exit codes, and environment seams: [docs/troubleshooting.md](docs/troubleshooting.md). Architecture deep-dive: [docs/architecture.md](docs/architecture.md). Guard hook details: [docs/guard.md](docs/guard.md).
+Windows OpenCode fallback, exit codes, and environment seams: [docs/guide/troubleshooting.md](docs/guide/troubleshooting.md). Architecture deep-dive: [docs/guide/architecture.md](docs/guide/architecture.md). Guard hook details: [docs/guide/guard.md](docs/guide/guard.md).
+
+## Development
+
+```bash
+npm ci          # install dependencies
+npm test        # build + vitest suite
+npm run lint    # markdownlint + cspell over all Markdown
+```
 
 ## License
 

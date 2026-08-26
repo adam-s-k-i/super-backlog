@@ -4,7 +4,7 @@ super-backlog is a Node >= 20 CLI (TypeScript, ESM, zero runtime dependencies) t
 
 ## Glue orchestrator, not a fork
 
-Decision D6 in the [design spec](../superpowers/specs/2026-08-25-super-backlog-kit-design.md): super-backlog delegates to upstream tools and owns only the glue between them.
+Decision D6 in the [design spec](https://github.com/adam-s-k-i/super-backlog/blob/master/docs/superpowers/specs/2026-08-25-super-backlog-kit-design.md): super-backlog delegates to upstream tools and owns only the glue between them.
 
 - Backlog.md is installed as a devDependency at `latest` and driven through its own CLI (`backlog init --defaults`, `backlog task list --json`). super-backlog never forks or vendors upstream code and pins nothing — every init pulls current versions.
 - Superpowers reaches the project through its canonical channels (OpenCode plugin spec, Claude marketplace) rather than copies of its content.

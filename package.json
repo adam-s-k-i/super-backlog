@@ -20,6 +20,7 @@
     "pretest": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "markdownlint-cli2 \"**/*.md\" && cspell --no-progress --no-summary \"**/*.md\"",
     "tasks": "backlog task list",
     "board": "backlog board",
     "browser": "backlog browser",
@@ -28,8 +29,11 @@
   "devDependencies": {
     "@types/node": "^20.14.0",
     "backlog.md": "^1.50.1",
+    "cspell": "^10.1.1",
+    "markdownlint-cli2": "^0.23.2",
     "super-backlog": "file:.",
     "typescript": "^5.6.0",
+    "vitepress": "^1.6.4",
     "vitest": "^2.1.0"
   }
 }
