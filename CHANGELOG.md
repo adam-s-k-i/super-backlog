@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.2](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.1...v0.3.2) (2026-08-26)
+
+
+### Bug Fixes
+
+* **ci:** use NPM_TOKEN secret name for npm publish ([43a7fa1](https://github.com/adam-s-k-i/super-backlog/commit/43a7fa198074fe5dbf6e40582ab6e88906902e61))
+* **dashboard:** disable recursive live reload on Node 24 Windows to avoid libuv crash ([59f9342](https://github.com/adam-s-k-i/super-backlog/commit/59f9342073831c029fed85d9ec47fe12db2668cd))
+
 ## [0.3.1](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.0...v0.3.1) (2026-08-26)
 
 
