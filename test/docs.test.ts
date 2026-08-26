@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const readme = readFileSync(join(root, 'README.md'), 'utf8');
-const troubleshooting = readFileSync(join(root, 'docs', 'troubleshooting.md'), 'utf8');
+const troubleshooting = readFileSync(join(root, 'docs', 'guide', 'troubleshooting.md'), 'utf8');
 
 describe('README doc-rot guard', () => {
   it('contains the quickstart command', () => {
