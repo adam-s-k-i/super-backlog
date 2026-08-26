@@ -1,6 +1,7 @@
 {
   "version": "0.2",
   "language": "en",
+  "allowCompoundWords": true,
   "dictionaries": ["node", "typescript"],
   "words": [
     "afrizzal",
@@ -24,8 +25,10 @@
     "dependabot",
     "dogfood",
     "dogfooding",
+    "Empfehlungen",
     "frontmatter",
     "harness",
+    "hedgefond",
     "healthcheck",
     "hostable",
     "idempotent",
@@ -56,6 +59,7 @@
   "ignorePaths": [
     ".superpowers/**",
     ".worktrees/**",
+    "docs/superpowers/specs/2026-08-25-dashboard-v2-design.md",
     "node_modules/**",
     "dist/**",
     "backlog/**",
