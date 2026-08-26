@@ -34,4 +34,4 @@ Then create a GitHub Release from the tag, pasting the CHANGELOG section.
 
 - Run `sbl update` in a dogfood project and confirm the new version is picked up.
 - Watch the first-install issues for Windows plugin-spec problems and update
-  `docs/troubleshooting.md` if the fallback triggers.
+  `docs/guide/troubleshooting.md` if the fallback triggers.

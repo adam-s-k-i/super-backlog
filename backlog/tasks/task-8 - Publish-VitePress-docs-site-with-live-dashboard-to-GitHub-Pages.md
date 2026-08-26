@@ -1,9 +1,11 @@
 ---
 id: TASK-8
 title: Publish VitePress docs site with live dashboard to GitHub Pages
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@ox-alpha'
 created_date: '2026-08-26 02:02'
+updated_date: '2026-08-26 03:51'
 labels:
   - ci
   - pages
@@ -25,3 +27,9 @@ Docs website as the landing page: VitePress config over docs/, existing docs/*.m
 - [ ] #3 Freshly generated dashboard.html is included and reachable on the live site
 - [ ] #4 Inbound links (notably README) updated and markdownlint reports no dangling internal links
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Per plan Task 3: move docs/*.md to docs/guide/, fix inbound links, add index.md + .vitepress/config.mts, local vitepress build smoke with fresh dashboard in public/, pages-deploy.yml with pinned SHAs.
+<!-- SECTION:PLAN:END -->
