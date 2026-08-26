@@ -42,3 +42,16 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  Tests:
+    name: Tests
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: always()
+    permissions: {}
+    steps:
+      - name: Require test matrix success
+        if: needs.test.result != 'success'
+        run: exit 1
+      - name: Report success
+        run: echo "All tests passed"
+
