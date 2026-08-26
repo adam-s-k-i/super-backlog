@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { DashboardData } from './data.js';
+import type { DashboardData, DashboardStatusCount } from './data.js';
 
 export interface PipelinePhase {
   n: number;
@@ -46,23 +46,40 @@ function esc(s: string): string {
   });
 }
 
-function phasesHtml(): string {
-  return PIPELINE_PHASES.map(
-    (p) =>
-      `<div class="phase"><span class="phase-n">${p.n}</span>` +
-      `<div class="phase-body"><span class="phase-name">${esc(p.name)}</span>` +
-      `<span class="phase-gate">${esc(p.gate)}</span></div></div>`,
-  ).join('\n          ');
+function toneFor(status: string): 'ok' | 'accent' | 'warn' | 'danger' | 'dim' {
+  const s = status.toLowerCase();
+  if (s === 'done' || s === 'complete' || s === 'completed') return 'ok';
+  if (s.includes('progress') || s === 'review') return 'accent';
+  if (s.includes('block') || s === 'rejected') return 'danger';
+  if (s.includes('hold') || s.includes('wait') || s === 'draft') return 'warn';
+  return 'dim';
 }
 
-/** Fill the static template shell with data; all dynamic task/metric content stays in the JSON island. */
+/** Sidebar pills with live counts; click-to-filter wiring lands in a later task. */
+function statusPillsHtml(statuses: readonly DashboardStatusCount[]): string {
+  if (statuses.length === 0) return '<span class="pill-empty">no data</span>';
+  return statuses
+    .map(
+      (s) =>
+        `<button type="button" class="pill" data-status="${esc(s.status)}"` +
+        ` data-count="${s.count}" data-tone="${toneFor(s.status)}">` +
+        `<span class="n">${s.count}</span> ${esc(s.status)}</button>`,
+    )
+    .join('\n      ');
+}
+
+function jsonIsland(value: unknown): string {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
+
+/** Fill the static template shell with data; all dynamic task/metric content stays in the JSON islands. */
 export function renderDashboard(data: DashboardData): string {
-  const islandJson = JSON.stringify(data).replace(/</g, '\\u003c');
   return readTemplate()
     .replaceAll('__PROJECT_NAME__', () => esc(data.project.name))
     .replaceAll('__PROJECT_DESC__', () => esc(data.project.description))
     .replaceAll('__GENERATED_AT__', () => esc(data.generatedAt))
     .replaceAll('__KIT_VERSION__', () => esc(data.kitVersion))
-    .replaceAll('__PIPELINE_PHASES__', () => phasesHtml())
-    .replaceAll('__SBL_DATA_JSON__', () => islandJson);
+    .replaceAll('__STATUS_PILLS__', () => statusPillsHtml(data.statuses))
+    .replaceAll('__SBL_DATA_JSON__', () => jsonIsland(data))
+    .replaceAll('__SBL_GLOSSARY_JSON__', () => jsonIsland(data.glossary));
 }

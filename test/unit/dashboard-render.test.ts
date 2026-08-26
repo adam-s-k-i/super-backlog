@@ -5,7 +5,14 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { PIPELINE_PHASES, renderDashboard } from '../../src/dashboard/render.js';
-import type { DashboardData } from '../../src/dashboard/data.js';
+import type { DashboardActivityBucket, DashboardData } from '../../src/dashboard/data.js';
+
+function buckets(nonZero: Record<number, number>): DashboardActivityBucket[] {
+  return Array.from({ length: 30 }, (_, i) => ({
+    date: `2026-07-${String(28 + i).padStart(2, '0')}`,
+    count: nonZero[i] ?? 0,
+  }));
+}
 
 const SAMPLE: DashboardData = {
   project: { name: 'demo-project', description: 'A demo <b>project</b>' },
@@ -40,21 +47,36 @@ const SAMPLE: DashboardData = {
       acs: [{ text: 'dark mode', checked: false }],
     },
   ],
+  deps: [
+    { from: 'T-2', to: 'T-1' },
+    { from: 'T-4', to: 'T-2' },
+  ],
+  activity: buckets({ 0: 1, 25: 2, 29: 1 }),
+  glossary: [
+    { term: 'AC', definition: 'Acceptance criterion.' },
+    { term: 'Review Gate', definition: 'Human checkpoint before proceeding.' },
+  ],
   source: 'backlog-json',
-  deps: [],
-  activity: [],
-  glossary: [],
 };
 
 const html = renderDashboard(SAMPLE);
 
-function islandOf(doc: string): string {
-  const m = /<script type="application\/json" id="sbl-data">([\s\S]*?)<\/script>/.exec(doc);
-  if (!m) return '';
-  return m[1];
+function islandOf(doc: string, id: string): string {
+  const m = new RegExp(`<script type="application\\/json" id="${id}">([\\s\\S]*?)<\\/script>`).exec(doc);
+  return m?.[1] ?? '';
 }
 
-describe('renderDashboard contract', () => {
+const SECTIONS = [
+  ['01', 'Board & Quick Actions'],
+  ['02', 'Status'],
+  ['03', 'Milestones'],
+  ['04', 'Tasks'],
+  ['05', 'Feature Cycle'],
+  ['06', 'Activity'],
+  ['07', 'Decisions & Docs'],
+] as const;
+
+describe('renderDashboard v2 structure', () => {
   it('matches the approved snapshot', () => {
     expect(html).toMatchSnapshot();
   });
@@ -63,44 +85,134 @@ describe('renderDashboard contract', () => {
     expect(html.startsWith('<!doctype html>')).toBe(true);
   });
 
-  it('embeds the JSON data island with < escaped as \\u003c', () => {
-    const island = islandOf(html);
-    expect(island).toBeTruthy();
-    const parsed = JSON.parse(island) as DashboardData;
-    expect(parsed.project.name).toBe('demo-project');
-    expect(parsed.tasks).toHaveLength(4);
-    // the XSS probe never survives unescaped
-    expect(html).not.toContain('<script>alert');
-    expect(island).not.toContain('<');
-    expect(parsed.tasks[0]?.description).toBe('Handles <script>alert(1)</script> safely');
+  it('renders a fixed sidebar with project badge and kicker line', () => {
+    expect(html).toContain('<aside class="sbl-side">');
+    const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
+    expect(aside).toContain('●');
+    expect(aside).toContain('demo-project');
+    expect(aside).toContain('SUPERPOWERS × BACKLOG.MD');
   });
 
-  it('contains all four section headings', () => {
-    for (const heading of ['Overview', 'Milestones', 'Tasks', 'Workflow cheat sheet']) {
-      expect(html).toContain(heading);
+  it('nav links to all seven numbered sections', () => {
+    const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
+    for (const [num] of SECTIONS) {
+      expect(aside).toContain(`href="#sec-${num}"`);
+    }
+    for (const [, label] of SECTIONS) {
+      expect(aside).toContain(label.replace('&', '&amp;'));
     }
   });
 
-  it('contains the quick-command strings', () => {
-    expect(html).toContain('backlog browser');
-    expect(html).toContain('sbl dashboard --serve');
+  it('emits live status pills with counts', () => {
+    expect(html).toContain('class="pill"');
+    expect(html).toMatch(/class="pill"[^>]*data-status="Done"/);
+    expect(html).toMatch(/class="pill"[^>]*data-status="Done"[^>]*data-count="1"/);
+    expect(html).toMatch(/data-status="In Progress"[^>]*data-count="2"/);
+    expect(html).toMatch(/data-status="To Do"[^>]*data-count="1"/);
+  });
+
+  it('contains seven numbered main sections with HTS-style sec-heads', () => {
+    for (const [num, label] of SECTIONS) {
+      const section = new RegExp(`<section id="sec-${num}">([\\s\\S]*?)</section>`).exec(html)?.[1];
+      expect(section, `section sec-${num}`).toBeTruthy();
+      expect(section).toContain('<div class="sec-head">');
+      expect(section).toContain(`>${num}<`);
+      expect(section).toContain('<h2>');
+      expect(section).toContain(label.replace('&', '&amp;'));
+      expect(section).toContain('class="tagline"');
+    }
+  });
+
+  it('keeps an empty mount element per diagram/content slot', () => {
+    for (const mount of ['#quickactions', '#donut', '#bars', '#tasks', '#stepper', '#spark', '#docs']) {
+      expect(html).toContain(`id="${mount.slice(1)}"`);
+    }
+  });
+
+  it('retains the v1 sortable/filterable task table shell inside #tasks', () => {
+    const tasksSection = /<section id="sec-04">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    expect(tasksSection).toContain('id="filter"');
+    expect(tasksSection).toContain('id="tasks-table"');
+    expect(tasksSection).toContain('data-key="status"');
+    expect(tasksSection).toContain('id="task-rows"');
+  });
+
+  it('carries the exact HTS design tokens', () => {
+    for (const token of [
+      '--bg:#0a0e16',
+      '--surface:#111826',
+      '--line:#1e293c',
+      '--line-strong:#2c3b57',
+      '--text:#e8edf6',
+      '--muted:#8fa0ba',
+      '--dim:#5d6d88',
+      '--accent:#5cc8ff',
+      '--ok:#3ecf8e',
+      '--warn:#ffb454',
+      '--danger:#ff7a7a',
+      '--ok-bg:',
+      '--warn-bg:',
+      '--danger-bg:',
+      '--accent-dim:',
+    ]) {
+      expect(html).toContain(token);
+    }
+    expect(html).toContain('"Cascadia Code"');
+    expect(html).toContain('Consolas');
+    expect(html).toContain('"Segoe UI"');
+  });
+
+  it('is dark-only: no prefers-color-scheme block anywhere', () => {
+    expect(html).not.toMatch(/prefers-color-scheme/);
+  });
+
+  it('collapses the sidebar under 900px', () => {
+    expect(html).toMatch(/@media \(max-width:\s*900px\)/);
   });
 
   it('references no external URLs', () => {
     expect(html).not.toContain('src="http');
     expect(html).not.toContain('href="http');
   });
+});
 
-  it('keeps the inline app script within 150 lines of vanilla JS', () => {
+describe('renderDashboard data islands', () => {
+  it('embeds the JSON data island with < escaped as \\u003c', () => {
+    const island = islandOf(html, 'sbl-data');
+    expect(island).toBeTruthy();
+    const parsed = JSON.parse(island) as DashboardData;
+    expect(parsed.project.name).toBe('demo-project');
+    expect(parsed.tasks).toHaveLength(4);
+    expect(parsed.deps).toEqual(SAMPLE.deps);
+    // the XSS probe never survives unescaped
+    expect(html).not.toContain('<script>alert');
+    expect(island).not.toContain('<');
+    expect(parsed.tasks[0]?.description).toBe('Handles <script>alert(1)</script> safely');
+  });
+
+  it('embeds the glossary island consumed by tooltips later', () => {
+    const island = islandOf(html, 'sbl-glossary');
+    expect(island).toBeTruthy();
+    const parsed = JSON.parse(island) as DashboardData['glossary'];
+    expect(parsed).toEqual(SAMPLE.glossary);
+  });
+});
+
+describe('renderDashboard footer', () => {
+  it('shows generated-at, kit version and the freshness note', () => {
+    const footer = /<footer[^>]*>([\s\S]*?)<\/footer>/.exec(html)?.[1] ?? '';
+    expect(footer).toContain('2026-08-26T12:00:00.000Z');
+    expect(footer).toContain('v0.1.0');
+    expect(footer).toContain('regenerated automatically on commits touching backlog/');
+  });
+});
+
+describe('inline app budget', () => {
+  it('keeps the inline app script within 650 lines of vanilla JS', () => {
     const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
     expect(m).toBeTruthy();
     const lines = (m?.[1] ?? '').split('\n').length;
-    expect(lines).toBeLessThanOrEqual(150);
-  });
-
-  it('uses prefers-color-scheme for dark/light and a system font stack', () => {
-    expect(html).toMatch(/@media \(prefers-color-scheme: dark\)/);
-    expect(html).toMatch(/font-family:[^;]*(system-ui|-apple-system|Segoe UI)/);
+    expect(lines).toBeLessThanOrEqual(650);
   });
 });
 
@@ -127,12 +239,5 @@ describe('PIPELINE_PHASES', () => {
     );
     const tableNames = [...block.matchAll(/^\|\s*\d+\s*\|\s*(.+?)\s*\|/gm)].map((m) => m[1]);
     expect(tableNames).toEqual(PIPELINE_PHASES.map((p) => p.name));
-  });
-
-  it('renders every phase into the cheat-sheet grid', () => {
-    for (const phase of PIPELINE_PHASES) {
-      // static content is HTML-escaped by the renderer (& → &amp;)
-      expect(html).toContain(phase.name.replace(/&/g, '&amp;'));
-    }
   });
 });
