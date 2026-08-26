@@ -15,6 +15,7 @@ describe('model router e2e lifecycle', () => {
     const cwd = join(tmpdir(), `sbl-router-e2e-${Date.now()}`);
     mkdirSync(cwd, { recursive: true });
     try {
+      // Use harness:'opencode' and 'no-refresh-hook':true to avoid .git/refresher warnings that would make runInit exit 4.
       const code = await runInit(cwd, args({ pm: 'skip', 'no-dashboard': true, 'no-refresh-hook': true, harness: 'opencode', models: true }));
       expect(code).toBe(0);
       expect(existsSync(join(cwd, '.super-backlog/models.json'))).toBe(true);
@@ -22,9 +23,10 @@ describe('model router e2e lifecycle', () => {
       expect(existsSync(join(cwd, '.opencode/agents/sbl-worker.md'))).toBe(true);
       expect(existsSync(join(cwd, '.claude/agents/sbl-worker.md'))).toBe(true);
 
-      const uninstall = runUninstall(cwd, args({}));
+      const uninstall = await runUninstall(cwd, args({}));
       expect(uninstall).toBe(0);
       expect(existsSync(join(cwd, '.opencode/plugins/sbl-model-router.js'))).toBe(false);
+      expect(existsSync(join(cwd, '.opencode/agents/sbl-worker.md'))).toBe(false);
       expect(existsSync(join(cwd, '.claude/agents/sbl-worker.md'))).toBe(false);
       expect(existsSync(join(cwd, '.super-backlog/models.json'))).toBe(false);
     } finally {
