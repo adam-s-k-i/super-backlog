@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.1](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.0...v0.3.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* **ci:** publish to npm via NPM_TOKEN secret, idempotent GitHub release step ([c7c1d31](https://github.com/adam-s-k-i/super-backlog/commit/c7c1d31a3fc89786c07251d50b9d753f33b34845))
+* **release:** add package.json repository field + guard test (TASK-18) ([#15](https://github.com/adam-s-k-i/super-backlog/issues/15)) ([ef515b7](https://github.com/adam-s-k-i/super-backlog/commit/ef515b72084d838005935c8efa1accbff3d3cf7f))
+
 ## [0.3.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.2.0...v0.3.0) (2026-08-26)
 
 
