@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-import { readFileSync } from 'node:fs';
+﻿import { readFileSync } from 'node:fs';
 import { reportToIssue } from './report-to-issue.mjs';
 
 const file = process.argv[2] ?? 'audit.json';

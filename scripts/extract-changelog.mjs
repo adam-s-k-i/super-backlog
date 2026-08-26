@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-import { readFileSync, writeFileSync } from 'node:fs';
+﻿import { readFileSync, writeFileSync } from 'node:fs';
 import { extractChangelogSection } from './verify-release.mjs';
 
 const version = JSON.parse(readFileSync('package.json', 'utf8')).version;

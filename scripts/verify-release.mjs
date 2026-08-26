@@ -1,5 +1,4 @@
-#!/usr/bin/env node
-import { readFileSync } from 'node:fs';
+﻿import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
 export function verifyRelease({ version, changelogText, remoteTagExists }) {
