@@ -38,6 +38,7 @@
     "idempotent",
     "kanban",
     "Klick",
+    "libuv",
     "markdownlint",
     "npmjs",
     "opencode",

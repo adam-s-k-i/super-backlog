@@ -8,6 +8,13 @@ import process from 'node:process';
 
 export const DASHBOARD_PORT = 6428;
 
+export function recursiveWatchSupported(platform: string, nodeVersion: string): boolean {
+  // Node 24 on Windows triggers a libuv assertion in recursive fs.watch:
+  // https://github.com/nodejs/node/issues/xxx (fs-event.c line 72)
+  const major = Number(nodeVersion.split('.')[0]);
+  return !(platform === 'win32' && !Number.isNaN(major) && major >= 24);
+}
+
 export interface ServeOptions {
   port?: number;
   regenerate?: () => void | Promise<void>;
@@ -67,12 +74,19 @@ export async function startServeServer(
   };
 
   let watcher: FSWatcher | null = null;
-  try {
-    // recursive so subdirectory writes (e.g. backlog/tasks/*.md) fire on every platform
-    watcher = watch(join(cwd, 'backlog'), { persistent: true, recursive: true }, debouncedRegenerate);
-    watcher.on('error', () => {}); // e.g. watched dir removed mid-session
-  } catch {
-    watcher = null; // no backlog dir -> no live reload; serving still works
+  const backlogDir = join(cwd, 'backlog');
+  if (recursiveWatchSupported(process.platform, process.versions.node)) {
+    try {
+      // recursive so subdirectory writes (e.g. backlog/tasks/*.md) fire on every platform
+      watcher = watch(backlogDir, { persistent: true, recursive: true }, debouncedRegenerate);
+      watcher.on('error', () => {}); // e.g. watched dir removed mid-session
+    } catch {
+      watcher = null; // no backlog dir -> no live reload; serving still works
+    }
+  } else {
+    console.warn(
+      'warning: live reload is disabled because Node 24+ on Windows cannot reliably watch directories recursively (libuv fs-event bug); use Node 22 or Linux/macOS for --serve',
+    );
   }
 
   const server: Server = createServer((req, res) => {
