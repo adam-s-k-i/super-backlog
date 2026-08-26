@@ -1,0 +1,26 @@
+/* Brand color sampled from the logo: the "B" in "Backlog" (#9740F8). */
+:root {
+  --vp-c-brand-1: #7d2ff0;
+  --vp-c-brand-2: #6c28d4;
+  --vp-c-brand-3: #9740f8;
+  --vp-c-brand-soft: rgba(151, 64, 248, 0.14);
+}
+
+.dark {
+  --vp-c-brand-1: #a55bff;
+  --vp-c-brand-2: #9740f8;
+  --vp-c-brand-3: #b87fff;
+  --vp-c-brand-soft: rgba(165, 91, 255, 0.16);
+}
+
+/* Home hero name gradient: "Super" in text color, "Backlog" violet-to-cyan like the logo. */
+.VPHero .name {
+  color: transparent;
+  background: linear-gradient(90deg, var(--vp-c-text-1) 0%, var(--vp-c-text-1) 38%, #9740f8 46%, #38bdf8 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.VPHero .text {
+  color: var(--vp-c-brand-1);
+}
