@@ -132,7 +132,7 @@ describe('renderDashboard v2 structure', () => {
 
   it('retains the v1 sortable/filterable task table shell inside #tasks', () => {
     const tasksSection = /<section id="sec-04">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
-    expect(tasksSection).toContain('id="filter"');
+    expect(tasksSection).toContain('id="taskfilter"');
     expect(tasksSection).toContain('id="tasks-table"');
     expect(tasksSection).toContain('data-key="status"');
     expect(tasksSection).toContain('id="task-rows"');
@@ -292,6 +292,56 @@ describe('client dependency graph', () => {
     expect(app).toContain('data-to');
     expect(app).toContain("toggle('hot'");
     expect(app).toContain('__sblOpenDetail');
+  });
+});
+
+describe('tooltips, glossary terms and detail panel', () => {
+  it('ships the single floating tooltip element and detail panel shells', () => {
+    expect(html).toContain('id="sbl-tip"');
+    expect(html).toContain('id="sbl-detail"');
+    expect(html).toContain('id="sbl-backdrop"');
+  });
+
+  it('wraps the core glossary terms in static section copy', () => {
+    for (const term of ['AC', 'DoD', 'Milestone', 'Review Gate', 'TDD']) {
+      expect(html, `term span for ${term}`).toContain(`data-term="${term}"`);
+      expect(html, `class=term for ${term}`).toMatch(
+        new RegExp(`<span class="term" data-term="${term}">`),
+      );
+    }
+  });
+
+  it('resolves data-term lookups case-insensitively from the sbl-glossary island', () => {
+    const app = appScript();
+    expect(app).toContain("getElementById('sbl-glossary')");
+    expect(app).toContain('toLowerCase()');
+    expect(app).toContain("'[data-tip],[data-term]'");
+  });
+
+  it('wires openDetail/closeDetail with backdrop, Esc close and clickable deps', () => {
+    const app = appScript();
+    expect(app).toContain('function openDetail(');
+    expect(app).toContain('function closeDetail(');
+    expect(app).toContain("addEventListener('click'");
+    expect(app).toContain('__sblOpenDetail');
+    expect(app.match(/Escape/g)?.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('binds delegation for hover and focus tooltips with viewport clamping', () => {
+    const app = appScript();
+    expect(app).toContain("addEventListener('mouseover'");
+    expect(app).toContain("addEventListener('focusin'");
+    expect(app).toContain('innerWidth');
+    expect(app).toContain('innerHeight');
+  });
+
+  it('focuses #taskfilter on / and drives the table filter from pills + donut segments', () => {
+    const app = appScript();
+    expect(app).toContain("key === '/'");
+    expect(app).toContain("getElementById('taskfilter')");
+    expect(app).toContain('#pills .pill');
+    expect(app).toContain('setStatusFilter');
+    expect(app).toMatch(/\.seg['"],|seg\.addEventListener\('click'/);
   });
 });
 

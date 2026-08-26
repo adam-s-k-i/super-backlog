@@ -77,7 +77,47 @@
   .pill[data-tone="warn"] { color: var(--warn); border-color: #5c4520; background: var(--warn-bg); }
   .pill[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
   .pill:hover { filter: brightness(1.25); }
+  .pill.active { outline: 2px solid var(--accent); outline-offset: 1px; }
   .pill-empty { color: var(--dim); font-size: .78rem; }
+
+  /* ---------- Glossary tooltips ---------- */
+  .term { border-bottom: 1px dotted var(--dim); cursor: help; }
+  .term:hover { color: var(--accent); border-color: var(--accent); }
+  #sbl-tip {
+    position: fixed; z-index: 70; max-width: 340px; padding: 8px 12px;
+    background: rgba(13,19,32,.97); border: 1px solid var(--line-strong); border-radius: 8px;
+    font-size: .78rem; line-height: 1.45; color: var(--text);
+    box-shadow: 0 10px 28px rgba(0,0,0,.5); pointer-events: none;
+  }
+
+  /* ---------- Detail panel ---------- */
+  #sbl-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4,7,12,.55); }
+  #sbl-detail {
+    position: fixed; top: 0; right: 0; z-index: 50; height: 100vh; width: min(400px, 92vw);
+    overflow-y: auto; padding: 22px 24px 32px;
+    background: var(--surface); border-left: 1px solid var(--line-strong);
+    box-shadow: -18px 0 44px rgba(0,0,0,.45);
+    animation: sbl-slide-in .18s ease-out;
+  }
+  @keyframes sbl-slide-in { from { transform: translateX(26px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
+  .status-chip { font-family: var(--mono); font-size: .68rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+  .status-chip[data-tone="ok"] { color: var(--ok); border-color: #2b5642; background: var(--ok-bg); }
+  .status-chip[data-tone="accent"] { color: var(--accent); border-color: #274a63; background: #10202e; }
+  .status-chip[data-tone="warn"] { color: var(--warn); border-color: #5c4520; background: var(--warn-bg); }
+  .status-chip[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
+  .detail-close { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+  .detail-close:hover { color: var(--danger); }
+  .detail-title { font-size: 1.06rem; margin-bottom: 8px; overflow-wrap: anywhere; }
+  #sbl-detail .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
+  #sbl-detail h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
+  .dep-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dep-link {
+    font-family: var(--mono); font-size: .74rem; padding: 2px 10px; border-radius: 999px;
+    border: 1px solid #274a63; background: #10202e; color: var(--accent); cursor: pointer;
+  }
+  .dep-link:hover { filter: brightness(1.25); }
 
   /* ---------- Sections ---------- */
   section { margin-top: 44px; scroll-margin-top: 20px; }
@@ -268,15 +308,15 @@
 </section>
 
 <section id="sec-03">
-  <div class="sec-head"><span class="sec-num">03</span><h2>Milestones</h2><span class="tagline">progress per milestone</span></div>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Milestones</h2><span class="tagline">done / total per <span class="term" data-term="Milestone">Milestone</span></span></div>
   <div id="bars" class="mount"></div>
 </section>
 
 <section id="sec-04">
-  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; expand for details</span></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; expand &mdash; <span class="term" data-term="AC">AC</span>s inline</span></div>
   <div id="tasks" class="mount">
     <div class="toolbar">
-      <input id="filter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
+      <input id="taskfilter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
     </div>
     <div class="table-wrap">
       <table id="tasks-table">
@@ -298,7 +338,7 @@
 </section>
 
 <section id="sec-05">
-  <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; human gates included</span></div>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included</span></div>
   <div id="stepper" class="mount"></div>
   <h3 class="sub-head">Dependency flow</h3>
   <div id="depgraph" class="mount"></div>
@@ -312,7 +352,7 @@
 <section id="sec-07">
   <div class="sec-head"><span class="sec-num">07</span><h2>Decisions &amp; Docs</h2><span class="tagline">decisions &middot; docs &middot; glossary</span></div>
   <div id="docs" class="mount"></div>
-  <p class="hint">Glossary terms are explained on hover &mdash; extend them via <code class="inline">backlog/docs/glossary.md</code>.</p>
+  <p class="hint">The <span class="term" data-term="TDD">TDD</span> loop and the <span class="term" data-term="DoD">DoD</span> ship as built-in glossary terms &mdash; extend them via <code class="inline">backlog/docs/glossary.md</code>.</p>
 </section>
 
 <footer class="footer">
@@ -322,6 +362,10 @@
 
 </main>
 </div>
+
+<div id="sbl-backdrop" hidden></div>
+<aside id="sbl-detail" hidden aria-label="Task details"></aside>
+<div id="sbl-tip" role="tooltip" hidden></div>
 
 <script type="application/json" id="sbl-data">__SBL_DATA_JSON__</script>
 <script type="application/json" id="sbl-glossary">__SBL_GLOSSARY_JSON__</script>
@@ -433,9 +477,25 @@
       renderTasks();
     });
   });
-  $('#filter').addEventListener('input', function (event) {
-    state.query = event.target.value.trim().toLowerCase();
+  var filterInput = document.getElementById('taskfilter');
+  if (filterInput) {
+    filterInput.addEventListener('input', function (event) {
+      state.query = event.target.value.trim().toLowerCase();
+      renderTasks();
+    });
+  }
+  function setStatusFilter(status) {
+    state.status = status || null;
+    document.querySelectorAll('#pills .pill').forEach(function (pill) {
+      pill.classList.toggle('active', !!state.status && pill.getAttribute('data-status') === state.status);
+    });
     renderTasks();
+  }
+  document.querySelectorAll('#pills .pill').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      var s = pill.getAttribute('data-status');
+      setStatusFilter(state.status === s ? null : s);
+    });
   });
   renderTasks();
 
@@ -494,6 +554,9 @@
       attachTitle(seg, s.status + ': ' + s.count);
       seg.addEventListener('mouseenter', function () { setHoverStatus(s.status); });
       seg.addEventListener('mouseleave', function () { setHoverStatus(null); });
+      seg.addEventListener('click', function () {
+        setStatusFilter(state.status === s.status ? null : s.status);
+      });
       svg.appendChild(seg);
       offset += frac;
     });
@@ -630,8 +693,160 @@
   if ($('#stepper')) renderStepper($('#stepper'), phases);
   if ($('#spark')) renderSparkline($('#spark'), data.activity);
 
+  /* ---------- Glossary tooltips ---------- */
+  var glossary = {};
+  try {
+    JSON.parse(document.getElementById('sbl-glossary').textContent).forEach(function (entry) {
+      glossary[String(entry.term).toLowerCase()] = entry.definition;
+    });
+  } catch (e) {
+    glossary = {};
+  }
+  var tip = document.getElementById('sbl-tip');
+  function tipTarget(node) {
+    return node instanceof Element ? node.closest('[data-tip],[data-term]') : null;
+  }
+  function tipTextFor(target) {
+    if (target.hasAttribute('data-tip')) return target.getAttribute('data-tip');
+    var key = String(target.getAttribute('data-term')).toLowerCase();
+    return glossary[key] === undefined ? '' : target.getAttribute('data-term') + ': ' + glossary[key];
+  }
+  function tipShow(text, x, y) {
+    if (!tip || !text) return;
+    tip.textContent = text;
+    tip.hidden = false;
+    var rect = tip.getBoundingClientRect();
+    var px = Math.min(Math.max(8, x + 14), window.innerWidth - rect.width - 8);
+    var py = y + 18 + rect.height > window.innerHeight - 8 ? y - rect.height - 12 : y + 16;
+    py = Math.min(Math.max(8, py), window.innerHeight - rect.height - 8);
+    tip.style.left = px + 'px';
+    tip.style.top = py + 'px';
+  }
+  function tipHide() {
+    if (tip) tip.hidden = true;
+  }
+  if (tip) {
+    document.addEventListener('mouseover', function (ev) {
+      var t = tipTarget(ev.target);
+      if (!t) return;
+      tipShow(tipTextFor(t), ev.clientX, ev.clientY);
+    });
+    document.addEventListener('mousemove', function (ev) {
+      if (tip.hidden) return;
+      var t = tipTarget(ev.target);
+      if (!t) {
+        tipHide();
+        return;
+      }
+      tipShow(tipTextFor(t), ev.clientX, ev.clientY);
+    });
+    document.addEventListener('focusin', function (ev) {
+      var t = tipTarget(ev.target);
+      if (!t) return;
+      var r = t.getBoundingClientRect();
+      tipShow(tipTextFor(t), r.left + r.width / 2, r.bottom);
+    });
+    document.addEventListener('focusout', tipHide);
+  }
+
+  /* ---------- Detail panel ---------- */
+  var panel = document.getElementById('sbl-detail');
+  var backdrop = document.getElementById('sbl-backdrop');
+  var depsOut = {};
+  var depsIn = {};
+  data.deps.forEach(function (d) {
+    (depsOut[d.from] = depsOut[d.from] || []).push(d.to);
+    (depsIn[d.to] = depsIn[d.to] || []).push(d.from);
+  });
+  function findTask(id) {
+    var found = null;
+    data.tasks.forEach(function (t) {
+      if (t.id === id) found = t;
+    });
+    return found;
+  }
+  function closeDetail() {
+    if (panel) panel.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+  }
+  window.closeDetail = closeDetail;
+  function acList(task) {
+    var list = el('ul', 'ac-list');
+    task.acs.forEach(function (ac) {
+      var li = el('li', ac.checked ? 'ac done' : 'ac');
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = ac.checked;
+      box.disabled = true;
+      li.appendChild(box);
+      li.appendChild(document.createTextNode(ac.text));
+      list.appendChild(li);
+    });
+    return list;
+  }
+  function depSection(titleText, ids) {
+    var block = el('div');
+    block.appendChild(el('h4', '', titleText));
+    var row = el('div', 'dep-row');
+    ids.filter(function (id) { return findTask(id); }).forEach(function (id) {
+      var btn = el('button', 'dep-link', id);
+      btn.type = 'button';
+      btn.setAttribute('data-dep', id);
+      btn.addEventListener('click', function () { openDetail(id); });
+      row.appendChild(btn);
+    });
+    if (row.children.length === 0) row.appendChild(el('p', 'detail-empty', 'None'));
+    block.appendChild(row);
+    return block;
+  }
+  function openDetail(id) {
+    var t = findTask(id);
+    if (!t || !panel) return;
+    panel.textContent = '';
+    var head = el('div', 'detail-head');
+    head.appendChild(el('span', 'detail-id', t.id));
+    var chip = el('span', 'status-chip', t.status);
+    chip.setAttribute('data-tone', toneOf(t.status));
+    head.appendChild(chip);
+    var closeBtn = el('button', 'detail-close', '\u00d7');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close details');
+    closeBtn.addEventListener('click', closeDetail);
+    head.appendChild(closeBtn);
+    panel.appendChild(head);
+    panel.appendChild(el('h3', 'detail-title', t.title));
+    panel.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
+    if (t.acs.length > 0) {
+      panel.appendChild(el('h4', '', 'Acceptance criteria'));
+      panel.appendChild(acList(t));
+    }
+    panel.appendChild(depSection('Depends on', depsOut[id] || []));
+    panel.appendChild(depSection('Needed by', depsIn[id] || []));
+    panel.scrollTop = 0;
+    panel.hidden = false;
+    backdrop.hidden = false;
+  }
+  window.__sblOpenDetail = openDetail;
+  if (backdrop) backdrop.addEventListener('click', closeDetail);
+
+  /* ---------- Keyboard shortcuts ---------- */
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') {
+      tipHide();
+      closeDetail();
+      return;
+    }
+    if (ev.key === '/') {
+      var active = document.activeElement;
+      var typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+      if (typing) return;
+      ev.preventDefault();
+      var f = document.getElementById('taskfilter');
+      if (f) f.focus();
+    }
+  });
+
   /* ---------- Dependency graph (mirrors src/dashboard/layering.ts semantics) ---------- */
-  window.__sblOpenDetail = window.__sblOpenDetail || function () {};
   function assignLayers(nodes, deps) {
     var nodeSet = {};
     nodes.forEach(function (n) { nodeSet[n] = true; });
