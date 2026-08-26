@@ -2,6 +2,11 @@
 
 [![CI](https://github.com/adam-s-k-i/super-backlog/actions/workflows/ci.yml/badge.svg)](https://github.com/adam-s-k-i/super-backlog/actions/workflows/ci.yml)
 
+![Super Backlog](docs/assets/super-backlog-video.mp4)
+
+![Super Backlog](docs/assets/super-backlog-logo.jpg)
+
+
 One command to equip any project with [Backlog.md](https://github.com/MrLesk/Backlog.md) + [Superpowers](https://github.com/obra/superpowers), plus a Project Dashboard.
 
 ## What & why
@@ -48,8 +53,6 @@ Commands: `sbl init` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl
 `sbl dashboard` generates a single self-contained `dashboard.html` from your Backlog data: metric cards per status, milestone progress bars, an expandable task table, and a workflow cheat sheet. No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `--serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428 by default.
 
 ![Project Dashboard](docs/assets/dashboard.png)
-
-![Super Backlog](docs/assets/super-backlog-logo-all.jpg)
 
 ## Uninstall guarantee
 
