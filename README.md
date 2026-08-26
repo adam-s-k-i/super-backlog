@@ -7,8 +7,6 @@
 
 One command to equip any project with [Backlog.md](https://github.com/MrLesk/Backlog.md) + [Superpowers](https://github.com/obra/superpowers), plus a Project Dashboard.
 
-[Watch the intro video](docs/assets/super-backlog-video.mp4)
-
 ## What & why
 
 Superpowers and Backlog.md are strong on their own, but nothing wires them together: Superpowers defines *how* agents should work (brainstorming → plans → TDD → review), Backlog.md defines *what* is tracked (markdown tasks, Kanban board, browser UI). Connecting them today means hand-copying glue from project to project — workflow blocks in `AGENTS.md`, bridge skills like `spec-to-backlog`, npm scripts, plugin config. super-backlog is the glue orchestrator that installs and maintains all of it in one step, with a guaranteed-clean exit path (`sbl uninstall`).

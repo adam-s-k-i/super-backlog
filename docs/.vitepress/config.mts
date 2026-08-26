@@ -1,7 +1,10 @@
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
+  base: '/super-backlog/',
   srcExclude: ['**/superpowers/**'],
+  lang: 'en-US',
+  title: 'super-backlog',
   description: 'One command to equip any project with Backlog.md + Superpowers',
   themeConfig: {
     siteTitle: 'super-backlog',
