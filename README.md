@@ -2,12 +2,11 @@
 
 [![CI](https://github.com/adam-s-k-i/super-backlog/actions/workflows/ci.yml/badge.svg)](https://github.com/adam-s-k-i/super-backlog/actions/workflows/ci.yml)
 
-![Super Backlog](docs/assets/super-backlog-video.mp4)
-
 ![Super Backlog](docs/assets/super-backlog-logo.jpg)
 
-
 One command to equip any project with [Backlog.md](https://github.com/MrLesk/Backlog.md) + [Superpowers](https://github.com/obra/superpowers), plus a Project Dashboard.
+
+[Watch the intro video](docs/assets/super-backlog-video.mp4)
 
 ## What & why
 
