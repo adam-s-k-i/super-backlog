@@ -1,9 +1,11 @@
 ---
 id: TASK-14
 title: 'Document operations: workflows, cadence, failure behavior, setup checklist'
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@ox-alpha'
 created_date: '2026-08-26 02:03'
+updated_date: '2026-08-26 04:12'
 labels:
   - ci
   - docs
@@ -27,3 +29,9 @@ docs/operations.md describes every automation workflow (trigger, permissions, ca
 - [ ] #3 Each workflow successfully dry-run via workflow_dispatch during rollout
 - [ ] #4 operations.md passes markdownlint and cspell gates
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Per plan Task 8: write docs/guide/operations.md (workflow table, release chain, one-time setup checklist incl. npm trusted publisher + Pages source + branch protection), then post-push rollout: labels, Pages enablement, workflow_dispatch dry-runs with recorded run URLs.
+<!-- SECTION:PLAN:END -->
