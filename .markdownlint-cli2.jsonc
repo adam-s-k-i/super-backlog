@@ -2,7 +2,7 @@
   "config": {
     "MD013": false,
     "MD024": { "siblings_only": true },
-    "MD033": { "allowed_elements": ["details", "summary", "br", "style", "video", "source", "h2"] },
+    "MD033": { "allowed_elements": ["details", "summary", "br", "style", "video", "source", "h2", "div"] },
     "MD041": false,
     "MD060": false
   },
