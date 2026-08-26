@@ -26,6 +26,8 @@ sbl dashboard --serve         # live Project Dashboard on http://localhost:6428
                               # (or: npx super-backlog dashboard --serve)
 ```
 
+On Windows PowerShell, `npx super-backlog init` may fail with an execution-policy error before the CLI starts. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once in PowerShell, or run `sbl doctor` for the exact policy and fix.
+
 `init` is idempotent — safe to re-run any time; re-running with a newer kit version is the upgrade path for all injected files.
 
 ## What gets installed
@@ -45,7 +47,7 @@ sbl dashboard --serve         # live Project Dashboard on http://localhost:6428
 | `.git/hooks/post-commit` | dashboard freshness block — regenerates `dashboard.html` after commits that touch `backlog/` (default; opt out with `--no-refresh-hook`) | appended marker block |
 | `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
 
-Commands: `sbl init` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--serve] [--port <n>] [--no-open] [--out <file>]`. See `sbl help` for every flag.
+Commands: `sbl init` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--serve] [--port <n>] [--no-open] [--out <file>]`. See `sbl help` for every flag.
 
 ## Project Dashboard
 

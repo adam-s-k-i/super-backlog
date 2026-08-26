@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import process from 'node:process';
 
 import { runDashboard } from './commands/dashboard.js';
+import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
@@ -18,6 +19,7 @@ Commands:
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
   dashboard   Generate the single-file project dashboard (--serve for live mode)
+  doctor      Check the environment (node, PowerShell policy, backlog CLI)
 
 init options:
   --pm <auto|npm|pnpm|bun|skip>   Package manager to use (default: auto)
@@ -38,6 +40,9 @@ dashboard options:
   --port <n>                      Port for --serve (default: 6428)
   --no-open                       With --serve: do not open the browser automatically
   --out <file>                    Output file name or path (default: dashboard.html)
+
+doctor options:
+  (none)                          Prints one [ok]/[warn]/[skip] line per check; exit 4 on any warn
 
 Global options:
   --version                       Print the super-backlog version and exit
@@ -112,6 +117,8 @@ async function main(argv: string[]): Promise<number> {
         positionals: parsed.positionals,
       });
     }
+    case 'doctor':
+      return runDoctor(process.cwd());
     default:
       console.error(`Unknown command "${command}".\n`);
       console.error(HELP);

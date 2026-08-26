@@ -13,10 +13,12 @@ interface InitResult {
   status: number;
 }
 
-function runInit(dir: string, args: string[]): InitResult {
+function runInit(dir: string, args: string[], extraEnv: Record<string, string> = {}): InitResult {
   try {
     const out = execFileSync(process.execPath, [CLI, 'init', ...args], {
-      cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' }, encoding: 'utf8',
+      cwd: dir,
+      env: { ...process.env, SBL_SKIP_INSTALL: '1', ...extraEnv },
+      encoding: 'utf8',
     });
     return { out, err: '', status: 0 };
   } catch (err) {
@@ -91,5 +93,24 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
     expect(status).toBe(1);
     expect(err).toContain('package.json');
     expect(err).toMatch(/not valid JSON/i);
+  });
+
+  it('warns about a blocking PowerShell policy without changing the exit code', () => {
+    const { out, status } = runInit(dir, ['--pm', 'npm', '--no-dashboard', '--harness', 'opencode'], {
+      SBL_FAKE_POLICY: 'Restricted',
+    });
+    expect(status).toBe(0);
+    expect(out).toContain('PowerShell execution policy "Restricted"');
+    expect(out).toContain('Set-ExecutionPolicy -Scope CurrentUser RemoteSigned');
+  });
+
+  it('shows the policy warning in dry-run mode too', () => {
+    const { out, status } = runInit(
+      dir,
+      ['--pm', 'npm', '--no-dashboard', '--harness', 'opencode', '--dry-run'],
+      { SBL_FAKE_POLICY: 'Restricted' },
+    );
+    expect(status).toBe(0);
+    expect(out).toContain('PowerShell execution policy "Restricted"');
   });
 });
