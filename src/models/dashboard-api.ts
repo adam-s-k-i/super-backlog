@@ -1,5 +1,6 @@
 // src/models/dashboard-api.ts
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import process from 'node:process';
 import { loadConfig } from './config.js';
 import { discoverModels } from './discovery.js';
 
