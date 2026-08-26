@@ -3,6 +3,31 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.2.0...v0.3.0) (2026-08-26)
+
+
+### Features
+
+* **dashboard:** collector v2 - deps, activity, glossary (TASK-15) ([2e1ef25](https://github.com/adam-s-k-i/super-backlog/commit/2e1ef25d8e0d177ac266d556226d86f9a0be0f36))
+* **dashboard:** glossary tooltips, detail panel, filter wiring (TASK-15) ([75c4646](https://github.com/adam-s-k-i/super-backlog/commit/75c4646917d5caff810093dd7d110f024222dcf3))
+* **dashboard:** layered dependency graph with hover/click (TASK-15) ([a4e091e](https://github.com/adam-s-k-i/super-backlog/commit/a4e091e48e497c241f2063c03aa2db17ac4ac70b))
+* **dashboard:** post-commit freshness hook + regen entry (TASK-15) ([f890295](https://github.com/adam-s-k-i/super-backlog/commit/f890295835ad6618452028f3989b3ec39c1a032e))
+* **dashboard:** svg donut, bars, sparkline, stepper (TASK-15) ([6b26202](https://github.com/adam-s-k-i/super-backlog/commit/6b2620258503de4bde3d3b17614279c9f1475932))
+* **dashboard:** v2 layout skeleton in HTS design language (TASK-15) ([4454b7b](https://github.com/adam-s-k-i/super-backlog/commit/4454b7bc927a85b68f5d95dd06dc804a6f4f2f7c))
+* **pages:** 800px centered logo, hero-equivalent heading typography ([3dc9e0d](https://github.com/adam-s-k-i/super-backlog/commit/3dc9e0d40c26fbaccf377644256d6a2a495c4e94))
+* **pages:** brand color from logo B ([#9740](https://github.com/adam-s-k-i/super-backlog/issues/9740)F8) + hero gradient ([5769847](https://github.com/adam-s-k-i/super-backlog/commit/5769847acdc79ccb37998a72b47a4ea14eecfe43))
+* **pages:** hero logo and intro video section on landing page ([7001178](https://github.com/adam-s-k-i/super-backlog/commit/700117812327e59ef26c1f3e3dc1f8fe0bf5b79e))
+* **pages:** logo above h1 on landing, drop hero layout and intro video ([3e3cbe6](https://github.com/adam-s-k-i/super-backlog/commit/3e3cbe60c824b969ac5a0044166363c358354bf8))
+* **windows:** detect PowerShell execution policy, warn on init, add sbl doctor ([b3c0bd4](https://github.com/adam-s-k-i/super-backlog/commit/b3c0bd47b01ab49e3551a11b714caa2cbf1388e8))
+
+
+### Bug Fixes
+
+* **dashboard:** cycle-correct inline layering + v2 README screenshot ([e1ebc06](https://github.com/adam-s-k-i/super-backlog/commit/e1ebc06f9a9166321a5cc02d36ed83187b377bad))
+* **doctor:** respect SBL_FAKE_POLICY seam on non-win32 platforms ([92b52d7](https://github.com/adam-s-k-i/super-backlog/commit/92b52d7d1ad04df2d27008656919cbb38849aafa))
+* **pages:** set base and title so assets resolve under /super-backlog/; drop intro video link from README ([bd119ed](https://github.com/adam-s-k-i/super-backlog/commit/bd119edf7118d2882f7bdc2260095807fc960f2d))
+* **qa:** pin weekly matrix to node 22, track node 24 regression as TASK-16 ([e8f137f](https://github.com/adam-s-k-i/super-backlog/commit/e8f137f5866a2b8f995356ae87ab7b7bf7108ef7))
+
 ## [0.2.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.1.0...v0.2.0) (2026-08-26)
 
 
