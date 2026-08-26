@@ -13,7 +13,7 @@ jobs:
       contents: write
       pull-requests: write
     outputs:
-      releases_created: ${{ steps.rp.outputs.releases_created }}
+      releases_created: ${{ steps.rp.outputs.releases_created || steps.check.outputs.releases_created }}
     steps:
       - id: rp
         uses: google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169500e7d3b4ee # v4.4.0
@@ -21,6 +21,18 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/release-please-config.json
           manifest-file: .release-please-manifest.json
+      - id: check
+        if: always() && steps.rp.conclusion == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          if gh release view "$TAG" --json tagName > /dev/null 2>&1; then
+            echo "releases_created=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "releases_created=false" >> "$GITHUB_OUTPUT"
+          fi
 
   Publish:
     needs: Release-please
