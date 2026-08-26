@@ -30,6 +30,6 @@
     "backlog.md": "^1.50.1",
     "super-backlog": "file:.",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0"
+    "vitest": "^3.2.6"
   }
 }
