@@ -8,8 +8,9 @@ import { PIPELINE_PHASES, renderDashboard } from '../../src/dashboard/render.js'
 import type { DashboardActivityBucket, DashboardData } from '../../src/dashboard/data.js';
 
 function buckets(nonZero: Record<number, number>): DashboardActivityBucket[] {
+  const start = Date.UTC(2026, 6, 28); // 2026-07-28
   return Array.from({ length: 30 }, (_, i) => ({
-    date: `2026-07-${String(28 + i).padStart(2, '0')}`,
+    date: new Date(start + i * 86_400_000).toISOString().slice(0, 10),
     count: nonZero[i] ?? 0,
   }));
 }

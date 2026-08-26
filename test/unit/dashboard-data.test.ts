@@ -208,7 +208,8 @@ const ACTIVITY_JSON =
   '{"id":"T2","title":"b","status":"To Do","updated_at":"2026-08-01"},' +
   '{"id":"T3","title":"c","status":"Done","created_at":"2026-07-28"},' +
   '{"id":"T4","title":"d","status":"To Do"},' +
-  '{"id":"T5","title":"e","status":"In Progress","updated_at":"2026-08-26"}' +
+  '{"id":"T5","title":"e","status":"In Progress","updated_at":"2026-08-26"},' +
+  '{"id":"T6","title":"f","status":"To Do","updated":"2026-08-02"}' +
   ']}';
 
 describe('collector v2: deps', () => {
@@ -251,13 +252,14 @@ describe('collector v2: activity', () => {
     expect(data.activity).toHaveLength(30);
     expect(data.activity[0]).toEqual({ date: '2026-07-28', count: 1 });
     expect(data.activity[4]).toEqual({ date: '2026-08-01', count: 1 });
+    expect(data.activity[5]).toEqual({ date: '2026-08-02', count: 1 }); // legacy `updated` alias
     expect(data.activity[29]).toEqual({ date: '2026-08-26', count: 3 });
     for (let i = 1; i < 30; i++) {
       expect(data.activity[i]?.date).not.toBe(data.activity[i - 1]?.date);
     }
     // every non-event day sums to zero; total counts match task count
     const total = data.activity.reduce((sum, b) => sum + b.count, 0);
-    expect(total).toBe(5);
+    expect(total).toBe(6);
   });
 
   it('defaults today to the real current date when not injected', () => {
