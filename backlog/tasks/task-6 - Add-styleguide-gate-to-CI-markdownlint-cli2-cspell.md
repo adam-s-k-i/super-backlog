@@ -1,11 +1,11 @@
 ---
 id: TASK-6
 title: Add styleguide gate to CI (markdownlint-cli2 + cspell)
-status: In Progress
+status: Done
 assignee:
   - '@ox-alpha'
 created_date: '2026-08-26 02:02'
-updated_date: '2026-08-26 04:14'
+updated_date: '2026-08-26 04:49'
 labels:
   - ci
 dependencies: []
