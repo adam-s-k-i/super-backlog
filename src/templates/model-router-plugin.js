@@ -1,14 +1,14 @@
 // src/templates/model-router-plugin.js
-const { loadConfig } = require('../../models/config.js');
-const { resolveTier } = require('../../models/resolve.js');
-
-const TIER_BY_AGENT = {
-  'sbl-worker': 'workhorse',
-  'sbl-worker-cheap': 'budget',
-  'explore': 'budget',
-};
-
 module.exports = async () => {
+  const { loadConfig } = await import('super-backlog/dist/models/config.js');
+  const { resolveTier } = await import('super-backlog/dist/models/resolve.js');
+
+  const TIER_BY_AGENT = {
+    'sbl-worker': 'workhorse',
+    'sbl-worker-cheap': 'budget',
+    'explore': 'budget',
+  };
+
   return {
     'chat.params': async (input, output) => {
       const cfg = loadConfig(input.cwd ?? process.cwd());
