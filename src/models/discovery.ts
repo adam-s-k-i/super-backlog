@@ -44,14 +44,18 @@ export function rankTiers(available: string[]): Pick<FamilyTiers, 'workhorse' | 
 }
 
 export async function discoverModels(cwd: string): Promise<ResolvedTiers | null> {
-  const result = runCapture('opencode', ['models'], cwd);
-  if (result.status !== 0) return null;
-  const available = parseOpenCodeModels(result.stdout);
-  if (available.length === 0) return null;
-  const ranked = rankTiers(available);
-  return {
-    discoveredAt: new Date().toISOString(),
-    workhorse: ranked.workhorse,
-    budget: ranked.budget,
-  };
+  try {
+    const result = runCapture('opencode', ['models'], cwd);
+    if (result.status !== 0) return null;
+    const available = parseOpenCodeModels(result.stdout);
+    if (available.length === 0) return null;
+    const ranked = rankTiers(available);
+    return {
+      discoveredAt: new Date().toISOString(),
+      workhorse: ranked.workhorse,
+      budget: ranked.budget,
+    };
+  } catch {
+    return null;
+  }
 }
