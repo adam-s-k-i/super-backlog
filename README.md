@@ -49,6 +49,8 @@ Commands: `sbl init` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl
 
 ![Project Dashboard](docs/assets/dashboard.png)
 
+![Super Backlog](docs/assets/super-backlog-logo-all.jpg)
+
 ## Uninstall guarantee
 
 super-backlog uninstall removes only provably owned artifacts and keeps your Backlog task data unless you pass --with-backlog. Every removal decision is reported line by line as removed / kept / skipped; files whose ownership cannot be proven are left untouched.
