@@ -248,9 +248,11 @@ export async function executeActions(
         break;
       case 'install-model-router': {
         const { installOpenCodeAdapter } = await import('../models/opencode.js');
+        const { installClaudeAdapter } = await import('../models/claude.js');
         writeRouterConfig(cwd, action.enabled);
         if (action.enabled) {
           installOpenCodeAdapter(cwd);
+          installClaudeAdapter(cwd);
         }
         applied++;
         break;
