@@ -25,5 +25,4 @@ jobs:
   Publish:
     needs: Release-please
     if: needs.Release-please.outputs.releases_created == 'true'
-    permissions: {}
     uses: ./.github/workflows/publish.yml
