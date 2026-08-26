@@ -148,6 +148,55 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     color: var(--dim); font-size: .8rem;
   }
 
+  /* ---------- Donut ---------- */
+  .donut-wrap { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+  .donut-total { font-family: var(--mono); font-size: 2rem; font-weight: 700; fill: var(--text); }
+  .donut-caption { font-family: var(--mono); font-size: .6rem; letter-spacing: 2px; fill: var(--dim); }
+  .donut .seg { cursor: pointer; transition: opacity .15s ease; }
+  .donut .seg:hover, .donut .seg.hot { opacity: .82; }
+  .legend-list { display: grid; gap: 6px; font-size: .84rem; color: var(--muted); list-style: none; margin: 0; padding: 0; }
+  .legend-list li { display: flex; align-items: center; gap: 9px; cursor: default; }
+  .legend-list li:hover { color: var(--text); }
+  .legend-list .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- Milestone bars ---------- */
+  .bars text { font-family: var(--mono); }
+  .bar-label { fill: var(--text); font-size: 12.5px; }
+  .bar-val { fill: var(--muted); font-size: 11px; }
+  .bar-track { fill: var(--surface-2); stroke: var(--line); }
+  .bar-fill { fill: var(--accent); }
+  .bar-fill.complete { fill: var(--ok); }
+
+  /* ---------- Sparkline ---------- */
+  .spark-line {
+    fill: none; stroke: var(--accent); stroke-width: 2;
+    stroke-linejoin: round; stroke-linecap: round;
+    filter: drop-shadow(0 0 6px rgba(92,200,255,.4));
+  }
+  .spark-area { fill: rgba(92,200,255,.09); stroke: none; }
+  .spark-dot { fill: var(--bg); stroke: var(--dim); stroke-width: 1; }
+  .spark-dot.nonzero { fill: var(--accent); stroke: var(--accent); }
+  .spark-axis { fill: var(--dim); font-size: 10px; font-family: var(--mono); }
+
+  /* ---------- Pipeline stepper ---------- */
+  .stepper { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); margin: 4px 0 8px; }
+  .step { position: relative; min-width: 0; padding: 0 3px; text-align: center; }
+  .step::before {
+    content: ""; position: absolute; top: 15px; left: -50%; width: 100%; height: 2px;
+    background: var(--line-strong); z-index: 0;
+  }
+  .step:first-child::before { display: none; }
+  .step-num {
+    position: relative; z-index: 1; width: 32px; height: 32px; margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-family: var(--mono); font-size: .82rem; font-weight: 700;
+    background: var(--surface-2); border: 2px solid var(--line-strong); color: var(--muted);
+  }
+  .step.gate .step-num { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); box-shadow: 0 0 14px rgba(255,180,84,.25); }
+  .step-label { font-size: .63rem; color: var(--muted); line-height: 1.35; }
+  .step-label b { display: block; color: var(--text); font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step.gate .step-label b { color: var(--warn); }
+
   @media (max-width:900px) {
     .layout { grid-template-columns: 1fr; }
     .sbl-side {
@@ -260,6 +309,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 
 <script type="application/json" id="sbl-data">{"project":{"name":"demo-project","description":"A demo \\u003cb>project\\u003c/b>"},"generatedAt":"2026-08-26T12:00:00.000Z","kitVersion":"0.1.0","statuses":[{"status":"Done","count":1},{"status":"In Progress","count":2},{"status":"To Do","count":1}],"milestones":[{"name":"M1","done":1,"total":2},{"name":"M2","done":0,"total":2}],"tasks":[{"id":"T-1","title":"Ship auth flow","status":"Done","priority":"high","assignee":"adam","updated":"2026-08-20","milestone":"M1","description":"Handles \\u003cscript>alert(1)\\u003c/script> safely","acs":[{"text":"login works","checked":true}]},{"id":"T-2","title":"Add OAuth refresh","status":"In Progress","priority":"medium","assignee":"kim","updated":"2026-08-21","milestone":"M1","acs":[{"text":"token rotation","checked":true},{"text":"docs updated","checked":false}]},{"id":"T-3","title":"Write README","status":"To Do","priority":"low","milestone":"M2","acs":[]},{"id":"T-4","title":"Polish UI","status":"In Progress","milestone":"M2","updated":"2026-08-22","acs":[{"text":"dark mode","checked":false}]}],"deps":[{"from":"T-2","to":"T-1"},{"from":"T-4","to":"T-2"}],"activity":[{"date":"2026-07-28","count":1},{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":2},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":1}],"glossary":[{"term":"AC","definition":"Acceptance criterion."},{"term":"Review Gate","definition":"Human checkpoint before proceeding."}],"source":"backlog-json"}</script>
 <script type="application/json" id="sbl-glossary">[{"term":"AC","definition":"Acceptance criterion."},{"term":"Review Gate","definition":"Human checkpoint before proceeding."}]</script>
+<script type="application/json" id="sbl-phases">[{"n":1,"name":"Idea","gate":"User states a need; capture it before doing anything else"},{"n":2,"name":"Brainstorming","gate":"Explore intent, requirements and design before any creative work"},{"n":3,"name":"Design gate","gate":"Human approves the design document"},{"n":4,"name":"Spec-to-backlog","gate":"Decompose the approved design into reviewed tasks with acceptance criteria"},{"n":5,"name":"Review gate","gate":"Human reviews specs and acceptance criteria before any code exists"},{"n":6,"name":"Plan-before-code","gate":"A written implementation plan is approved by the human"},{"n":7,"name":"TDD implementation","gate":"Failing test first, then code; one task per session/PR"},{"n":8,"name":"Verification & final summary","gate":"Run tests/lint/typecheck; verification evidence before success claims"},{"n":9,"name":"Merge & archive","gate":"Merge the branch, then close/archive the task via the backlog CLI"}]</script>
 <script id="sbl-app">
 (function () {
   'use strict';
@@ -278,12 +328,17 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   }
 
   var KEYS = ['id', 'title', 'status', 'milestone', 'priority', 'assignee', 'updated'];
-  var state = { key: 'id', dir: 1, query: '' };
+  var state = { key: 'id', dir: 1, query: '', status: null, hoverStatus: null };
   function field(task, key) {
     var v = task[key];
     return v === undefined || v === null ? '' : String(v);
   }
+  function activeStatus() {
+    return state.hoverStatus || state.status;
+  }
   function matches(task) {
+    var eff = activeStatus();
+    if (eff && field(task, 'status').toLowerCase() !== eff.toLowerCase()) return false;
     if (!state.query) return true;
     var hit = KEYS.some(function (k) {
       return field(task, k).toLowerCase().indexOf(state.query) !== -1;
@@ -367,6 +422,197 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     renderTasks();
   });
   renderTasks();
+
+  /* ---------- Shared diagram helpers ---------- */
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var TONE_VAR = { ok: 'var(--ok)', accent: 'var(--accent)', warn: 'var(--warn)', danger: 'var(--danger)', dim: 'var(--dim)' };
+  function svgEl(tag, attrs) {
+    var node = document.createElementNS(SVGNS, tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    }
+    return node;
+  }
+  function attachTitle(node, text) {
+    var t = svgEl('title');
+    t.textContent = text;
+    node.appendChild(t);
+    return node;
+  }
+  function toneOf(status) {
+    var s = String(status || '').toLowerCase();
+    if (s === 'done' || s === 'complete' || s === 'completed') return 'ok';
+    if (s.indexOf('progress') !== -1 || s === 'review') return 'accent';
+    if (s.indexOf('block') !== -1 || s === 'rejected') return 'danger';
+    if (s.indexOf('hold') !== -1 || s.indexOf('wait') !== -1 || s === 'draft') return 'warn';
+    return 'dim';
+  }
+  function setHoverStatus(status) {
+    state.hoverStatus = status || null;
+    renderTasks();
+  }
+
+  function renderDonut(mount, statuses) {
+    mount.textContent = '';
+    var total = statuses.reduce(function (sum, s) { return sum + s.count; }, 0);
+    var wrap = el('div', 'donut-wrap');
+    var size = 220, r = 76, cx = size / 2, cy = size / 2, sw = 34;
+    var circ = 2 * Math.PI * r;
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + size + ' ' + size, width: '220', height: '220',
+      'class': 'donut', role: 'img', 'aria-label': 'Tasks per status'
+    });
+    svg.appendChild(svgEl('circle', { cx: cx, cy: cy, r: r, fill: 'none', stroke: 'var(--surface-2)', 'stroke-width': sw }));
+    var offset = 0;
+    statuses.forEach(function (s) {
+      if (total <= 0 || s.count <= 0) return;
+      var frac = s.count / total;
+      var seg = svgEl('circle', {
+        cx: cx, cy: cy, r: r, fill: 'none',
+        'class': 'seg', 'data-status': s.status,
+        stroke: TONE_VAR[toneOf(s.status)], 'stroke-width': sw,
+        'stroke-dasharray': (frac * circ).toFixed(2) + ' ' + (circ - frac * circ).toFixed(2),
+        'stroke-dashoffset': (-offset * circ).toFixed(2),
+        transform: 'rotate(-90 ' + cx + ' ' + cy + ')'
+      });
+      attachTitle(seg, s.status + ': ' + s.count);
+      seg.addEventListener('mouseenter', function () { setHoverStatus(s.status); });
+      seg.addEventListener('mouseleave', function () { setHoverStatus(null); });
+      svg.appendChild(seg);
+      offset += frac;
+    });
+    var num = svgEl('text', { x: cx, y: cy - 1, 'text-anchor': 'middle', 'class': 'donut-total' });
+    num.textContent = String(total);
+    var cap = svgEl('text', { x: cx, y: cy + 19, 'text-anchor': 'middle', 'class': 'donut-caption' });
+    cap.textContent = 'TASKS';
+    svg.appendChild(num);
+    svg.appendChild(cap);
+    wrap.appendChild(svg);
+    var list = el('ul', 'legend-list');
+    statuses.forEach(function (s) {
+      var li = el('li');
+      li.setAttribute('data-status', s.status);
+      var swatch = el('span', 'swatch');
+      swatch.style.background = TONE_VAR[toneOf(s.status)];
+      li.appendChild(swatch);
+      li.appendChild(el('span', '', s.status + ' (' + s.count + ')'));
+      li.addEventListener('mouseenter', function () { setHoverStatus(s.status); });
+      li.addEventListener('mouseleave', function () { setHoverStatus(null); });
+      list.appendChild(li);
+    });
+    wrap.appendChild(list);
+    mount.appendChild(wrap);
+  }
+
+  function renderBars(mount, milestones) {
+    mount.textContent = '';
+    if (milestones.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No milestones defined.'));
+      return;
+    }
+    var labelW = 170, valW = 56, padX = 12, rowH = 42, trackW = 420;
+    var w = labelW + trackW + valW + padX * 2;
+    var h = milestones.length * rowH + 8;
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'bars',
+      role: 'img', 'aria-label': 'Progress per milestone'
+    });
+    milestones.forEach(function (m, i) {
+      var g = attachTitle(svgEl('g'), m.name + ': ' + m.done + '/' + m.total + ' done');
+      var y = i * rowH + 22;
+      var lbl = svgEl('text', { x: labelW - 12, y: y, 'text-anchor': 'end', 'class': 'bar-label' });
+      lbl.textContent = m.name;
+      g.appendChild(lbl);
+      g.appendChild(svgEl('rect', { x: labelW, y: y - 11, width: trackW, height: 13, rx: 6.5, 'class': 'bar-track' }));
+      var frac = m.total > 0 ? m.done / m.total : 0;
+      if (frac > 0) {
+        g.appendChild(svgEl('rect', {
+          x: labelW, y: y - 11, width: Math.max(trackW * frac, 10), height: 13, rx: 6.5,
+          'class': frac >= 1 ? 'bar-fill complete' : 'bar-fill'
+        }));
+      }
+      var val = svgEl('text', { x: labelW + trackW + 14, y: y, 'class': 'bar-val' });
+      val.textContent = m.done + '/' + m.total;
+      g.appendChild(val);
+      svg.appendChild(g);
+    });
+    mount.appendChild(svg);
+  }
+
+  function renderSparkline(mount, activity) {
+    mount.textContent = '';
+    if (!activity || activity.length < 2) {
+      mount.appendChild(el('p', 'hint', 'No activity data.'));
+      return;
+    }
+    var w = 780, h = 150, padL = 14, padR = 14, padT = 18, padB = 26;
+    var max = 1;
+    activity.forEach(function (b) { if (b.count > max) max = b.count; });
+    function px(i) { return padL + (w - padL - padR) * i / (activity.length - 1); }
+    function py(c) { return padT + (h - padT - padB) * (1 - c / max); }
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'spark',
+      role: 'img', 'aria-label': 'Task activity over the last 30 days'
+    });
+    var coords = activity.map(function (b, i) {
+      return px(i).toFixed(1) + ',' + py(b.count).toFixed(1);
+    });
+    var areaD = 'M' + px(0).toFixed(1) + ',' + (h - padB) +
+      ' L ' + coords.join(' L ') +
+      ' L ' + px(activity.length - 1).toFixed(1) + ',' + (h - padB) + ' Z';
+    svg.appendChild(svgEl('path', { d: areaD, 'class': 'spark-area' }));
+    svg.appendChild(svgEl('polyline', { points: coords.join(' '), 'class': 'spark-line' }));
+    activity.forEach(function (b, i) {
+      var dot = svgEl('circle', {
+        cx: px(i).toFixed(1), cy: py(b.count).toFixed(1),
+        r: b.count > 0 ? 3.5 : 2,
+        'class': b.count > 0 ? 'spark-dot nonzero' : 'spark-dot'
+      });
+      attachTitle(dot, b.date + ': ' + b.count);
+      svg.appendChild(dot);
+    });
+    var first = svgEl('text', { x: padL, y: h - 7, 'class': 'spark-axis' });
+    first.textContent = activity[0].date;
+    var last = svgEl('text', { x: w - padR, y: h - 7, 'text-anchor': 'end', 'class': 'spark-axis' });
+    last.textContent = activity[activity.length - 1].date;
+    svg.appendChild(first);
+    svg.appendChild(last);
+    mount.appendChild(svg);
+  }
+
+  function renderStepper(mount, phases) {
+    mount.textContent = '';
+    if (!phases || phases.length === 0) {
+      mount.appendChild(el('p', 'hint', 'Pipeline unavailable.'));
+      return;
+    }
+    var wrap = el('div', 'stepper');
+    phases.forEach(function (p) {
+      var step = el('div', 'step' + (/gate/i.test(String(p.name)) ? ' gate' : ''));
+      step.setAttribute('data-phase', p.n);
+      step.appendChild(el('div', 'step-num', String(p.n)));
+      var lab = el('div', 'step-label');
+      var b = document.createElement('b');
+      b.textContent = p.name;
+      lab.appendChild(b);
+      lab.appendChild(document.createTextNode(p.gate));
+      step.appendChild(lab);
+      wrap.appendChild(step);
+    });
+    mount.appendChild(wrap);
+  }
+
+  var phases = [];
+  try {
+    var phasesNode = document.getElementById('sbl-phases');
+    if (phasesNode) phases = JSON.parse(phasesNode.textContent);
+  } catch (e) {
+    phases = [];
+  }
+  if ($('#donut')) renderDonut($('#donut'), data.statuses);
+  if ($('#bars')) renderBars($('#bars'), data.milestones);
+  if ($('#stepper')) renderStepper($('#stepper'), phases);
+  if ($('#spark')) renderSparkline($('#spark'), data.activity);
 })();
 </script>
 </body>

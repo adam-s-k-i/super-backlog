@@ -217,6 +217,60 @@ describe('inline app budget', () => {
   });
 });
 
+function appScript(): string {
+  const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
+  return m?.[1] ?? '';
+}
+
+describe('client diagrams: donut, bars, sparkline, stepper', () => {
+  it('defines the four global SVG builder functions', () => {
+    const app = appScript();
+    for (const fn of ['renderDonut(', 'renderBars(', 'renderSparkline(', 'renderStepper(']) {
+      expect(app).toContain(`function ${fn}`);
+    }
+  });
+
+  it('builds SVG nodes with createElementNS and donut segments via stroke-dasharray', () => {
+    const app = appScript();
+    expect(app).toContain('createElementNS');
+    expect(app).toContain('stroke-dasharray');
+    expect(app).toContain('stroke-dashoffset');
+  });
+
+  it('donut shows the center total in mono at 2rem and hover-filters by status', () => {
+    const app = appScript();
+    expect(app).toMatch(/'class': 'donut-total'/);
+    expect(html).toMatch(/\.donut-total[^}]*font-size:\s*2rem/);
+    expect(app).toContain('hoverStatus');
+  });
+
+  it('sparkline emits polyline + area with a <title> tooltip per point', () => {
+    const app = appScript();
+    expect(app).toContain('polyline');
+    expect(app).toContain("svgEl('title'");
+    expect(app).toMatch(/b\.date\s*\+\s*': '\s*\+\s*b\.count/);
+  });
+
+  it('stepper renders all nine phases from the sbl-phases island', () => {
+    const island = islandOf(html, 'sbl-phases');
+    expect(island).toBeTruthy();
+    const phases = JSON.parse(island) as Array<Record<string, unknown>>;
+    expect(phases).toHaveLength(9);
+    expect(phases.map((p) => p['name'])).toEqual(PIPELINE_PHASES.map((p) => p.name));
+    const app = appScript();
+    expect(app).toContain("getElementById('sbl-phases')");
+    expect(app).toContain('step-num');
+    expect(app).toContain('step-label');
+  });
+
+  it('bootstraps every diagram into its section mount', () => {
+    const app = appScript();
+    for (const mount of ['donut', 'bars', 'stepper', 'spark']) {
+      expect(app).toContain(`'${mount}'`);
+    }
+  });
+});
+
 describe('PIPELINE_PHASES', () => {
   it('has exactly nine phases in workflow order', () => {
     expect(PIPELINE_PHASES).toHaveLength(9);

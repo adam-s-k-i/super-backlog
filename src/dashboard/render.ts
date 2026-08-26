@@ -81,5 +81,6 @@ export function renderDashboard(data: DashboardData): string {
     .replaceAll('__KIT_VERSION__', () => esc(data.kitVersion))
     .replaceAll('__STATUS_PILLS__', () => statusPillsHtml(data.statuses))
     .replaceAll('__SBL_DATA_JSON__', () => jsonIsland(data))
-    .replaceAll('__SBL_GLOSSARY_JSON__', () => jsonIsland(data.glossary));
+    .replaceAll('__SBL_GLOSSARY_JSON__', () => jsonIsland(data.glossary))
+    .replaceAll('__SBL_PHASES_JSON__', () => jsonIsland(PIPELINE_PHASES));
 }
