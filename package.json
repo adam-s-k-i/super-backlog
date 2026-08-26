@@ -3,6 +3,10 @@
   "version": "0.3.0",
   "description": "One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/adam-s-k-i/super-backlog"
+  },
   "type": "module",
   "engines": {
     "node": ">=20"
