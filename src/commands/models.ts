@@ -5,7 +5,7 @@ import { writeRouterConfig } from '../models/install.js';
 import type { ParsedArgs } from './init.js';
 
 export async function runModels(cwd: string, args: ParsedArgs): Promise<number> {
-  const sub = args.positionals[1] ?? 'show';
+  const sub = args.positionals[0] ?? 'show';
   switch (sub) {
     case 'show': {
       const cfg = loadConfig(cwd);

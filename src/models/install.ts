@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { atomicWrite } from '../lib/atomic.js';
-import { DEFAULT_CONFIG } from './defaults.js';
+import { loadConfig } from './config.js';
 import type { RouterConfig } from './types.js';
 
 const CONFIG_DIR = '.super-backlog';
@@ -14,7 +14,8 @@ export function writeRouterConfig(cwd: string, enabled: boolean): boolean {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true });
   }
-  const next: RouterConfig = { ...DEFAULT_CONFIG, enabled };
+  const current = loadConfig(cwd);
+  const next: RouterConfig = { ...current, enabled };
   atomicWrite(path, `${JSON.stringify(next, null, 2)}\n`);
   return true;
 }
