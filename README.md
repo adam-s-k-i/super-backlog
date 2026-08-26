@@ -39,13 +39,18 @@ sbl dashboard --serve         # live Project Dashboard on http://localhost:6428
 | `.claude/skills/<skill>/SKILL.md` | same templates | fingerprint header line |
 | `package.json` scripts | `tasks` → `backlog task list`, `board` → `backlog board`, `browser` → `backlog browser`, `dashboard` → `super-backlog dashboard` (never overwrite existing values) | merged, add-only-if-absent |
 | `dashboard.html` | generated Project Dashboard | regenerated wholesale |
+| `.git/hooks/post-commit` | dashboard freshness block — regenerates `dashboard.html` after commits that touch `backlog/` (default; opt out with `--no-refresh-hook`) | appended marker block |
 | `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
 
 Commands: `sbl init` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--serve] [--port <n>] [--no-open] [--out <file>]`. See `sbl help` for every flag.
 
 ## Project Dashboard
 
-`sbl dashboard` generates a single self-contained `dashboard.html` from your Backlog data: metric cards per status, milestone progress bars, an expandable task table, and a workflow cheat sheet. No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `--serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428 by default.
+`sbl dashboard` generates a single self-contained `dashboard.html`: a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table with a click-in detail panel per task), Feature Cycle (pipeline stepper), Activity (30-day sparkline), and Decisions & Docs. A layered dependency graph maps task `depends-on` relations (cycle- and dangling-ref-tolerant): hover highlights edges, click opens the task. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `--serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428 by default.
+
+### Keeping it fresh
+
+By default `init` installs a `post-commit` hook block that regenerates `dashboard.html` whenever the commit touched `backlog/`. The block is marker-delimited, so it composes with the guard hook and foreign hook content, `uninstall` removes exactly that block, and `update` refreshes it. It never blocks a commit: failures print a one-line stderr note and the exit status stays 0. Opt out with `--no-refresh-hook`.
 
 ![Project Dashboard](docs/assets/dashboard.png)
 

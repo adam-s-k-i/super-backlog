@@ -6,131 +6,319 @@
 <title>super-backlog &middot; Project Dashboard</title>
 <style>
   :root {
-    --bg: #f6f7f9;
-    --surface: #ffffff;
-    --text: #1a202c;
-    --muted: #5f6b7a;
-    --border: #e2e8f0;
-    --accent: #2563eb;
-    --accent-soft: #dbeafe;
-    --ok: #16a34a;
-    --radius: 10px;
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 24px;
-    --space-6: 32px;
+    --bg:#0a0e16;
+    --bg-glow-1: rgba(92,200,255,.06);
+    --bg-glow-2: rgba(62,207,142,.04);
+    --surface:#111826;
+    --surface-2:#0d1320;
+    --line:#1e293c;
+    --line-strong:#2c3b57;
+    --text:#e8edf6;
+    --muted:#8fa0ba;
+    --dim:#5d6d88;
+    --accent:#5cc8ff;
+    --accent-dim:#234257;
+    --ok:#3ecf8e;
+    --ok-bg:#12291e;
+    --warn:#ffb454;
+    --warn-bg:#33260f;
+    --danger:#ff7a7a;
+    --danger-bg:#331718;
+    --mono:"Cascadia Code",Consolas,"Courier New",monospace;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0f1216;
-      --surface: #171c23;
-      --text: #e6e9ee;
-      --muted: #98a2b3;
-      --border: #262d38;
-      --accent: #60a5fa;
-      --accent-soft: #1e2937;
-      --ok: #4ade80;
-    }
-  }
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
   body {
-    margin: 0;
-    background: var(--bg);
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background:
+      radial-gradient(1100px 500px at 85% -10%, var(--bg-glow-1), transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, var(--bg-glow-2), transparent 55%),
+      var(--bg);
     color: var(--text);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    font-size: 15px;
     line-height: 1.55;
   }
-  main { max-width: 1100px; margin: 0 auto; padding: var(--space-6) var(--space-5) var(--space-6); }
-  header { border-bottom: 1px solid var(--border); background: var(--surface); }
-  .head-inner { max-width: 1100px; margin: 0 auto; padding: var(--space-5); }
-  h1 { margin: 0 0 var(--space-1); font-size: 24px; letter-spacing: -0.02em; }
-  .lede { margin: 0; color: var(--muted); }
-  .meta { margin: var(--space-2) 0 0; color: var(--muted); font-size: 13px; }
-  h2 { margin: 0 0 var(--space-4); font-size: 17px; letter-spacing: -0.01em; }
-  section { margin-top: var(--space-6); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--space-4); }
-  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4) var(--space-5); }
-  .card-num { font-size: 28px; font-weight: 650; line-height: 1.2; }
-  .card-label { color: var(--muted); font-size: 13px; margin-top: var(--space-1); }
-  .quick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-top: var(--space-5); }
-  .q-label { color: var(--muted); font-size: 13px; }
-  code {
-    background: var(--accent-soft); color: var(--accent); border-radius: 6px;
-    padding: var(--space-1) var(--space-2); font-size: 13px;
+
+  /* ---------- Layout: sticky sidebar + main ---------- */
+  .layout { display: grid; grid-template-columns: 232px minmax(0,1fr); max-width: 1300px; margin: 0 auto; }
+  .sbl-side {
+    position: sticky; top: 0; align-self: start;
+    height: 100vh; overflow-y: auto;
+    padding: 28px 18px 24px 24px;
+    border-right: 1px solid var(--line);
   }
-  .milestone { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-4); margin-bottom: var(--space-3); }
-  .ms-head { display: flex; justify-content: space-between; margin-bottom: var(--space-2); }
-  .ms-name { font-weight: 600; }
-  .ms-count { color: var(--muted); font-size: 13px; }
-  .bar { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
-  .bar-fill { height: 100%; background: var(--ok); border-radius: 999px; transition: width 200ms ease; }
-  .toolbar { display: flex; justify-content: flex-end; margin-bottom: var(--space-3); }
+  main { padding: 34px 38px 48px 36px; min-width: 0; }
+
+  /* ---------- Sidebar ---------- */
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .brand-glyph { color: var(--accent); font-size: .8rem; line-height: 1; text-shadow: 0 0 12px rgba(92,200,255,.6); }
+  .brand b { font-size: .98rem; letter-spacing: .4px; overflow-wrap: anywhere; }
+  .kicker {
+    color: var(--dim); font-size: .72rem; letter-spacing: 1.6px;
+    text-transform: uppercase; margin-bottom: 22px;
+  }
+  nav a {
+    display: block; padding: 7px 12px; border-radius: 8px;
+    color: var(--muted); text-decoration: none; font-size: .88rem;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  nav a:hover { color: var(--text); background: var(--surface); border-color: var(--line); }
+  nav a .n { color: var(--accent); font-family: var(--mono); font-size: .78rem; margin-right: 8px; }
+  .legend { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .legend h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 10px; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pill {
+    font-family: var(--mono); font-size: .72rem; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--line-strong); color: var(--muted); background: var(--surface-2);
+    white-space: nowrap; cursor: pointer;
+  }
+  .pill .n { color: inherit; font-weight: 700; margin-right: 4px; }
+  .pill[data-tone="ok"] { color: var(--ok); border-color: #2b5642; background: var(--ok-bg); }
+  .pill[data-tone="accent"] { color: var(--accent); border-color: #274a63; background: #10202e; }
+  .pill[data-tone="warn"] { color: var(--warn); border-color: #5c4520; background: var(--warn-bg); }
+  .pill[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
+  .pill:hover { filter: brightness(1.25); }
+  .pill.active { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pill-empty { color: var(--dim); font-size: .78rem; }
+
+  /* ---------- Glossary tooltips ---------- */
+  .term { border-bottom: 1px dotted var(--dim); cursor: help; }
+  .term:hover { color: var(--accent); border-color: var(--accent); }
+  #sbl-tip {
+    position: fixed; z-index: 70; max-width: 340px; padding: 8px 12px;
+    background: rgba(13,19,32,.97); border: 1px solid var(--line-strong); border-radius: 8px;
+    font-size: .78rem; line-height: 1.45; color: var(--text);
+    box-shadow: 0 10px 28px rgba(0,0,0,.5); pointer-events: none;
+  }
+
+  /* ---------- Detail panel ---------- */
+  #sbl-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4,7,12,.55); }
+  #sbl-detail {
+    position: fixed; top: 0; right: 0; z-index: 50; height: 100vh; width: min(400px, 92vw);
+    overflow-y: auto; padding: 22px 24px 32px;
+    background: var(--surface); border-left: 1px solid var(--line-strong);
+    box-shadow: -18px 0 44px rgba(0,0,0,.45);
+    animation: sbl-slide-in .18s ease-out;
+  }
+  @keyframes sbl-slide-in { from { transform: translateX(26px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
+  .status-chip { font-family: var(--mono); font-size: .68rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+  .status-chip[data-tone="ok"] { color: var(--ok); border-color: #2b5642; background: var(--ok-bg); }
+  .status-chip[data-tone="accent"] { color: var(--accent); border-color: #274a63; background: #10202e; }
+  .status-chip[data-tone="warn"] { color: var(--warn); border-color: #5c4520; background: var(--warn-bg); }
+  .status-chip[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
+  .detail-close { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 1.3rem; cursor: pointer; line-height: 1; }
+  .detail-close:hover { color: var(--danger); }
+  .detail-title { font-size: 1.06rem; margin-bottom: 8px; overflow-wrap: anywhere; }
+  #sbl-detail .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
+  #sbl-detail h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
+  .dep-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dep-link {
+    font-family: var(--mono); font-size: .74rem; padding: 2px 10px; border-radius: 999px;
+    border: 1px solid #274a63; background: #10202e; color: var(--accent); cursor: pointer;
+  }
+  .dep-link:hover { filter: brightness(1.25); }
+
+  /* ---------- Sections ---------- */
+  section { margin-top: 44px; scroll-margin-top: 20px; }
+  section:first-of-type { margin-top: 0; }
+  .sec-head {
+    display: flex; align-items: baseline; gap: 16px;
+    border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 20px;
+  }
+  .sec-num {
+    font-family: var(--mono); font-size: 2rem; font-weight: 700;
+    background: linear-gradient(180deg, var(--accent), transparent 130%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sec-head h2 { font-size: 1.15rem; letter-spacing: .5px; }
+  .sec-head .tagline { color: var(--dim); font-size: .82rem; margin-left: auto; text-align: right; }
+  .mount { min-height: 24px; }
+
+  /* ---------- Quick actions ---------- */
+  .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .cmd {
+    font-family: var(--mono); font-size: .84rem; padding: 6px 14px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
+  }
+  .cmd::before { content: "$ "; color: var(--accent); }
+  .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
+  code.inline {
+    font-family: var(--mono); font-size: .85em;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 5px; padding: 1px 6px; white-space: nowrap;
+  }
+
+  /* ---------- Tasks table ---------- */
+  .toolbar { display: flex; justify-content: flex-end; margin-bottom: var(--sp, 12px); }
   input[type="search"] {
-    background: var(--surface); color: var(--text); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: var(--space-2) var(--space-3); min-width: 260px; font: inherit;
+    background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong);
+    border-radius: 999px; padding: 7px 16px; min-width: 260px; font: inherit;
   }
-  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); white-space: nowrap; }
-  th:last-child, td:last-child { border-bottom: none; }
-  tbody tr:last-child td { border-bottom: none; }
-  thead th { color: var(--muted); font-weight: 600; font-size: 12.5px; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+  input[type="search"]:focus { outline: none; border-color: var(--accent-dim); box-shadow: 0 0 0 2px rgba(92,200,255,.15); }
+  .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: .89rem; }
+  th, td { text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--line); vertical-align: top; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  thead th {
+    color: var(--dim); font-weight: 600; font-size: .74rem; letter-spacing: 1.2px;
+    text-transform: uppercase; cursor: pointer; user-select: none;
+    position: sticky; top: 0; background: var(--surface);
+  }
   thead th.sorted-asc::after { content: " \2191"; color: var(--accent); }
   thead th.sorted-desc::after { content: " \2193"; color: var(--accent); }
   .task-row { cursor: pointer; }
-  .task-row:hover td { background: var(--accent-soft); }
-  .task-row.expanded td { border-bottom-color: transparent; }
-  .cell-id { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .task-row:hover td { background: var(--surface-2); }
+  .cell-id { color: var(--accent); font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .cell-title { font-weight: 550; white-space: normal; min-width: 220px; }
-  .task-detail td { white-space: normal; background: var(--accent-soft); border-top: none; }
-  .detail-desc { margin: 0 0 var(--space-2); }
-  .detail-empty { margin: 0; color: var(--muted); }
+  .cell-updated { font-family: var(--mono); color: var(--muted); }
+  .task-detail td { white-space: normal; background: var(--surface-2); border-top: none; }
+  .detail-desc { margin: 0 0 8px; color: var(--muted); }
+  .detail-empty { margin: 0; color: var(--dim); }
   .ac-list { margin: 0; padding: 0; list-style: none; }
-  .ac { display: flex; align-items: baseline; gap: var(--space-2); padding: 2px 0; }
-  .ac.done span { text-decoration: line-through; color: var(--muted); }
-  .phases { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-3); }
-  .phase { display: flex; gap: var(--space-3); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
-  .phase-n {
-    flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
-    display: flex; align-items: center; justify-content: center; font-weight: 650; font-size: 13px;
+  .ac { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; }
+  .ac.done span { text-decoration: line-through; color: var(--dim); }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    margin-top: 48px; padding-top: 14px; border-top: 1px solid var(--line);
+    color: var(--dim); font-size: .8rem;
   }
-  .phase-body { display: flex; flex-direction: column; gap: 2px; }
-  .phase-name { font-weight: 600; font-size: 14px; }
-  .phase-gate { color: var(--muted); font-size: 12.5px; }
-  .empty { color: var(--muted); margin: 0; }
+
+  /* ---------- Donut ---------- */
+  .donut-wrap { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+  .donut-total { font-family: var(--mono); font-size: 2rem; font-weight: 700; fill: var(--text); }
+  .donut-caption { font-family: var(--mono); font-size: .6rem; letter-spacing: 2px; fill: var(--dim); }
+  .donut .seg { cursor: pointer; transition: opacity .15s ease; }
+  .donut .seg:hover, .donut .seg.hot { opacity: .82; }
+  .legend-list { display: grid; gap: 6px; font-size: .84rem; color: var(--muted); list-style: none; margin: 0; padding: 0; }
+  .legend-list li { display: flex; align-items: center; gap: 9px; cursor: default; }
+  .legend-list li:hover { color: var(--text); }
+  .legend-list .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  /* ---------- Milestone bars ---------- */
+  .bars text { font-family: var(--mono); }
+  .bar-label { fill: var(--text); font-size: 12.5px; }
+  .bar-val { fill: var(--muted); font-size: 11px; }
+  .bar-track { fill: var(--surface-2); stroke: var(--line); }
+  .bar-fill { fill: var(--accent); }
+  .bar-fill.complete { fill: var(--ok); }
+
+  /* ---------- Sparkline ---------- */
+  .spark-line {
+    fill: none; stroke: var(--accent); stroke-width: 2;
+    stroke-linejoin: round; stroke-linecap: round;
+    filter: drop-shadow(0 0 6px rgba(92,200,255,.4));
+  }
+  .spark-area { fill: rgba(92,200,255,.09); stroke: none; }
+  .spark-dot { fill: var(--bg); stroke: var(--dim); stroke-width: 1; }
+  .spark-dot.nonzero { fill: var(--accent); stroke: var(--accent); }
+  .spark-axis { fill: var(--dim); font-size: 10px; font-family: var(--mono); }
+
+  /* ---------- Pipeline stepper ---------- */
+  .stepper { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); margin: 4px 0 8px; }
+  .step { position: relative; min-width: 0; padding: 0 3px; text-align: center; }
+  .step::before {
+    content: ""; position: absolute; top: 15px; left: -50%; width: 100%; height: 2px;
+    background: var(--line-strong); z-index: 0;
+  }
+  .step:first-child::before { display: none; }
+  .step-num {
+    position: relative; z-index: 1; width: 32px; height: 32px; margin: 0 auto 8px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-family: var(--mono); font-size: .82rem; font-weight: 700;
+    background: var(--surface-2); border: 2px solid var(--line-strong); color: var(--muted);
+  }
+  .step.gate .step-num { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); box-shadow: 0 0 14px rgba(255,180,84,.25); }
+  .step-label { font-size: .63rem; color: var(--muted); line-height: 1.35; }
+  .step-label b { display: block; color: var(--text); font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .step.gate .step-label b { color: var(--warn); }
+
+  /* ---------- Dependency graph ---------- */
+  .sub-head {
+    font-size: .78rem; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--dim); margin: 30px 0 12px; font-weight: 600;
+  }
+  .depgraph-wrap {
+    overflow-x: auto; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px;
+  }
+  .depgraph { display: block; min-width: 640px; }
+  .depgraph .edge { fill: none; stroke: var(--line-strong); stroke-width: 1.4; transition: stroke .15s ease, stroke-width .15s ease; }
+  .depgraph .edge.hot { stroke: var(--accent); stroke-width: 2.2; }
+  .depgraph .node { cursor: pointer; outline: none; }
+  .depgraph .node-box { fill: var(--surface-2); stroke: var(--line-strong); transition: stroke .15s ease, filter .15s ease; }
+  .depgraph .node:hover .node-box, .depgraph .node:focus .node-box { stroke: var(--accent); filter: drop-shadow(0 0 8px rgba(92,200,255,.35)); }
+  .depgraph .node-id { fill: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+  .depgraph .node-title { fill: var(--text); font-size: 11px; }
+  .depgraph .node-status { font-family: var(--mono); font-size: 9px; letter-spacing: .6px; }
+
+  @media (max-width:900px) {
+    .layout { grid-template-columns: 1fr; }
+    .sbl-side {
+      position: static; height: auto; overflow: visible;
+      border-right: none; border-bottom: 1px solid var(--line);
+      padding: 18px 20px 16px;
+    }
+    nav { display: flex; flex-wrap: wrap; gap: 4px; }
+    main { padding: 24px 20px 40px; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <div class="head-inner">
-    <h1>super-backlog</h1>
-    <p class="lede">One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard.</p>
-    <p class="meta">Generated 2026-08-26T00:35:39.923Z &middot; super-backlog v0.1.0 &middot; <span id="source-badge"></span></p>
-  </div>
-</header>
-<main>
-  <section aria-labelledby="h-overview">
-    <h2 id="h-overview">Overview</h2>
-    <div class="cards" id="cards"></div>
-    <div class="quick">
-      <span class="q-label">Quick commands:</span>
-      <code>backlog browser</code>
-      <code>sbl dashboard --serve</code>
+<div class="layout">
+
+<aside class="sbl-side">
+  <div class="brand"><span class="brand-glyph">●</span><b>super-backlog</b></div>
+  <div class="kicker">SUPERPOWERS × BACKLOG.MD</div>
+  <nav aria-label="Dashboard sections">
+    <a href="#sec-01"><span class="n">01</span>Board &amp; Quick Actions</a>
+    <a href="#sec-02"><span class="n">02</span>Status</a>
+    <a href="#sec-03"><span class="n">03</span>Milestones</a>
+    <a href="#sec-04"><span class="n">04</span>Tasks</a>
+    <a href="#sec-05"><span class="n">05</span>Feature Cycle</a>
+    <a href="#sec-06"><span class="n">06</span>Activity</a>
+    <a href="#sec-07"><span class="n">07</span>Decisions &amp; Docs</a>
+  </nav>
+  <div class="legend">
+    <h4>Status</h4>
+    <div class="pill-row" id="pills">
+      <button type="button" class="pill" data-status="Done" data-count="5" data-tone="ok"><span class="n">5</span> Done</button>
+      <button type="button" class="pill" data-status="In Progress" data-count="1" data-tone="accent"><span class="n">1</span> In Progress</button>
+      <button type="button" class="pill" data-status="To Do" data-count="9" data-tone="dim"><span class="n">9</span> To Do</button>
     </div>
-  </section>
+  </div>
+</aside>
 
-  <section aria-labelledby="h-milestones">
-    <h2 id="h-milestones">Milestones</h2>
-    <div id="milestones"></div>
-  </section>
+<main>
 
-  <section aria-labelledby="h-tasks">
-    <h2 id="h-tasks">Tasks</h2>
+<section id="sec-01">
+  <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
+  <div id="quickactions" class="mount">
+    <div class="cmd-row">
+      <code class="cmd">backlog browser</code>
+      <code class="cmd">backlog board</code>
+      <code class="cmd">sbl dashboard --serve</code>
+    </div>
+    <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
+  </div>
+</section>
+
+<section id="sec-02">
+  <div class="sec-head"><span class="sec-num">02</span><h2>Status</h2><span class="tagline">tasks per status</span></div>
+  <div id="donut" class="mount"></div>
+</section>
+
+<section id="sec-03">
+  <div class="sec-head"><span class="sec-num">03</span><h2>Milestones</h2><span class="tagline">done / total per <span class="term" data-term="Milestone">Milestone</span></span></div>
+  <div id="bars" class="mount"></div>
+</section>
+
+<section id="sec-04">
+  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; expand &mdash; <span class="term" data-term="AC">AC</span>s inline</span></div>
+  <div id="tasks" class="mount">
     <div class="toolbar">
-      <input id="filter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
+      <input id="taskfilter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
     </div>
     <div class="table-wrap">
       <table id="tasks-table">
@@ -148,25 +336,42 @@
         <tbody id="task-rows"></tbody>
       </table>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section aria-labelledby="h-phases">
-    <h2 id="h-phases">Workflow cheat sheet</h2>
-    <div class="phases">
-          <div class="phase"><span class="phase-n">1</span><div class="phase-body"><span class="phase-name">Idea</span><span class="phase-gate">User states a need; capture it before doing anything else</span></div></div>
-          <div class="phase"><span class="phase-n">2</span><div class="phase-body"><span class="phase-name">Brainstorming</span><span class="phase-gate">Explore intent, requirements and design before any creative work</span></div></div>
-          <div class="phase"><span class="phase-n">3</span><div class="phase-body"><span class="phase-name">Design gate</span><span class="phase-gate">Human approves the design document</span></div></div>
-          <div class="phase"><span class="phase-n">4</span><div class="phase-body"><span class="phase-name">Spec-to-backlog</span><span class="phase-gate">Decompose the approved design into reviewed tasks with acceptance criteria</span></div></div>
-          <div class="phase"><span class="phase-n">5</span><div class="phase-body"><span class="phase-name">Review gate</span><span class="phase-gate">Human reviews specs and acceptance criteria before any code exists</span></div></div>
-          <div class="phase"><span class="phase-n">6</span><div class="phase-body"><span class="phase-name">Plan-before-code</span><span class="phase-gate">A written implementation plan is approved by the human</span></div></div>
-          <div class="phase"><span class="phase-n">7</span><div class="phase-body"><span class="phase-name">TDD implementation</span><span class="phase-gate">Failing test first, then code; one task per session/PR</span></div></div>
-          <div class="phase"><span class="phase-n">8</span><div class="phase-body"><span class="phase-name">Verification &amp; final summary</span><span class="phase-gate">Run tests/lint/typecheck; verification evidence before success claims</span></div></div>
-          <div class="phase"><span class="phase-n">9</span><div class="phase-body"><span class="phase-name">Merge &amp; archive</span><span class="phase-gate">Merge the branch, then close/archive the task via the backlog CLI</span></div></div>
-    </div>
-  </section>
+<section id="sec-05">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included</span></div>
+  <div id="stepper" class="mount"></div>
+  <h3 class="sub-head">Dependency flow</h3>
+  <div id="depgraph" class="mount"></div>
+</section>
+
+<section id="sec-06">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Activity</h2><span class="tagline">last 30 days</span></div>
+  <div id="spark" class="mount"></div>
+</section>
+
+<section id="sec-07">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Decisions &amp; Docs</h2><span class="tagline">decisions &middot; docs &middot; glossary</span></div>
+  <div id="docs" class="mount"></div>
+  <p class="hint">The <span class="term" data-term="TDD">TDD</span> loop and the <span class="term" data-term="DoD">DoD</span> ship as built-in glossary terms &mdash; extend them via <code class="inline">backlog/docs/glossary.md</code>.</p>
+</section>
+
+<footer class="footer">
+  Generated 2026-08-26T09:41:53.041Z &middot; super-backlog v0.1.0 &middot; <span id="source-badge"></span> &middot;
+  regenerated automatically on commits touching backlog/.
+</footer>
+
 </main>
+</div>
 
-<script type="application/json" id="sbl-data">{"project":{"name":"super-backlog","description":"One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard."},"generatedAt":"2026-08-26T00:35:39.923Z","kitVersion":"0.1.0","statuses":[{"status":"Done","count":4},{"status":"In Progress","count":1}],"milestones":[],"tasks":[{"id":"TASK-1","title":"v1.0.1: unify invalid-JSON exit codes and fix planner warning text","status":"Done","acs":[]},{"id":"TASK-2","title":"Add CI matrix workflow (windows + ubuntu)","status":"Done","acs":[]},{"id":"TASK-3","title":"Capture Project Dashboard screenshot for README","status":"Done","acs":[]},{"id":"TASK-4","title":"Prepare npm publish (v0.1.0)","status":"Done","acs":[]},{"id":"TASK-5","title":"Roadmap skills: backlog-status-report and task-review-gate","status":"In Progress","acs":[]}],"source":"backlog-json"}</script>
+<div id="sbl-backdrop" hidden></div>
+<aside id="sbl-detail" hidden aria-label="Task details"></aside>
+<div id="sbl-tip" role="tooltip" hidden></div>
+
+<script type="application/json" id="sbl-data">{"project":{"name":"super-backlog","description":"One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard."},"generatedAt":"2026-08-26T09:41:53.041Z","kitVersion":"0.1.0","statuses":[{"status":"Done","count":5},{"status":"In Progress","count":1},{"status":"To Do","count":9}],"milestones":[],"tasks":[{"id":"TASK-9","title":"Automate PR and issue hygiene (templates, labels, title check, auto-merge, stale)","status":"To Do","priority":"high","acs":[]},{"id":"TASK-10","title":"Set up release-please release pipeline on master","status":"To Do","priority":"high","acs":[]},{"id":"TASK-11","title":"Add tag-triggered publish workflow with OIDC provenance","status":"To Do","priority":"high","acs":[]},{"id":"TASK-12","title":"Schedule weekly and monthly QA workflows","status":"To Do","priority":"medium","acs":[]},{"id":"TASK-13","title":"Harden repository security (pinning enforcement, least privilege, CODEOWNERS)","status":"To Do","priority":"medium","acs":[]},{"id":"TASK-14","title":"Document operations: workflows, cadence, failure behavior, setup checklist","status":"To Do","priority":"medium","acs":[]},{"id":"TASK-1","title":"v1.0.1: unify invalid-JSON exit codes and fix planner warning text","status":"Done","acs":[]},{"id":"TASK-2","title":"Add CI matrix workflow (windows + ubuntu)","status":"Done","acs":[]},{"id":"TASK-3","title":"Capture Project Dashboard screenshot for README","status":"Done","acs":[]},{"id":"TASK-4","title":"Prepare npm publish (v0.1.0)","status":"Done","acs":[]},{"id":"TASK-5","title":"Roadmap skills: backlog-status-report and task-review-gate","status":"Done","acs":[]},{"id":"TASK-6","title":"Add styleguide gate to CI (markdownlint-cli2 + cspell)","status":"In Progress","acs":[]},{"id":"TASK-7","title":"Build tested automation gate scripts (title regex, pack list, SHA pinning)","status":"To Do","acs":[]},{"id":"TASK-8","title":"Publish VitePress docs site with live dashboard to GitHub Pages","status":"To Do","acs":[]},{"id":"TASK-15","title":"Dashboard v2: HTS-style project cockpit with freshness hook","status":"To Do","acs":[]}],"deps":[],"activity":[{"date":"2026-07-28","count":0},{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":0},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":15}],"glossary":[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}],"source":"backlog-json"}</script>
+<script type="application/json" id="sbl-glossary">[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}]</script>
+<script type="application/json" id="sbl-phases">[{"n":1,"name":"Idea","gate":"User states a need; capture it before doing anything else"},{"n":2,"name":"Brainstorming","gate":"Explore intent, requirements and design before any creative work"},{"n":3,"name":"Design gate","gate":"Human approves the design document"},{"n":4,"name":"Spec-to-backlog","gate":"Decompose the approved design into reviewed tasks with acceptance criteria"},{"n":5,"name":"Review gate","gate":"Human reviews specs and acceptance criteria before any code exists"},{"n":6,"name":"Plan-before-code","gate":"A written implementation plan is approved by the human"},{"n":7,"name":"TDD implementation","gate":"Failing test first, then code; one task per session/PR"},{"n":8,"name":"Verification & final summary","gate":"Run tests/lint/typecheck; verification evidence before success claims"},{"n":9,"name":"Merge & archive","gate":"Merge the branch, then close/archive the task via the backlog CLI"}]</script>
 <script id="sbl-app">
 (function () {
   'use strict';
@@ -179,49 +384,23 @@
     return node;
   }
 
-  $('#source-badge').textContent =
-    data.source === 'fallback-empty' ? 'no live data' : 'live backlog data';
-
-  var cards = $('#cards');
-  if (data.statuses.length === 0) {
-    cards.appendChild(el('p', 'empty',
-      data.source === 'fallback-empty' ? 'No backlog data found.' : 'No tasks found yet.'));
-  } else {
-    data.statuses.forEach(function (s) {
-      var card = el('div', 'card');
-      card.appendChild(el('div', 'card-num', String(s.count)));
-      card.appendChild(el('div', 'card-label', s.status));
-      cards.appendChild(card);
-    });
-  }
-
-  var msRoot = $('#milestones');
-  if (data.milestones.length === 0) {
-    msRoot.appendChild(el('p', 'empty', 'No milestones yet.'));
-  } else {
-    data.milestones.forEach(function (m) {
-      var pct = m.total > 0 ? Math.round((m.done / m.total) * 100) : 0;
-      var row = el('div', 'milestone');
-      var head = el('div', 'ms-head');
-      head.appendChild(el('span', 'ms-name', m.name));
-      head.appendChild(el('span', 'ms-count', m.done + ' / ' + m.total + ' done'));
-      var bar = el('div', 'bar');
-      var fill = el('div', 'bar-fill');
-      fill.style.width = pct + '%';
-      bar.appendChild(fill);
-      row.appendChild(head);
-      row.appendChild(bar);
-      msRoot.appendChild(row);
-    });
+  var badge = $('#source-badge');
+  if (badge) {
+    badge.textContent = data.source === 'fallback-empty' ? 'no live data' : 'live backlog data';
   }
 
   var KEYS = ['id', 'title', 'status', 'milestone', 'priority', 'assignee', 'updated'];
-  var state = { key: 'id', dir: 1, query: '' };
+  var state = { key: 'id', dir: 1, query: '', status: null, hoverStatus: null };
   function field(task, key) {
     var v = task[key];
     return v === undefined || v === null ? '' : String(v);
   }
+  function activeStatus() {
+    return state.hoverStatus || state.status;
+  }
   function matches(task) {
+    var eff = activeStatus();
+    if (eff && field(task, 'status').toLowerCase() !== eff.toLowerCase()) return false;
     if (!state.query) return true;
     var hit = KEYS.some(function (k) {
       return field(task, k).toLowerCase().indexOf(state.query) !== -1;
@@ -300,11 +479,519 @@
       renderTasks();
     });
   });
-  $('#filter').addEventListener('input', function (event) {
-    state.query = event.target.value.trim().toLowerCase();
+  var filterInput = document.getElementById('taskfilter');
+  if (filterInput) {
+    filterInput.addEventListener('input', function (event) {
+      state.query = event.target.value.trim().toLowerCase();
+      renderTasks();
+    });
+  }
+  function setStatusFilter(status) {
+    state.status = status || null;
+    document.querySelectorAll('#pills .pill').forEach(function (pill) {
+      pill.classList.toggle('active', !!state.status && pill.getAttribute('data-status') === state.status);
+    });
     renderTasks();
+  }
+  document.querySelectorAll('#pills .pill').forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      var s = pill.getAttribute('data-status');
+      setStatusFilter(state.status === s ? null : s);
+    });
   });
   renderTasks();
+
+  /* ---------- Shared diagram helpers ---------- */
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var TONE_VAR = { ok: 'var(--ok)', accent: 'var(--accent)', warn: 'var(--warn)', danger: 'var(--danger)', dim: 'var(--dim)' };
+  function svgEl(tag, attrs) {
+    var node = document.createElementNS(SVGNS, tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) { node.setAttribute(k, attrs[k]); });
+    }
+    return node;
+  }
+  function attachTitle(node, text) {
+    var t = svgEl('title');
+    t.textContent = text;
+    node.appendChild(t);
+    return node;
+  }
+  function toneOf(status) {
+    var s = String(status || '').toLowerCase();
+    if (s === 'done' || s === 'complete' || s === 'completed') return 'ok';
+    if (s.indexOf('progress') !== -1 || s === 'review') return 'accent';
+    if (s.indexOf('block') !== -1 || s === 'rejected') return 'danger';
+    if (s.indexOf('hold') !== -1 || s.indexOf('wait') !== -1 || s === 'draft') return 'warn';
+    return 'dim';
+  }
+  function setHoverStatus(status) {
+    state.hoverStatus = status || null;
+    renderTasks();
+  }
+
+  function renderDonut(mount, statuses) {
+    mount.textContent = '';
+    var total = statuses.reduce(function (sum, s) { return sum + s.count; }, 0);
+    var wrap = el('div', 'donut-wrap');
+    var size = 220, r = 76, cx = size / 2, cy = size / 2, sw = 34;
+    var circ = 2 * Math.PI * r;
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + size + ' ' + size, width: '220', height: '220',
+      'class': 'donut', role: 'img', 'aria-label': 'Tasks per status'
+    });
+    svg.appendChild(svgEl('circle', { cx: cx, cy: cy, r: r, fill: 'none', stroke: 'var(--surface-2)', 'stroke-width': sw }));
+    var offset = 0;
+    statuses.forEach(function (s) {
+      if (total <= 0 || s.count <= 0) return;
+      var frac = s.count / total;
+      var seg = svgEl('circle', {
+        cx: cx, cy: cy, r: r, fill: 'none',
+        'class': 'seg', 'data-status': s.status,
+        stroke: TONE_VAR[toneOf(s.status)], 'stroke-width': sw,
+        'stroke-dasharray': (frac * circ).toFixed(2) + ' ' + (circ - frac * circ).toFixed(2),
+        'stroke-dashoffset': (-offset * circ).toFixed(2),
+        transform: 'rotate(-90 ' + cx + ' ' + cy + ')'
+      });
+      attachTitle(seg, s.status + ': ' + s.count);
+      seg.addEventListener('mouseenter', function () { setHoverStatus(s.status); });
+      seg.addEventListener('mouseleave', function () { setHoverStatus(null); });
+      seg.addEventListener('click', function () {
+        setStatusFilter(state.status === s.status ? null : s.status);
+      });
+      svg.appendChild(seg);
+      offset += frac;
+    });
+    var num = svgEl('text', { x: cx, y: cy - 1, 'text-anchor': 'middle', 'class': 'donut-total' });
+    num.textContent = String(total);
+    var cap = svgEl('text', { x: cx, y: cy + 19, 'text-anchor': 'middle', 'class': 'donut-caption' });
+    cap.textContent = 'TASKS';
+    svg.appendChild(num);
+    svg.appendChild(cap);
+    wrap.appendChild(svg);
+    var list = el('ul', 'legend-list');
+    statuses.forEach(function (s) {
+      var li = el('li');
+      li.setAttribute('data-status', s.status);
+      var swatch = el('span', 'swatch');
+      swatch.style.background = TONE_VAR[toneOf(s.status)];
+      li.appendChild(swatch);
+      li.appendChild(el('span', '', s.status + ' (' + s.count + ')'));
+      li.addEventListener('mouseenter', function () { setHoverStatus(s.status); });
+      li.addEventListener('mouseleave', function () { setHoverStatus(null); });
+      list.appendChild(li);
+    });
+    wrap.appendChild(list);
+    mount.appendChild(wrap);
+  }
+
+  function renderBars(mount, milestones) {
+    mount.textContent = '';
+    if (milestones.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No milestones defined.'));
+      return;
+    }
+    var labelW = 170, valW = 56, padX = 12, rowH = 42, trackW = 420;
+    var w = labelW + trackW + valW + padX * 2;
+    var h = milestones.length * rowH + 8;
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'bars',
+      role: 'img', 'aria-label': 'Progress per milestone'
+    });
+    milestones.forEach(function (m, i) {
+      var g = attachTitle(svgEl('g'), m.name + ': ' + m.done + '/' + m.total + ' done');
+      var y = i * rowH + 22;
+      var lbl = svgEl('text', { x: labelW - 12, y: y, 'text-anchor': 'end', 'class': 'bar-label' });
+      lbl.textContent = m.name;
+      g.appendChild(lbl);
+      g.appendChild(svgEl('rect', { x: labelW, y: y - 11, width: trackW, height: 13, rx: 6.5, 'class': 'bar-track' }));
+      var frac = m.total > 0 ? m.done / m.total : 0;
+      if (frac > 0) {
+        g.appendChild(svgEl('rect', {
+          x: labelW, y: y - 11, width: Math.max(trackW * frac, 10), height: 13, rx: 6.5,
+          'class': frac >= 1 ? 'bar-fill complete' : 'bar-fill'
+        }));
+      }
+      var val = svgEl('text', { x: labelW + trackW + 14, y: y, 'class': 'bar-val' });
+      val.textContent = m.done + '/' + m.total;
+      g.appendChild(val);
+      svg.appendChild(g);
+    });
+    mount.appendChild(svg);
+  }
+
+  function renderSparkline(mount, activity) {
+    mount.textContent = '';
+    if (!activity || activity.length < 2) {
+      mount.appendChild(el('p', 'hint', 'No activity data.'));
+      return;
+    }
+    var w = 780, h = 150, padL = 14, padR = 14, padT = 18, padB = 26;
+    var max = 1;
+    activity.forEach(function (b) { if (b.count > max) max = b.count; });
+    function px(i) { return padL + (w - padL - padR) * i / (activity.length - 1); }
+    function py(c) { return padT + (h - padT - padB) * (1 - c / max); }
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'spark',
+      role: 'img', 'aria-label': 'Task activity over the last 30 days'
+    });
+    var coords = activity.map(function (b, i) {
+      return px(i).toFixed(1) + ',' + py(b.count).toFixed(1);
+    });
+    var areaD = 'M' + px(0).toFixed(1) + ',' + (h - padB) +
+      ' L ' + coords.join(' L ') +
+      ' L ' + px(activity.length - 1).toFixed(1) + ',' + (h - padB) + ' Z';
+    svg.appendChild(svgEl('path', { d: areaD, 'class': 'spark-area' }));
+    svg.appendChild(svgEl('polyline', { points: coords.join(' '), 'class': 'spark-line' }));
+    activity.forEach(function (b, i) {
+      var dot = svgEl('circle', {
+        cx: px(i).toFixed(1), cy: py(b.count).toFixed(1),
+        r: b.count > 0 ? 3.5 : 2,
+        'class': b.count > 0 ? 'spark-dot nonzero' : 'spark-dot'
+      });
+      attachTitle(dot, b.date + ': ' + b.count);
+      svg.appendChild(dot);
+    });
+    var first = svgEl('text', { x: padL, y: h - 7, 'class': 'spark-axis' });
+    first.textContent = activity[0].date;
+    var last = svgEl('text', { x: w - padR, y: h - 7, 'text-anchor': 'end', 'class': 'spark-axis' });
+    last.textContent = activity[activity.length - 1].date;
+    svg.appendChild(first);
+    svg.appendChild(last);
+    mount.appendChild(svg);
+  }
+
+  function renderStepper(mount, phases) {
+    mount.textContent = '';
+    if (!phases || phases.length === 0) {
+      mount.appendChild(el('p', 'hint', 'Pipeline unavailable.'));
+      return;
+    }
+    var wrap = el('div', 'stepper');
+    phases.forEach(function (p) {
+      var step = el('div', 'step' + (/gate/i.test(String(p.name)) ? ' gate' : ''));
+      step.setAttribute('data-phase', p.n);
+      step.appendChild(el('div', 'step-num', String(p.n)));
+      var lab = el('div', 'step-label');
+      var b = document.createElement('b');
+      b.textContent = p.name;
+      lab.appendChild(b);
+      lab.appendChild(document.createTextNode(p.gate));
+      step.appendChild(lab);
+      wrap.appendChild(step);
+    });
+    mount.appendChild(wrap);
+  }
+
+  var phases = [];
+  try {
+    var phasesNode = document.getElementById('sbl-phases');
+    if (phasesNode) phases = JSON.parse(phasesNode.textContent);
+  } catch (e) {
+    phases = [];
+  }
+  if ($('#donut')) renderDonut($('#donut'), data.statuses);
+  if ($('#bars')) renderBars($('#bars'), data.milestones);
+  if ($('#stepper')) renderStepper($('#stepper'), phases);
+  if ($('#spark')) renderSparkline($('#spark'), data.activity);
+
+  /* ---------- Glossary tooltips ---------- */
+  var glossary = {};
+  try {
+    JSON.parse(document.getElementById('sbl-glossary').textContent).forEach(function (entry) {
+      glossary[String(entry.term).toLowerCase()] = entry.definition;
+    });
+  } catch (e) {
+    glossary = {};
+  }
+  var tip = document.getElementById('sbl-tip');
+  function tipTarget(node) {
+    return node instanceof Element ? node.closest('[data-tip],[data-term]') : null;
+  }
+  function tipTextFor(target) {
+    if (target.hasAttribute('data-tip')) return target.getAttribute('data-tip');
+    var key = String(target.getAttribute('data-term')).toLowerCase();
+    return glossary[key] === undefined ? '' : target.getAttribute('data-term') + ': ' + glossary[key];
+  }
+  function tipShow(text, x, y) {
+    if (!tip) return;
+    if (!text) { tip.hidden = true; return; }
+    tip.textContent = text;
+    tip.hidden = false;
+    var rect = tip.getBoundingClientRect();
+    var px = Math.min(Math.max(8, x + 14), window.innerWidth - rect.width - 8);
+    var py = y + 18 + rect.height > window.innerHeight - 8 ? y - rect.height - 12 : y + 16;
+    py = Math.min(Math.max(8, py), window.innerHeight - rect.height - 8);
+    tip.style.left = px + 'px';
+    tip.style.top = py + 'px';
+  }
+  function tipHide() {
+    if (tip) tip.hidden = true;
+  }
+  if (tip) {
+    document.addEventListener('mouseover', function (ev) {
+      var t = tipTarget(ev.target);
+      if (!t) return;
+      tipShow(tipTextFor(t), ev.clientX, ev.clientY);
+    });
+    document.addEventListener('mousemove', function (ev) {
+      if (tip.hidden) return;
+      var t = tipTarget(ev.target);
+      if (!t) {
+        tipHide();
+        return;
+      }
+      tipShow(tipTextFor(t), ev.clientX, ev.clientY);
+    });
+    document.addEventListener('focusin', function (ev) {
+      var t = tipTarget(ev.target);
+      if (!t) return;
+      var r = t.getBoundingClientRect();
+      tipShow(tipTextFor(t), r.left + r.width / 2, r.bottom);
+    });
+    document.addEventListener('focusout', tipHide);
+  }
+
+  /* ---------- Detail panel ---------- */
+  var panel = document.getElementById('sbl-detail');
+  var backdrop = document.getElementById('sbl-backdrop');
+  var depsOut = {};
+  var depsIn = {};
+  data.deps.forEach(function (d) {
+    (depsOut[d.from] = depsOut[d.from] || []).push(d.to);
+    (depsIn[d.to] = depsIn[d.to] || []).push(d.from);
+  });
+  function findTask(id) {
+    var found = null;
+    data.tasks.forEach(function (t) {
+      if (t.id === id) found = t;
+    });
+    return found;
+  }
+  function closeDetail() {
+    if (panel) panel.hidden = true;
+    if (backdrop) backdrop.hidden = true;
+  }
+  window.closeDetail = closeDetail;
+  function acList(task) {
+    var list = el('ul', 'ac-list');
+    task.acs.forEach(function (ac) {
+      var li = el('li', ac.checked ? 'ac done' : 'ac');
+      var box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = ac.checked;
+      box.disabled = true;
+      li.appendChild(box);
+      li.appendChild(document.createTextNode(ac.text));
+      list.appendChild(li);
+    });
+    return list;
+  }
+  function depSection(titleText, ids) {
+    var block = el('div');
+    block.appendChild(el('h4', '', titleText));
+    var row = el('div', 'dep-row');
+    ids.filter(function (id) { return findTask(id); }).forEach(function (id) {
+      var btn = el('button', 'dep-link', id);
+      btn.type = 'button';
+      btn.setAttribute('data-dep', id);
+      btn.addEventListener('click', function () { openDetail(id); });
+      row.appendChild(btn);
+    });
+    if (row.children.length === 0) row.appendChild(el('p', 'detail-empty', 'None'));
+    block.appendChild(row);
+    return block;
+  }
+  function openDetail(id) {
+    var t = findTask(id);
+    if (!t || !panel) return;
+    panel.textContent = '';
+    var head = el('div', 'detail-head');
+    head.appendChild(el('span', 'detail-id', t.id));
+    var chip = el('span', 'status-chip', t.status);
+    chip.setAttribute('data-tone', toneOf(t.status));
+    head.appendChild(chip);
+    var closeBtn = el('button', 'detail-close', '\u00d7');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close details');
+    closeBtn.addEventListener('click', closeDetail);
+    head.appendChild(closeBtn);
+    panel.appendChild(head);
+    panel.appendChild(el('h3', 'detail-title', t.title));
+    panel.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
+    if (t.acs.length > 0) {
+      panel.appendChild(el('h4', '', 'Acceptance criteria'));
+      panel.appendChild(acList(t));
+    }
+    panel.appendChild(depSection('Depends on', depsOut[id] || []));
+    panel.appendChild(depSection('Needed by', depsIn[id] || []));
+    panel.scrollTop = 0;
+    panel.hidden = false;
+    backdrop.hidden = false;
+  }
+  window.__sblOpenDetail = openDetail;
+  if (backdrop) backdrop.addEventListener('click', closeDetail);
+
+  /* ---------- Keyboard shortcuts ---------- */
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') {
+      tipHide();
+      closeDetail();
+      return;
+    }
+    if (ev.key === '/') {
+      var active = document.activeElement;
+      var typing = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+      if (typing) return;
+      ev.preventDefault();
+      var f = document.getElementById('taskfilter');
+      if (f) f.focus();
+    }
+  });
+
+  /* ---------- Dependency graph (mirrors src/dashboard/layering.ts semantics) ---------- */
+  function assignLayers(nodes, deps) {
+    var nodeSet = {};
+    nodes.forEach(function (n) { nodeSet[n] = true; });
+    var prereqs = {};
+    nodes.forEach(function (n) { prereqs[n] = []; });
+    deps.forEach(function (d) {
+      if (!nodeSet[d.from] || !nodeSet[d.to]) return; // dangling ref
+      if (prereqs[d.from].indexOf(d.to) === -1) prereqs[d.from].push(d.to);
+    });
+    var layers = {};
+    var remaining = {};
+    nodes.forEach(function (n) { remaining[n] = true; });
+    var left = nodes.length;
+    var current = 0;
+    function take(n) {
+      layers[n] = current;
+      delete remaining[n];
+      left -= 1;
+    }
+    while (left > 0) {
+      var ready = nodes.filter(function (n) {
+        if (!remaining[n]) return false;
+        return prereqs[n].every(function (p) { return !remaining[p]; });
+      });
+      current += 1;
+      if (ready.length === 0) {
+        // stalled behind a cycle: append self-reachable members to this layer
+        nodes.forEach(function (start) {
+          if (!remaining[start]) return;
+          var seen = {};
+          var stack = prereqs[start].filter(function (p) { return remaining[p]; });
+          while (stack.length > 0) {
+            var cur = stack.pop();
+            if (cur === start) { take(start); return; }
+            if (seen[cur]) continue;
+            seen[cur] = true;
+            stack = stack.concat(prereqs[cur].filter(function (p) { return remaining[p]; }));
+          }
+        });
+        if (Object.keys(remaining).length === left) break; // unreachable safety net
+        continue;
+      }
+      ready.forEach(take);
+    }
+    var out = {};
+    nodes.forEach(function (n) { out[n] = layers[n] || 1; });
+    return out;
+  }
+
+  function hotEdges(id, on) {
+    document.querySelectorAll('.depgraph .edge').forEach(function (edge) {
+      var hit = edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id;
+      edge.classList.toggle('hot', on && hit);
+    });
+  }
+
+  function renderDepGraph(mount, tasks, deps) {
+    mount.textContent = '';
+    if (tasks.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No tasks to graph.'));
+      return;
+    }
+    var ids = tasks.map(function (t) { return t.id; });
+    var layers = assignLayers(ids, deps);
+    var byId = {};
+    tasks.forEach(function (t) { byId[t.id] = t; });
+    var maxLayer = 1;
+    ids.forEach(function (id) { if (layers[id] > maxLayer) maxLayer = layers[id]; });
+    var cols = [];
+    for (var i = 0; i < maxLayer; i++) cols.push([]);
+    ids.forEach(function (id) { cols[layers[id] - 1].push(byId[id]); });
+    var CHIP_W = 172, CHIP_H = 40, GAP_X = 84, GAP_Y = 14, PAD = 18;
+    var rows = 1;
+    cols.forEach(function (c) { if (c.length > rows) rows = c.length; });
+    var width = PAD * 2 + cols.length * CHIP_W + (cols.length - 1) * GAP_X;
+    var height = PAD * 2 + Math.max(rows, 1) * CHIP_H + (Math.max(rows, 1) - 1) * GAP_Y;
+    var wrap = el('div', 'depgraph-wrap');
+    var svg = svgEl('svg', {
+      viewBox: '0 0 ' + width + ' ' + height, width: width, height: height,
+      'class': 'depgraph', role: 'img', 'aria-label': 'Task dependency graph'
+    });
+    var defs = svgEl('defs');
+    var marker = svgEl('marker', { id: 'sbl-arrow', markerWidth: '9', markerHeight: '7', refX: '8.5', refY: '3.5', orient: 'auto' });
+    marker.appendChild(svgEl('polygon', { points: '0 0, 9 3.5, 0 7', fill: 'var(--line-strong)' }));
+    defs.appendChild(marker);
+    svg.appendChild(defs);
+    var pos = {};
+    cols.forEach(function (col, ci) {
+      col.forEach(function (t, ri) {
+        pos[t.id] = {
+          x: PAD + ci * (CHIP_W + GAP_X),
+          y: PAD + ri * (CHIP_H + GAP_Y)
+        };
+      });
+    });
+    deps.forEach(function (d) {
+      if (!pos[d.from] || !pos[d.to] || d.from === d.to) return;
+      var a = pos[d.from];
+      var b = pos[d.to];
+      var x1 = a.x + CHIP_W, y1 = a.y + CHIP_H / 2, x2 = b.x, y2 = b.y + CHIP_H / 2;
+      var mx = (x1 + x2) / 2;
+      var path = svgEl('path', {
+        'class': 'edge', 'data-from': d.from, 'data-to': d.to,
+        d: 'M ' + x1 + ' ' + y1 + ' C ' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2,
+        'marker-end': 'url(#sbl-arrow)'
+      });
+      svg.appendChild(path);
+    });
+    cols.forEach(function (col) {
+      col.forEach(function (t) {
+        var p = pos[t.id];
+        var tone = toneOf(t.status);
+        var g = svgEl('g', { 'class': 'node', 'data-id': t.id, tabindex: '0', role: 'button', 'aria-label': t.id + ': ' + t.title });
+        attachTitle(g, t.id + ' \u2014 ' + t.title + ' (' + t.status + ')' + (t.milestone ? ' [' + t.milestone + ']' : ''));
+        g.appendChild(svgEl('rect', { x: p.x, y: p.y, width: CHIP_W, height: CHIP_H, rx: 9, 'class': 'node-box' }));
+        g.appendChild(svgEl('rect', { x: p.x, y: p.y + 6, width: 4, height: CHIP_H - 12, rx: 2, fill: TONE_VAR[tone] }));
+        var idText = svgEl('text', { x: p.x + 13, y: p.y + 17, 'class': 'node-id' });
+        idText.textContent = t.id;
+        g.appendChild(idText);
+        var st = svgEl('text', { x: p.x + CHIP_W - 10, y: p.y + 16, 'text-anchor': 'end', 'class': 'node-status', fill: TONE_VAR[tone] });
+        st.textContent = String(t.status).toUpperCase();
+        g.appendChild(st);
+        var title = svgEl('text', { x: p.x + 13, y: p.y + 31, 'class': 'node-title' });
+        title.textContent = String(t.title).length > 26 ? String(t.title).slice(0, 25) + '\u2026' : t.title;
+        g.appendChild(title);
+        g.addEventListener('mouseenter', function () { hotEdges(t.id, true); });
+        g.addEventListener('mouseleave', function () { hotEdges(t.id, false); });
+        g.addEventListener('click', function () { window.__sblOpenDetail(t.id); });
+        g.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Enter' || ev.key === ' ') {
+            ev.preventDefault();
+            window.__sblOpenDetail(t.id);
+          }
+        });
+        svg.appendChild(g);
+      });
+    });
+    wrap.appendChild(svg);
+    mount.appendChild(wrap);
+  }
+
+  renderDepGraph($('#depgraph'), data.tasks, data.deps);
 })();
 </script>
 </body>

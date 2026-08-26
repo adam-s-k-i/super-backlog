@@ -140,6 +140,34 @@ describe('post-commit freshness hook (regeneration behavior)', () => {
     expect(after.length).toBeGreaterThan(before.length);
   });
 
+  it('sh-level regen failure never blocks the commit - note lands on stderr', () => {
+    const initRes = cli(dir, ['init', '--no-dashboard']);
+    expect([0, 4]).toContain(initRes.status);
+
+    mkdirSync(join(dir, 'backlog', 'tasks'), { recursive: true });
+    writeFileSync(
+      join(dir, 'backlog', 'tasks', 'TASK-101.md'),
+      '---\nid: TASK-101\ntitle: Healthy probe\n---\n',
+    );
+    git(dir, ['add', 'backlog']);
+    git(dir, ['commit', '-q', '-m', 'task: add TASK-101']);
+    expect(readFileSync(join(dir, 'dashboard.html'), 'utf8')).toContain('sbl-regen-shim:Healthy probe');
+
+    // sabotage the fabricated shim so the hook's regen invocation exits 3
+    writeFileSync(join(dir, 'node_modules', 'super-backlog', 'dist', 'dashboard', 'regen.js'), 'process.exit(3);\n');
+
+    writeFileSync(
+      join(dir, 'backlog', 'tasks', 'TASK-102.md'),
+      '---\nid: TASK-102\ntitle: Sabotaged probe\n---\n',
+    );
+    git(dir, ['add', 'backlog']);
+    // raw run (not the throwing git() helper): both the commit status and the
+    // hook's stderr note are part of the contract under test
+    const res = run(dir, 'git', ['commit', '-q', '-m', 'task: add TASK-102']);
+    expect(res.status).toBe(0); // hook NEVER blocks a commit
+    expect(res.err).toContain('super-backlog: dashboard regeneration failed');
+  });
+
   it('uninstall removes the refresh block but keeps foreign post-commit content', () => {
     const post = join(dir, '.git', 'hooks', 'post-commit');
     mkdirSync(dirname(post), { recursive: true });
