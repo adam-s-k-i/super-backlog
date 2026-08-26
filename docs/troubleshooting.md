@@ -4,7 +4,7 @@
 
 OpenCode on Windows can fail to cache git-backed plugin specs. If the Superpowers plugin does not load after `sbl init`, install it into OpenCode's config directory directly:
 
-```
+```text
 npm install superpowers@git+https://github.com/obra/superpowers.git --prefix "$HOME\.config\opencode"
 ```
 

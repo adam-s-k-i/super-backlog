@@ -115,6 +115,7 @@ release-please is idempotent (one rolling Release PR, never duplicates).
 ### 4.4 Scheduled QA
 
 Weekly (cron):
+
 - Test matrix extended to Node 20 and 22 on both OSes (CI itself stays on
   Node 20; weekly QA catches Node-22 regressions).
 - `npm audit --omit=dev` → vulnerability opens an issue with the audit
@@ -123,6 +124,7 @@ Weekly (cron):
   comment instead of new-issue spam.
 
 Monthly deep check:
+
 - `npm pack`, extract tarball to temp dir, run
   `node dist/cli.js --version` and `--help`.
 - Regenerate the dashboard (`super-backlog dashboard`) and assert it was
@@ -132,7 +134,7 @@ Monthly deep check:
 
 ### 4.5 GitHub Pages docs site (VitePress)
 
-```
+```text
 docs/.vitepress/config.ts   # nav + sidebar
 docs/index.md               # landing = condensed README
 docs/guide/*.md             # existing docs/*.md move here semantically

@@ -12,6 +12,7 @@ This project uses Backlog.md for task and project management.
 Use the overview to decide whether to search, read, create, or update Backlog tasks.
 
 Before task lifecycle actions, read the matching detailed guide:
+
 - `backlog instructions task-creation` before creating or splitting tasks
 - `backlog instructions task-execution` before planning, changing status or assignee, adding a plan or implementation notes, or implementing task work
 - `backlog instructions task-finalization` before checking acceptance criteria, writing final summaries, or moving tasks to terminal statuses

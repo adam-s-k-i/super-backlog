@@ -21,7 +21,7 @@ Bridge between Superpowers (brainstorming, writing-plans) and Backlog.md.
 3. Create per task:
    backlog task create "Title" -d "<goal/context>" --ac "<criterion 1>" --ac "<criterion 2>" --type feature --label feature --ref "<path/to/plan-doc>"
    - Dependencies: --dep TASK-y (order follows the plan).
-   - Larger efforts: backlog milestone add "<Name>", attach via -m.
+   - Larger efforts: backlog milestone add `"<Name>"`, attach via -m.
    - Reference the plan doc via --ref; NEVER copy it into the task.
 4. Never set --plan or --notes at create time — those belong to the "task started" checkpoint after codebase research.
 5. STOP at the review gate: the human reviews specs and acceptance criteria (backlog board / backlog browser / dashboard.html) before any code exists.

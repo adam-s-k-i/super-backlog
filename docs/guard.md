@@ -14,7 +14,7 @@ These checks catch accidental or faulty hand edits at commit time without interf
 
 ## Escape hatch
 
-```
+```bash
 git commit --no-verify
 ```
 

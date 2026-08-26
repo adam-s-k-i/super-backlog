@@ -1,3 +1,5 @@
 node_modules/
 .superpowers/
 dist/
+.superpowers/
+.worktrees/

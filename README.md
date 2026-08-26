@@ -68,6 +68,14 @@ Details and matrix: [docs/harness-support.md](docs/harness-support.md).
 
 Windows OpenCode fallback, exit codes, and environment seams: [docs/troubleshooting.md](docs/troubleshooting.md). Architecture deep-dive: [docs/architecture.md](docs/architecture.md). Guard hook details: [docs/guard.md](docs/guard.md).
 
+## Development
+
+```bash
+npm ci          # install dependencies
+npm test        # build + vitest suite
+npm run lint    # markdownlint + cspell over all Markdown
+```
+
 ## License
 
 [MIT](LICENSE)
