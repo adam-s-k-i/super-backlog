@@ -1,9 +1,11 @@
 ---
 id: TASK-11
 title: Add tag-triggered publish workflow with OIDC provenance
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - '@ox-alpha'
 created_date: '2026-08-26 02:03'
+updated_date: '2026-08-26 04:08'
 labels:
   - ci
   - security
@@ -28,3 +30,9 @@ publish.yml runs on v* tags: clean build, full tests, pack-list validation via t
 - [ ] #3 GitHub Release body contains the matching CHANGELOG section
 - [ ] #4 docs/publishing.md describes the automated flow plus an emergency manual fallback
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Per plan Task 5: publish.yml reusable workflow - verify tag/version/changelog, pack-list gate, npm publish --provenance (npm@latest for trusted publishing), gh release from CHANGELOG section; publishing.md rewritten.
+<!-- SECTION:PLAN:END -->

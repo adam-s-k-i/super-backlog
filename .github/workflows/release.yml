@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches: [master]
+
+permissions: {}
+
+jobs:
+  Release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      releases_created: ${{ steps.rp.outputs.releases_created }}
+    steps:
+      - id: rp
+        uses: google-github-actions/release-please-action@a017ec70c7f1401744d60197f7577a0c51c8c1cf # v4.4.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  Publish:
+    needs: Release-please
+    if: needs.Release-please.outputs.releases_created == 'true'
+    permissions: {}
+    uses: ./.github/workflows/publish.yml

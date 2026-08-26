@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 
 export function verifyRelease({ version, changelogText, remoteTagExists }) {
   const problems = [];
@@ -21,7 +22,6 @@ export function extractChangelogSection(text, version) {
 
 function remoteTagExists(tagRef) {
   try {
-    const { execFileSync } = require('node:child_process');
     const out = execFileSync('git', ['ls-remote', 'origin', `refs/tags/${tagRef}`], {
       encoding: 'utf8'
     });

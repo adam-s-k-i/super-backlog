@@ -1,37 +1,57 @@
 # Publishing super-backlog
 
-Who: the maintainer (@adam-s-k-i) publishes. Releases are manual — there is no
-automated publish pipeline.
+Releases are fully automated. Merging Conventional-Commit PRs into `master`
+is the only manual act required to ship a release.
 
-## When to publish
+## Automated flow
 
-- CI is green on `master` (both OS in the matrix).
-- `CHANGELOG.md` has an entry for the version about to be published.
-- All tasks for the milestone are `Done` in the backlog.
+1. Merge normal PRs with Conventional Commit titles (`feat:`, `fix:`, ...).
+2. The [Release workflow](../../.github/workflows/release.yml) (release-please)
+   maintains exactly one open **Release PR** that bumps the version in
+   `package.json` and adds the matching `CHANGELOG.md` entry.
+3. Once all required checks are green, that Release PR is merged
+   automatically (label: `autorelease`).
+4. The merge creates tag `v<x.y.z>` and immediately triggers the
+   [Publish workflow](../../.github/workflows/publish.yml), which:
+   - builds and runs the full test suite,
+   - verifies tag ↔ version ↔ CHANGELOG consistency
+     (`scripts/verify-release.mjs`),
+   - validates the pack file list (`scripts/check-pack-list.mjs`),
+   - publishes to npm with OIDC provenance (`npm publish --provenance`),
+   - creates the GitHub Release from the CHANGELOG section.
 
-## Pre-publish checklist
+> Implementation note: release-please creates tags using `GITHUB_TOKEN`, and
+> events triggered by `GITHUB_TOKEN` do not start other workflows. The Publish
+> workflow is therefore a reusable workflow invoked by Release the moment
+> release-please reports a new release — semantically identical to being
+> tag-triggered, without needing any personal access token.
 
-1. Bump `version` in `package.json` (semver: fix → patch, feature → minor).
-2. Add the matching `CHANGELOG.md` entry.
-3. `npm ci && npm test` — full suite green.
-4. `npm pack --dry-run` — tarball contains only `dist/**`, `README.md`,
-   `LICENSE`, `package.json`.
-5. Extract the tarball to a temp dir and run `node <extracted>/dist/cli.js --version`
-   plus `--help` (bin smoke test).
-6. Commit: `chore(release): v<x.y.z>` and tag `git tag v<x.y.z>`.
+## One-time setup
 
-## Publish
+1. Register the **npm trusted publisher**: on npmjs.com open package
+   `super-backlog` → Settings → Trusted Publisher, and bind it to
+   repository `adam-s-k-i/super-backlog`, workflow file `publish.yml`,
+   environment `(none)`. Until this is done, the publish step fails fast at
+   `npm publish --provenance`.
+2. Enable GitHub Actions as the Pages source (done once via API, see
+   [Operations](operations.md)).
+
+## Emergency manual fallback
+
+Only if automation is broken:
 
 ```bash
+npm ci && npm test
+npm version <patch|minor|major>
+# add CHANGELOG entry for the new version, then:
+git commit --amend --no-edit && git tag -f v$(node -p "require('./package.json').version")
+git push origin master --tags --force-with-lease
 npm login
-npm publish
-git push origin master --tags
+npm publish --access public
 ```
 
-Then create a GitHub Release from the tag, pasting the CHANGELOG section.
+Then create the GitHub Release from the tag manually, pasting the CHANGELOG
+section.
 
-## After publish
-
-- Run `sbl update` in a dogfood project and confirm the new version is picked up.
-- Watch the first-install issues for Windows plugin-spec problems and update
-  `docs/guide/troubleshooting.md` if the fallback triggers.
+After an emergency release, bring `.release-please-manifest.json` back in
+sync with the published version.
