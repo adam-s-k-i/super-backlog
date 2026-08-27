@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.1](https://github.com/adam-s-k-i/super-backlog/compare/v0.5.0...v0.5.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* **test:** stabilize activity date assertion against real current date ([55da1ed](https://github.com/adam-s-k-i/super-backlog/commit/55da1ed9b995acc4c8bb74c9eb5226f3b038fabc))
+
 ## [0.5.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.4.0...v0.5.0) (2026-08-26)
 
 
