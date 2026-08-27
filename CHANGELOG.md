@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.9.0...v0.10.0) (2026-08-27)
+
+
+### Features
+
+* **dashboard:** modal details, Inter font, flow view; sbl aliases; drafts; quick actions; task count fix ([f4bdd4a](https://github.com/adam-s-k-i/super-backlog/commit/f4bdd4a0a1f661048c779083e21954f91f6b1e8d))
+* **serve:** live-sync dashboard with SSE and sbl serve command ([a9f88dc](https://github.com/adam-s-k-i/super-backlog/commit/a9f88dc96f49ec18caa7b0dd9f5b56b5275b4e99))
+
 ## [0.9.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.8.1...v0.9.0) (2026-08-27)
 
 
