@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.1](https://github.com/adam-s-k-i/super-backlog/compare/v0.8.0...v0.8.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* **deps:** resolve Dependabot alerts in vitepress/vite/esbuild chain ([388f811](https://github.com/adam-s-k-i/super-backlog/commit/388f8119433ebefd3f052beca8cab10d2ea31638))
+* harden docs freshness gate (sidebar matching, parsing edge cases, error reporting) ([#27](https://github.com/adam-s-k-i/super-backlog/issues/27)) ([43c1d77](https://github.com/adam-s-k-i/super-backlog/commit/43c1d776da5fd188e968e36dc9064e880df41ba8))
+
 ## [0.8.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.7.0...v0.8.0) (2026-08-27)
 
 
