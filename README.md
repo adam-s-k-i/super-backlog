@@ -52,6 +52,7 @@ After installation:
 
 ```bash
 npm run board                   # open the Backlog.md kanban board
+sbl serve                       # dashboard server + Backlog browser with live reload
 sbl dashboard --serve             # live Project Dashboard on http://localhost:6428
 ```
 
@@ -74,7 +75,7 @@ sbl dashboard --serve             # live Project Dashboard on http://localhost:6
 | `.git/hooks/post-commit` | dashboard freshness block — regenerates `dashboard.html` after commits that touch `backlog/` (default; opt out with `--no-refresh-hook`) | appended marker block |
 | `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
 
-Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--serve] [--port <n>] [--no-open] [--out <file>]`. See `sbl help` for every flag.
+Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--serve] [--port <n>] [--no-open] [--out <file>]` · `sbl serve [--port <n>] [--no-open] [--out <file>]`. See `sbl help` for every flag.
 
 ## Model router (opt-in)
 
@@ -98,7 +99,7 @@ The router is fully owned by super-backlog and removed by `sbl uninstall`. See t
 
 ## Project Dashboard
 
-`sbl dashboard` generates a single self-contained `dashboard.html`: a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table with a click-in detail panel per task), Feature Cycle (pipeline stepper), Activity (30-day sparkline), and Decisions & Docs. A layered dependency graph maps task `depends-on` relations (cycle- and dangling-ref-tolerant): hover highlights edges, click opens the task. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `--serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428 by default.
+`sbl dashboard` generates a single self-contained `dashboard.html`: a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Activity (30-day sparkline), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `sbl dashboard --serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428; connected browser tabs reload automatically via Server-Sent Events. `sbl serve` starts the dashboard server and the Backlog browser together.
 
 ### Keeping it fresh
 

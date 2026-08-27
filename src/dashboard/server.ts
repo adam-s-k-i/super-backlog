@@ -87,12 +87,116 @@ export function createRunApiHandler(cwd: string): (req: IncomingMessage, res: Se
   };
 }
 
-function createApiHandler(cwd: string): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+/** SSE broker: keeps a set of response objects and broadcasts named events. */
+export function createReloadBroker(): {
+  handler: (req: IncomingMessage, res: ServerResponse) => boolean;
+  broadcast: (event: string) => void;
+  clientCount: () => number;
+  close: () => void;
+} {
+  const clients = new Set<ServerResponse>();
+  let closed = false;
+
+  function handler(req: IncomingMessage, res: ServerResponse): boolean {
+    if (req.url !== '/api/events' || req.method !== 'GET') return false;
+
+    res.writeHead(200, {
+      'content-type': 'text/event-stream',
+      'cache-control': 'no-cache',
+      connection: 'keep-alive',
+    });
+    res.write(':ok\n\n');
+    clients.add(res);
+    const cleanup = (): void => {
+      clients.delete(res);
+    };
+    req.on('close', cleanup);
+    req.on('error', cleanup);
+    res.on('close', cleanup);
+    res.on('error', cleanup);
+    return true;
+  }
+
+  function broadcast(event: string): void {
+    if (closed) return;
+    // A data line is mandatory: per the HTML standard, EventSource never
+    // dispatches an event whose data buffer is empty, so `event: x\n\n`
+    // alone would silently never reach addEventListener('x', ...) clients.
+    const message = `event: ${event}\ndata: {}\n\n`;
+    for (const client of clients) {
+      try {
+        client.write(message);
+      } catch {
+        clients.delete(client);
+      }
+    }
+  }
+
+  function clientCount(): number {
+    return clients.size;
+  }
+
+  function close(): void {
+    if (closed) return;
+    closed = true;
+    for (const client of clients) {
+      try {
+        client.end();
+      } catch {
+        // ignore
+      }
+    }
+    clients.clear();
+  }
+
+  return { handler, broadcast, clientCount, close };
+}
+
+/** Debounced wrapper around a regenerate callback; on success invokes onReload. */
+export function createDebouncedReloader(
+  regenerate: (() => void | Promise<void>) | undefined,
+  onReload: () => void,
+  delayMs: number,
+): { trigger(): void; cancel(): void } {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  function trigger(): void {
+    if (!regenerate) return;
+    if (timer !== null) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      void Promise.resolve()
+        .then(regenerate)
+        .then(() => {
+          onReload();
+        })
+        .catch(() => {});
+    }, delayMs);
+  }
+
+  function cancel(): void {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
+
+  return { trigger, cancel };
+}
+
+function createApiHandler(
+  cwd: string,
+  broker: ReturnType<typeof createReloadBroker>,
+): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const modelApi = createModelApiHandler();
   const runApi = createRunApiHandler(cwd);
   return async (req, res) => {
-    if (req.url === '/api/run') {
+    const url = req.url ?? '/';
+    if (url === '/api/run') {
       await runApi(req, res);
+      return;
+    }
+    if (broker.handler(req, res)) {
       return;
     }
     await modelApi(req, res);
@@ -151,25 +255,15 @@ export async function startServeServer(
   const file = opts.file ?? 'dashboard.html';
   const filePath = isAbsolute(file) ? file : join(cwd, file);
   const regenerate = opts.regenerate;
-
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const debouncedRegenerate = (): void => {
-    if (!regenerate) return;
-    if (timer !== null) clearTimeout(timer);
-    timer = setTimeout(() => {
-      timer = null;
-      void Promise.resolve()
-        .then(regenerate)
-        .catch(() => {}); // regeneration failures never kill the server
-    }, 300);
-  };
+  const broker = createReloadBroker();
+  const reloader = createDebouncedReloader(regenerate, () => broker.broadcast('reload'), 300);
 
   let watcher: FSWatcher | null = null;
   const backlogDir = join(cwd, 'backlog');
   if (recursiveWatchSupported(process.platform, process.versions.node)) {
     try {
       // recursive so subdirectory writes (e.g. backlog/tasks/*.md) fire on every platform
-      watcher = watch(backlogDir, { persistent: true, recursive: true }, debouncedRegenerate);
+      watcher = watch(backlogDir, { persistent: true, recursive: true }, () => reloader.trigger());
       watcher.on('error', () => {}); // e.g. watched dir removed mid-session
     } catch {
       watcher = null; // no backlog dir -> no live reload; serving still works
@@ -180,7 +274,7 @@ export async function startServeServer(
     );
   }
 
-  const apiHandler = createApiHandler(cwd);
+  const apiHandler = createApiHandler(cwd, broker);
 
   const server: Server = createServer((req, res) => {
     if (req.url?.startsWith('/api/')) {
@@ -225,8 +319,8 @@ export async function startServeServer(
     server,
     port,
     close(): Promise<void> {
-      if (timer !== null) clearTimeout(timer);
-      timer = null;
+      reloader.cancel();
+      broker.close();
       watcher?.close();
       watcher = null;
       return new Promise((resolveClose) => {

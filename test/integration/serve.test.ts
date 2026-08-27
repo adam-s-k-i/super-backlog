@@ -175,4 +175,69 @@ describe('startServeServer', () => {
     expect(typeof handle.close).toBe('function');
     await expect(handle.close()).resolves.toBeUndefined();
   });
+
+  it('serves an SSE stream on /api/events', async () => {
+    const dir = freshProject();
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    const res = await new Promise<{ status: number; contentType: string }>((resolvePromise, rejectPromise) => {
+      const req = request({ host: '127.0.0.1', port: handle.port, path: '/api/events', method: 'GET' }, (r) => {
+        resolvePromise({ status: r.statusCode ?? 0, contentType: String(r.headers['content-type'] ?? '') });
+        req.destroy();
+      });
+      req.on('error', () => {}); // expected: we destroy the socket after headers
+      req.end();
+    });
+    expect(res.status).toBe(200);
+    expect(res.contentType).toContain('text/event-stream');
+  });
+
+  watcherIt('pushes a reload event to SSE clients after a backlog change regenerates', async () => {
+    const dir = freshProject();
+    const regenerate = vi.fn(async () => {});
+    const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
+    handles.push(handle);
+
+    const received: string[] = [];
+    const req = request({ host: '127.0.0.1', port: handle.port, path: '/api/events', method: 'GET' }, (res) => {
+      res.setEncoding('utf8');
+      res.on('data', (c: string) => received.push(c));
+    });
+    req.on('error', () => {});
+    req.end();
+
+    // wait for the SSE stream to be established before triggering the watcher
+    const connected = await until(2000, () => received.join('').includes(':'));
+    expect(connected).toBe(true);
+
+    writeFileSync(join(dir, 'backlog', 'tasks.md'), '# touched\n');
+
+    const got = await until(3000, () => received.join('').includes('event: reload'));
+    expect(got).toBe(true);
+    expect(regenerate.mock.calls.length).toBeGreaterThan(0);
+    req.destroy();
+  });
+
+  it('does not push reload events when regeneration fails', async () => {
+    const dir = freshProject();
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    // without a regenerate callback there is nothing to broadcast; the stream
+    // must still connect and stay silent
+    const received: string[] = [];
+    const req = request({ host: '127.0.0.1', port: handle.port, path: '/api/events', method: 'GET' }, (res) => {
+      res.setEncoding('utf8');
+      res.on('data', (c: string) => received.push(c));
+    });
+    req.on('error', () => {});
+    req.end();
+
+    const connected = await until(2000, () => received.join('').includes(':'));
+    expect(connected).toBe(true);
+    await new Promise((r) => setTimeout(r, 400));
+    expect(received.join('')).not.toContain('event: reload');
+    req.destroy();
+  });
 });

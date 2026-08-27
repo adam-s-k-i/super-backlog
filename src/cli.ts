@@ -8,6 +8,7 @@ import { runBacklogSubcommand } from './commands/backlog-alias.js';
 import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runModels } from './commands/models.js';
+import { runServe } from './commands/serve.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
 import { assertNode20, KIT_VERSION } from './lib/version.js';
@@ -21,6 +22,7 @@ Commands:
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
   dashboard   Generate the single-file project dashboard (--serve for live mode)
+  serve       Start dashboard server and the Backlog browser together
   browser     Open the Backlog.md browser (delegates to backlog browser)
   board       Show the Backlog.md board (delegates to backlog board)
   models      Manage the model router (show, enable, disable, discover)
@@ -49,6 +51,10 @@ dashboard options:
   --port <n>                      Port for --serve (default: 6428)
   --no-open                       With --serve: do not open the browser automatically
   --out <file>                    Output file name or path (default: dashboard.html)
+
+serve options:
+  --port <n>                      Port for the dashboard server (default: 6428)
+  --no-open                       Do not open the dashboard browser automatically
 
 doctor options:
   (none)                          Prints one [ok]/[warn]/[skip] line per check; exit 4 on any warn
@@ -125,6 +131,21 @@ async function main(argv: string[]): Promise<number> {
         },
       });
       return await runDashboard(process.cwd(), {
+        values: parsed.values as Record<string, string | boolean | undefined>,
+        positionals: parsed.positionals,
+      });
+    }
+    case 'serve': {
+      const parsed = parseArgs({
+        args: rest,
+        allowPositionals: true,
+        options: {
+          port: { type: 'string' },
+          'no-open': { type: 'boolean' },
+          out: { type: 'string' },
+        },
+      });
+      return await runServe(process.cwd(), {
         values: parsed.values as Record<string, string | boolean | undefined>,
         positionals: parsed.positionals,
       });

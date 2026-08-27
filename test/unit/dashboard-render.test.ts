@@ -414,3 +414,25 @@ describe('carried Batch B review fixes', () => {
     expect(app).not.toMatch(/\.cell-title\s*\{[^}]*font-weight:\s*(bold|5\d\d|6\d\d|700)/);
   });
 });
+
+describe('live-reload script', () => {
+  const liveScript = (): string => {
+    // the live-reload snippet is the last inline script before </body>
+    const m = /(<script>\s*\(function \(\) \{[\s\S]*?EventSource[\s\S]*?)<\/script>/.exec(html);
+    return m?.[1] ?? '';
+  };
+
+  it('embeds an EventSource client that reloads on the reload event', () => {
+    const live = liveScript();
+    expect(live).not.toBe('');
+    expect(live).toContain("new EventSource('/api/events')");
+    expect(live).toContain("'reload'");
+    expect(live).toContain('location.reload()');
+  });
+
+  it('only connects over http(s) so file:// usage stays silent', () => {
+    const live = liveScript();
+    expect(live).toContain('location.protocol');
+    expect(live).toMatch(/https?/);
+  });
+});

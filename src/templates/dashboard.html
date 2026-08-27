@@ -955,5 +955,13 @@
   renderFlow($('#depgraph'), data.tasks);
 })();
 </script>
+<script>
+(function () {
+  if (!window.EventSource || (location.protocol !== 'http:' && location.protocol !== 'https:')) return;
+  var es = new EventSource('/api/events');
+  es.addEventListener('reload', function () { location.reload(); });
+  es.addEventListener('error', function () {});
+})();
+</script>
 </body>
 </html>
