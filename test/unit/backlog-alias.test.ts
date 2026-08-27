@@ -36,6 +36,19 @@ afterEach(() => {
   dirs = [];
 });
 
+function backlogBinScript(action: 'browser' | 'board', argsCount: number): string {
+  if (process.platform === 'win32') {
+    const args = Array.from({ length: argsCount }, (_, i) => `%${i + 1}`).join(' ');
+    return `echo ${action}-called ${args} > output.txt`;
+  }
+  const args = Array.from({ length: argsCount }, (_, i) => `\$${i + 1}`).join(' ');
+  return `echo "${action}-called ${args}" > output.txt`;
+}
+
+function exitScript(code: number): string {
+  return process.platform === 'win32' ? `exit /b ${code}` : `exit ${code}`;
+}
+
 describe('runBacklogSubcommand', () => {
   it('returns 1 when backlog binary is not found', async () => {
     const dir = freshDir();
@@ -45,7 +58,7 @@ describe('runBacklogSubcommand', () => {
 
   it('delegates browser subcommand to the resolved backlog binary', async () => {
     const dir = freshDir();
-    fabricateBacklogBin(dir, 'echo browser-called %1 %2 > output.txt');
+    fabricateBacklogBin(dir, backlogBinScript('browser', 2));
     const code = await runBacklogSubcommand(dir, 'browser', ['--no-open']);
     expect(code).toBe(0);
     const output = readFileSync(join(dir, 'output.txt'), 'utf8').trim();
@@ -55,7 +68,7 @@ describe('runBacklogSubcommand', () => {
 
   it('delegates board subcommand to the resolved backlog binary', async () => {
     const dir = freshDir();
-    fabricateBacklogBin(dir, 'echo board-called %1 > output.txt');
+    fabricateBacklogBin(dir, backlogBinScript('board', 1));
     const code = await runBacklogSubcommand(dir, 'board', []);
     expect(code).toBe(0);
     const output = readFileSync(join(dir, 'output.txt'), 'utf8').trim();
@@ -64,7 +77,7 @@ describe('runBacklogSubcommand', () => {
 
   it('forwards the exit code from the backlog binary', async () => {
     const dir = freshDir();
-    fabricateBacklogBin(dir, 'exit /b 7');
+    fabricateBacklogBin(dir, exitScript(7));
     const code = await runBacklogSubcommand(dir, 'browser', []);
     expect(code).toBe(7);
   });
