@@ -35,3 +35,4 @@ Rules:
 - One page covers exactly one topic, written from the user’s perspective — detailed in content, minimalist in presentation.
 - New pages must be linked in `docs/.vitepress/config.mts` (sidebar); unlinked pages are invisible on GitHub Pages.
 - A CI gate (Docs-Gate job in `pr-hygiene.yml`) blocks `feat:` PRs that change `src/` without a docs update. Apply the `no-docs` label for features without user-facing surface.
+- Changes to `scripts/check-docs-required.mjs` or `.github/workflows/pr-hygiene.yml` require explicit maintainer sign-off: the gate runs PR-controlled code, so review such PRs with extra care.

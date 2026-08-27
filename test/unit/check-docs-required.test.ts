@@ -10,6 +10,7 @@ import {
 const PAGE = ['---', 'type: how-to', '---', '', '# Page'].join('\n');
 const PAGE_NO_TYPE = '# Page\n';
 const PAGE_BAD_TYPE = ['---', 'type: guide', '---', '', '# Page'].join('\n');
+const PAGE_QUOTED = ['---', 'type: "how-to"', '---', '', '# Page'].join('\n');
 const SIDEBAR = "items: [{ text: 'X', link: '/guide/x' }]";
 
 const feat = { prTitle: 'feat: add thing', labels: [], sidebarText: SIDEBAR };
@@ -154,5 +155,70 @@ describe('checkDocsRequired new page rules', () => {
       readContent: () => PAGE_NO_TYPE
     });
     expect(problems).toHaveLength(2);
+  });
+});
+
+describe('gate hardening (TASK-30)', () => {
+  it('accepts quoted YAML type values', () => {
+    expect(frontmatterType(PAGE_QUOTED)).toBe('how-to');
+    expect(
+      checkDocsRequired({ ...feat, changedFiles: added('docs/guide/x.md'), readContent: () => PAGE_QUOTED })
+    ).toEqual([]);
+  });
+
+  it('maps index pages to their served directory URL', () => {
+    expect(docsLinkFor('docs/guide/index.md')).toBe('/guide/');
+  });
+
+  it('accepts an index page linked as its directory URL', () => {
+    expect(
+      checkDocsRequired({
+        ...feat,
+        sidebarText: "items: [{ text: 'Guide', link: '/guide/' }]",
+        changedFiles: added('docs/guide/index.md'),
+        readContent: () => PAGE
+      })
+    ).toEqual([]);
+  });
+
+  it('does not false-pass the sidebar check on a prefix match', () => {
+    const problems = checkDocsRequired({
+      ...feat,
+      sidebarText: "items: [{ text: 'X', link: '/guide/xyz' }]",
+      changedFiles: added('docs/guide/x.md'),
+      readContent: () => PAGE
+    });
+    expect(problems.some((p) => p.includes('config.mts'))).toBe(true);
+  });
+
+  it('applies type and nav rules to renamed docs pages', () => {
+    const problems = checkDocsRequired({
+      ...feat,
+      changedFiles: [{ status: 'R', path: 'docs/guide/y.md' }],
+      readContent: () => PAGE_NO_TYPE
+    });
+    expect(problems).toHaveLength(2);
+  });
+
+  it('passes a renamed docs page that is well-formed and linked', () => {
+    expect(
+      checkDocsRequired({
+        ...feat,
+        changedFiles: [{ status: 'R', path: 'docs/guide/x.md' }],
+        readContent: () => PAGE
+      })
+    ).toEqual([]);
+  });
+
+  it('does not count docs/superpowers changes as a docs update', () => {
+    const problems = checkDocsRequired({
+      ...feat,
+      changedFiles: [
+        { status: 'M', path: 'src/cli.ts' },
+        { status: 'M', path: 'docs/superpowers/specs/x.md' }
+      ]
+    });
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain('src/');
   });
 });
