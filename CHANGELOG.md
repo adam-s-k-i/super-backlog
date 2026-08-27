@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.1](https://github.com/adam-s-k-i/super-backlog/compare/v0.10.0...v0.10.1) (2026-08-27)
+
+
+### Bug Fixes
+
+* **test:** make backlog-alias tests cross-platform ([9fef678](https://github.com/adam-s-k-i/super-backlog/commit/9fef678a9d2ba772ca5a57f39ec76e5821bb29e5))
+
 ## [0.10.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.9.0...v0.10.0) (2026-08-27)
 
 
