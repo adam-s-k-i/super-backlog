@@ -1,3 +1,7 @@
+---
+type: tutorial
+---
+
 # Quick start
 
 Get super-backlog installed and running in a few commands.

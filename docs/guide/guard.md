@@ -1,3 +1,7 @@
+---
+type: explanation
+---
+
 # Guard hook
 
 `sbl init --guard` installs an opt-in pre-commit hook into `.git/hooks/pre-commit` (appended as a marker-delimited block, so pre-existing hook content is preserved). It is POSIX sh and runs under Git for Windows' bundled `sh` as well.

@@ -1,3 +1,7 @@
+---
+type: reference
+---
+
 # Troubleshooting
 
 ## Windows: PowerShell execution policy blocks `npx super-backlog`

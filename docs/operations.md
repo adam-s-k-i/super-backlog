@@ -1,3 +1,7 @@
+---
+type: how-to
+---
+
 # Operations guide
 
 This document describes every automation workflow in the repository, its trigger, permissions, cadence, and failure behavior. It also records the one-time setup checklist and links to emergency runbooks.
