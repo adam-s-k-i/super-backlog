@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.8.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.7.0...v0.8.0) (2026-08-27)
+
+
+### Features
+
+* add docs freshness gate (CI gate, style guide, type frontmatter) ([#25](https://github.com/adam-s-k-i/super-backlog/issues/25)) ([94431b7](https://github.com/adam-s-k-i/super-backlog/commit/94431b77f9dd0ae927f027885223c0e543187296))
+
 ## [0.7.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.6.0...v0.7.0) (2026-08-27)
 
 
