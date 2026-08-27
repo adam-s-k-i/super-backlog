@@ -3,6 +3,28 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.5.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.4.0...v0.5.0) (2026-08-26)
+
+
+### Features
+
+* **claude:** install cc agents and session-start sync hook ([751089e](https://github.com/adam-s-k-i/super-backlog/commit/751089ea64b299064eea03e7011e374e7fc03349))
+* **cli:** add sbl models commands and init --models opt-in ([157cd6a](https://github.com/adam-s-k-i/super-backlog/commit/157cd6a62f83bccbb7f29e1da9fe5c3b9127c7ea))
+* **dashboard:** expose model-router API endpoints in serve mode ([d9243e3](https://github.com/adam-s-k-i/super-backlog/commit/d9243e32ff25f338d8a29c0fba1f80e8bea5f989))
+* **models:** add discovery helper for opencode model tiers ([42faf22](https://github.com/adam-s-k-i/super-backlog/commit/42faf22a3c9b549747d98d062a3f88b9032c59e9))
+* **opencode:** install model-router plugin and tier agents ([8f64eaf](https://github.com/adam-s-k-i/super-backlog/commit/8f64eaf26b0c794a3fe7120fa5b524ed3d4b4bd0))
+* **uninstall:** remove model-router artifacts with ownership report ([7685159](https://github.com/adam-s-k-i/super-backlog/commit/768515980acc7af2f7fcd26d17bf4b0f2445fd53))
+
+
+### Bug Fixes
+
+* **claude:** guard session hook and clean test imports ([bc05906](https://github.com/adam-s-k-i/super-backlog/commit/bc0590666b0f74694b3d6d83682651d548a7da68))
+* **claude:** point SessionStart hook at shipped template path ([ede43e1](https://github.com/adam-s-k-i/super-backlog/commit/ede43e1ac413bd9f245b6c6182c682b7e4cc7ab7))
+* **cli:** correct models subcommand routing and preserve config ([bc8f2b3](https://github.com/adam-s-k-i/super-backlog/commit/bc8f2b3105435438d06f61a11f2ecbc92727871a))
+* **models:** catch discovery failures and return null ([7011d44](https://github.com/adam-s-k-i/super-backlog/commit/7011d449fec8f23455f089b0018b9a330faa6304))
+* **opencode:** use package-name dynamic imports in plugin ([525d53a](https://github.com/adam-s-k-i/super-backlog/commit/525d53a51ca19eeda88b007ea7c2abd0c8b50283))
+* **uninstall:** restore backlog/ kept message ([dd51d47](https://github.com/adam-s-k-i/super-backlog/commit/dd51d475ecae3616ae9c74b6dcf8bf2a7f9b4bee))
+
 ## [0.4.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.3.4...v0.4.0) (2026-08-26)
 
 
