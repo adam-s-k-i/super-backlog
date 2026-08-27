@@ -3,6 +3,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.6.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.5.0...v0.6.0) (2026-08-27)
+
+
+### Features
+
+* **install:** add cross-platform installer scripts and update docs ([e22216c](https://github.com/adam-s-k-i/super-backlog/commit/e22216ce63e4aea26950d32a85b80be8695f08ac))
+
+
+### Bug Fixes
+
+* **test:** stabilize activity date assertion against real current date ([55da1ed](https://github.com/adam-s-k-i/super-backlog/commit/55da1ed9b995acc4c8bb74c9eb5226f3b038fabc))
+
 ## [0.5.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.4.0...v0.5.0) (2026-08-26)
 
 
