@@ -10,6 +10,7 @@ import {
   collectDashboardData,
   parseGlossaryMarkdown,
   parseTasksJson,
+  readDrafts,
 } from '../../src/dashboard/data.js';
 
 let dirs: string[] = [];
@@ -382,6 +383,76 @@ describe('parseGlossaryMarkdown', () => {
     expect(entries).toEqual([
       { term: 'Alpha', definition: 'First body.' },
       { term: 'Beta', definition: 'Line one.\nLine two.' },
+    ]);
+  });
+});
+
+describe('readDrafts', () => {
+  it('returns an empty array when the drafts directory does not exist', () => {
+    const dir = freshDir();
+    expect(readDrafts(dir)).toEqual([]);
+  });
+
+  it('reads draft frontmatter and sorts by id', () => {
+    const dir = freshDir();
+    const draftsDir = join(dir, 'backlog', 'drafts');
+    mkdirSync(draftsDir, { recursive: true });
+    writeFileSync(
+      join(draftsDir, 'draft-2.md'),
+      `---\nid: DRAFT-2\ntitle: 'Second idea'\nstatus: Draft\n---\n`,
+    );
+    writeFileSync(
+      join(draftsDir, 'draft-1.md'),
+      `---\nid: DRAFT-1\ntitle: 'First idea'\nstatus: Draft\n---\n`,
+    );
+    expect(readDrafts(dir)).toEqual([
+      { id: 'DRAFT-1', title: 'First idea', status: 'Draft' },
+      { id: 'DRAFT-2', title: 'Second idea', status: 'Draft' },
+    ]);
+  });
+
+  it('ignores files that are missing required frontmatter', () => {
+    const dir = freshDir();
+    const draftsDir = join(dir, 'backlog', 'drafts');
+    mkdirSync(draftsDir, { recursive: true });
+    writeFileSync(join(draftsDir, 'empty.md'), '# Empty\n');
+    expect(readDrafts(dir)).toEqual([]);
+  });
+});
+
+describe('collectDashboardData drafts', () => {
+  it('includes drafts even when the backlog bin is missing', () => {
+    const dir = freshDir();
+    const draftsDir = join(dir, 'backlog', 'drafts');
+    mkdirSync(draftsDir, { recursive: true });
+    writeFileSync(
+      join(draftsDir, 'draft-1.md'),
+      `---\nid: DRAFT-1\ntitle: 'First idea'\nstatus: Draft\n---\n`,
+    );
+    const data = collectDashboardData(dir, { kitVersion: '0.1.0' });
+    expect(data.drafts).toEqual([{ id: 'DRAFT-1', title: 'First idea', status: 'Draft' }]);
+  });
+});
+
+describe('collectDashboardData task count alignment', () => {
+  it('matches the raw backlog task list count and status totals', () => {
+    const dir = freshDir();
+    fabricateBacklogBin(dir, HAPPY_JSON);
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+    expect(data.tasks).toHaveLength(3);
+    const totalFromStatuses = data.statuses.reduce((sum, s) => sum + s.count, 0);
+    expect(totalFromStatuses).toBe(3);
+  });
+
+  it('includes tasks regardless of status casing and missing fields', () => {
+    const dir = freshDir();
+    fabricateBacklogBin(dir, '{"tasks":[{"id":"X-1","title":"A","status":"In Progress"},{"id":"X-2","title":"B","status":"in progress"},{"id":"X-3","title":"C","status":"Done"}]}');
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+    expect(data.tasks).toHaveLength(3);
+    expect(data.statuses).toEqual([
+      { status: 'Done', count: 1 },
+      { status: 'in progress', count: 1 },
+      { status: 'In Progress', count: 1 },
     ]);
   });
 });

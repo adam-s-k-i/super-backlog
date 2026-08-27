@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>super-backlog &middot; Project Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%235cc8ff'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg:#0a0e16;
@@ -137,12 +138,18 @@
 
   /* ---------- Quick actions ---------- */
   .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .cmd {
+  .cmd-btn {
     font-family: var(--mono); font-size: .84rem; padding: 6px 14px; border-radius: 999px;
     background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
+    cursor: pointer;
   }
-  .cmd::before { content: "$ "; color: var(--accent); }
+  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+  .cmd-btn:active { transform: translateY(1px); }
+  .cmd-btn::before { content: "$ "; color: var(--accent); }
+  .cmd-btn[data-copy]::after { content: " copy"; font-size: .7em; color: var(--dim); }
   .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
+  .drafts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .drafts-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .88rem; }
   code.inline {
     font-family: var(--mono); font-size: .85em;
     background: var(--surface-2); border: 1px solid var(--line);
@@ -283,9 +290,9 @@
   <div class="legend">
     <h4>Status</h4>
     <div class="pill-row" id="pills">
-      <button type="button" class="pill" data-status="Done" data-count="5" data-tone="ok"><span class="n">5</span> Done</button>
+      <button type="button" class="pill" data-status="Done" data-count="36" data-tone="ok"><span class="n">36</span> Done</button>
       <button type="button" class="pill" data-status="In Progress" data-count="1" data-tone="accent"><span class="n">1</span> In Progress</button>
-      <button type="button" class="pill" data-status="To Do" data-count="9" data-tone="dim"><span class="n">9</span> To Do</button>
+      <button type="button" class="pill" data-status="To Do" data-count="3" data-tone="dim"><span class="n">3</span> To Do</button>
     </div>
   </div>
 </aside>
@@ -295,12 +302,16 @@
 <section id="sec-01">
   <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
   <div id="quickactions" class="mount">
-    <div class="cmd-row">
-      <code class="cmd">backlog browser</code>
-      <code class="cmd">backlog board</code>
-      <code class="cmd">sbl dashboard --serve</code>
+    <div class="cmd-row" id="cmd-buttons">
+      <button type="button" class="cmd-btn" data-cmd="browser">backlog browser</button>
+      <button type="button" class="cmd-btn" data-cmd="board">backlog board</button>
+      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve">sbl dashboard --serve</button>
     </div>
     <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
+  </div>
+  <div id="drafts" class="mount">
+    <h3 class="sub-head">Drafts</h3>
+    <ul id="drafts-list" class="drafts-list"></ul>
   </div>
 </section>
 
@@ -358,7 +369,7 @@
 </section>
 
 <footer class="footer">
-  Generated 2026-08-26T10:01:06.739Z &middot; super-backlog v0.1.0 &middot; <span id="source-badge"></span> &middot;
+  Generated 2026-08-27T21:00:18.429Z &middot; super-backlog v0.9.0 &middot; <span id="source-badge"></span> &middot;
   regenerated automatically on commits touching backlog/.
 </footer>
 
@@ -369,7 +380,7 @@
 <aside id="sbl-detail" hidden aria-label="Task details"></aside>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
-<script type="application/json" id="sbl-data">{"project":{"name":"super-backlog","description":"One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard."},"generatedAt":"2026-08-26T10:01:06.739Z","kitVersion":"0.1.0","statuses":[{"status":"Done","count":5},{"status":"In Progress","count":1},{"status":"To Do","count":9}],"milestones":[],"tasks":[{"id":"TASK-9","title":"Automate PR and issue hygiene (templates, labels, title check, auto-merge, stale)","status":"To Do","priority":"high","acs":[]},{"id":"TASK-10","title":"Set up release-please release pipeline on master","status":"To Do","priority":"high","acs":[]},{"id":"TASK-11","title":"Add tag-triggered publish workflow with OIDC provenance","status":"To Do","priority":"high","acs":[]},{"id":"TASK-12","title":"Schedule weekly and monthly QA workflows","status":"To Do","priority":"medium","acs":[]},{"id":"TASK-13","title":"Harden repository security (pinning enforcement, least privilege, CODEOWNERS)","status":"To Do","priority":"medium","acs":[]},{"id":"TASK-14","title":"Document operations: workflows, cadence, failure behavior, setup checklist","status":"To Do","priority":"medium","acs":[]},{"id":"TASK-1","title":"v1.0.1: unify invalid-JSON exit codes and fix planner warning text","status":"Done","acs":[]},{"id":"TASK-2","title":"Add CI matrix workflow (windows + ubuntu)","status":"Done","acs":[]},{"id":"TASK-3","title":"Capture Project Dashboard screenshot for README","status":"Done","acs":[]},{"id":"TASK-4","title":"Prepare npm publish (v0.1.0)","status":"Done","acs":[]},{"id":"TASK-5","title":"Roadmap skills: backlog-status-report and task-review-gate","status":"Done","acs":[]},{"id":"TASK-6","title":"Add styleguide gate to CI (markdownlint-cli2 + cspell)","status":"In Progress","acs":[]},{"id":"TASK-7","title":"Build tested automation gate scripts (title regex, pack list, SHA pinning)","status":"To Do","acs":[]},{"id":"TASK-8","title":"Publish VitePress docs site with live dashboard to GitHub Pages","status":"To Do","acs":[]},{"id":"TASK-15","title":"Dashboard v2: HTS-style project cockpit with freshness hook","status":"To Do","acs":[]}],"deps":[],"activity":[{"date":"2026-07-28","count":0},{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":0},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":15}],"glossary":[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}],"source":"backlog-json"}</script>
+<script type="application/json" id="sbl-data">{"project":{"name":"super-backlog","description":"One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard."},"generatedAt":"2026-08-27T21:00:18.429Z","kitVersion":"0.9.0","statuses":[{"status":"Done","count":36},{"status":"In Progress","count":1},{"status":"To Do","count":3}],"milestones":[{"name":"m-0","done":5,"total":5}],"tasks":[{"id":"TASK-9","title":"Automate PR and issue hygiene (templates, labels, title check, auto-merge, stale)","status":"Done","priority":"high","acs":[]},{"id":"TASK-10","title":"Set up release-please release pipeline on master","status":"Done","priority":"high","acs":[]},{"id":"TASK-11","title":"Add tag-triggered publish workflow with OIDC provenance","status":"To Do","priority":"high","acs":[]},{"id":"TASK-17","title":"Windows PowerShell execution policy: quickstart docs, init warning, sbl doctor","status":"Done","priority":"high","acs":[]},{"id":"TASK-18","title":"Fix release pipeline: package.json repository field + duplicate GitHub Release step","status":"Done","priority":"high","acs":[]},{"id":"TASK-20","title":"Fix release.yml Publish job skipped when release-please creates a release","status":"Done","priority":"high","acs":[]},{"id":"TASK-12","title":"Schedule weekly and monthly QA workflows","status":"Done","priority":"medium","acs":[]},{"id":"TASK-13","title":"Harden repository security (pinning enforcement, least privilege, CODEOWNERS)","status":"Done","priority":"medium","acs":[]},{"id":"TASK-14","title":"Document operations: workflows, cadence, failure behavior, setup checklist","status":"Done","priority":"medium","acs":[]},{"id":"TASK-1","title":"v1.0.1: unify invalid-JSON exit codes and fix planner warning text","status":"Done","acs":[]},{"id":"TASK-2","title":"Add CI matrix workflow (windows + ubuntu)","status":"Done","acs":[]},{"id":"TASK-3","title":"Capture Project Dashboard screenshot for README","status":"Done","acs":[]},{"id":"TASK-4","title":"Prepare npm publish (v0.1.0)","status":"Done","acs":[]},{"id":"TASK-5","title":"Roadmap skills: backlog-status-report and task-review-gate","status":"Done","acs":[]},{"id":"TASK-6","title":"Add styleguide gate to CI (markdownlint-cli2 + cspell)","status":"Done","acs":[]},{"id":"TASK-7","title":"Build tested automation gate scripts (title regex, pack list, SHA pinning)","status":"Done","acs":[]},{"id":"TASK-8","title":"Publish VitePress docs site with live dashboard to GitHub Pages","status":"Done","acs":[]},{"id":"TASK-15","title":"Dashboard v2: HTS-style project cockpit with freshness hook","status":"Done","acs":[]},{"id":"TASK-16","title":"Fix CLI under Node 24 (weekly QA matrix finding)","status":"Done","acs":[]},{"id":"TASK-19","title":"Migrate npm publish to OIDC trusted publishing and retire NPM_TOKEN","status":"To Do","acs":[]},{"id":"TASK-21","title":"Add robust cross-platform installer scripts","status":"Done","acs":[]},{"id":"TASK-22","title":"Preflight module: check/fix/verify units","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-23","title":"sbl init: preflight integration and --fix-all flag","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-24","title":"Slim installer wrapper scripts (install.ps1/install.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-25","title":"Harden sbl uninstall: error collection, verification, self-removal","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-26","title":"Uninstall wrapper scripts (uninstall.ps1/uninstall.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-27","title":"Add check-docs-required gate script with unit tests","status":"Done","acs":[]},{"id":"TASK-28","title":"Wire Docs-Gate job into pr-hygiene workflow","status":"Done","acs":[]},{"id":"TASK-29","title":"Add documentation style guide and backfill type frontmatter","status":"Done","acs":[]},{"id":"TASK-30","title":"Harden docs freshness gate: sidebar matching, parsing edge cases, self-exemption note","status":"Done","acs":[]},{"id":"TASK-31","title":"Fix Dependabot vulnerabilities in vitepress/vite/esbuild chain","status":"Done","acs":[]},{"id":"TASK-32","title":"Dashboard: directory-name fallback for project identity","status":"Done","acs":[]},{"id":"TASK-33","title":"init: scaffold minimal package.json when absent","status":"Done","acs":[]},{"id":"TASK-34","title":"Fix Pages dashboard links and stale /main/ docs URLs","status":"Done","acs":[]},{"id":"TASK-35","title":"Auto-refresh README dashboard screenshot with curated demo data","status":"Done","acs":[]},{"id":"TASK-36","title":"Project Dashboard: render quick-action commands as executable buttons","status":"Done","acs":[]},{"id":"TASK-37","title":"Project Dashboard: integrate drafts into the dashboard","status":"Done","acs":[]},{"id":"TASK-38","title":"Project Dashboard: add a custom browser icon","status":"Done","acs":[]},{"id":"TASK-39","title":"Investigate task count mismatch between Backlog browser and Project Dashboard","status":"In Progress","acs":[]},{"id":"TASK-40","title":"Unify kit commands under sbl aliases","status":"To Do","acs":[]}],"deps":[],"drafts":[],"activity":[{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":0},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":0},{"date":"2026-08-27","count":40}],"glossary":[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}],"source":"backlog-json"}</script>
 <script type="application/json" id="sbl-glossary">[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}]</script>
 <script type="application/json" id="sbl-phases">[{"n":1,"name":"Idea","gate":"User states a need; capture it before doing anything else"},{"n":2,"name":"Brainstorming","gate":"Explore intent, requirements and design before any creative work"},{"n":3,"name":"Design gate","gate":"Human approves the design document"},{"n":4,"name":"Spec-to-backlog","gate":"Decompose the approved design into reviewed tasks with acceptance criteria"},{"n":5,"name":"Review gate","gate":"Human reviews specs and acceptance criteria before any code exists"},{"n":6,"name":"Plan-before-code","gate":"A written implementation plan is approved by the human"},{"n":7,"name":"TDD implementation","gate":"Failing test first, then code; one task per session/PR"},{"n":8,"name":"Verification & final summary","gate":"Run tests/lint/typecheck; verification evidence before success claims"},{"n":9,"name":"Merge & archive","gate":"Merge the branch, then close/archive the task via the backlog CLI"}]</script>
 <script id="sbl-app">
@@ -500,6 +511,26 @@
     });
   });
   renderTasks();
+
+  /* ---------- Quick action buttons ---------- */
+  document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var copy = b.getAttribute('data-copy');
+      if (copy) { navigator.clipboard && navigator.clipboard.writeText(copy).catch(function(){}); return; }
+      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: b.getAttribute('data-cmd') }) })
+        .catch(function () { navigator.clipboard && navigator.clipboard.writeText(b.textContent || '').catch(function(){}); });
+    });
+  });
+
+  /* ---------- Drafts ---------- */
+  function renderDrafts(drafts) {
+    var list = document.getElementById('drafts-list');
+    if (!list) return;
+    list.textContent = '';
+    if (!drafts || drafts.length === 0) { list.appendChild(el('li', '', 'No drafts.')); return; }
+    drafts.forEach(function (d) { list.appendChild(el('li', '', d.id + ' \u2014 ' + d.title)); });
+  }
+  renderDrafts(data.drafts);
 
   /* ---------- Shared diagram helpers ---------- */
   var SVGNS = 'http://www.w3.org/2000/svg';

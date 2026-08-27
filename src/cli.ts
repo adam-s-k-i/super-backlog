@@ -4,6 +4,7 @@ import { parseArgs } from 'node:util';
 import process from 'node:process';
 
 import { runDashboard } from './commands/dashboard.js';
+import { runBacklogSubcommand } from './commands/backlog-alias.js';
 import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runModels } from './commands/models.js';
@@ -20,6 +21,8 @@ Commands:
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
   dashboard   Generate the single-file project dashboard (--serve for live mode)
+  browser     Open the Backlog.md browser (delegates to backlog browser)
+  board       Show the Backlog.md board (delegates to backlog board)
   models      Manage the model router (show, enable, disable, discover)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
 
@@ -126,6 +129,10 @@ async function main(argv: string[]): Promise<number> {
         positionals: parsed.positionals,
       });
     }
+    case 'browser':
+      return await runBacklogSubcommand(process.cwd(), 'browser', rest);
+    case 'board':
+      return await runBacklogSubcommand(process.cwd(), 'board', rest);
     case 'models': {
       const parsed = parseArgs({ args: rest, allowPositionals: true, options: {} });
       return await runModels(process.cwd(), {

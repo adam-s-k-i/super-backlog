@@ -7,6 +7,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>demo-project &middot; Project Dashboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%235cc8ff'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg:#0a0e16;
@@ -29,10 +30,25 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     --danger-bg:#331718;
     --mono:"Cascadia Code",Consolas,"Courier New",monospace;
   }
+  @font-face {
+    font-family: 'Inter';
+    src: local('Inter'), local('Inter-Regular');
+    font-weight: 400; font-style: normal;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: local('Inter Medium'), local('Inter-Medium');
+    font-weight: 500; font-style: normal;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: local('Inter SemiBold'), local('Inter-SemiBold');
+    font-weight: 600; font-style: normal;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background:
       radial-gradient(1100px 500px at 85% -10%, var(--bg-glow-1), transparent 60%),
       radial-gradient(900px 500px at -10% 30%, var(--bg-glow-2), transparent 55%),
@@ -94,15 +110,22 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   }
 
   /* ---------- Detail panel ---------- */
-  #sbl-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4,7,12,.55); }
-  #sbl-detail {
-    position: fixed; top: 0; right: 0; z-index: 50; height: 100vh; width: min(400px, 92vw);
-    overflow-y: auto; padding: 22px 24px 32px;
-    background: var(--surface); border-left: 1px solid var(--line-strong);
-    box-shadow: -18px 0 44px rgba(0,0,0,.45);
-    animation: sbl-slide-in .18s ease-out;
+  #task-dialog {
+    width: min(640px, 92vw); max-height: 85vh; overflow-y: auto; padding: 0;
+    border: 1px solid var(--line-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 24px 80px rgba(0,0,0,.55);
   }
-  @keyframes sbl-slide-in { from { transform: translateX(26px); opacity: 0; } to { transform: none; opacity: 1; } }
+  #task-dialog::backdrop {
+    background: rgba(4,7,12,.65);
+    backdrop-filter: blur(2px);
+  }
+  #task-dialog[open] { animation: sbl-dialog-in .18s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    #task-dialog[open] { animation: none; }
+  }
+  @keyframes sbl-dialog-in { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+  .dialog-content { padding: 22px 24px 28px; }
   .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
   .status-chip { font-family: var(--mono); font-size: .68rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--muted); white-space: nowrap; }
@@ -112,9 +135,12 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   .status-chip[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
   .detail-close { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 1.3rem; cursor: pointer; line-height: 1; }
   .detail-close:hover { color: var(--danger); }
-  .detail-title { font-size: 1.06rem; margin-bottom: 8px; overflow-wrap: anywhere; }
-  #sbl-detail .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
-  #sbl-detail h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
+  .detail-title { font-size: 1.18rem; font-weight: 600; margin-bottom: 8px; overflow-wrap: anywhere; }
+  #task-dialog .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
+  #task-dialog h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; color: var(--muted); }
+  .meta-row span { display: flex; align-items: center; gap: 4px; }
+  .meta-label { color: var(--dim); }
   .dep-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .dep-link {
     font-family: var(--mono); font-size: .74rem; padding: 2px 10px; border-radius: 999px;
@@ -140,12 +166,18 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 
   /* ---------- Quick actions ---------- */
   .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .cmd {
+  .cmd-btn {
     font-family: var(--mono); font-size: .84rem; padding: 6px 14px; border-radius: 999px;
     background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
+    cursor: pointer;
   }
-  .cmd::before { content: "$ "; color: var(--accent); }
+  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+  .cmd-btn:active { transform: translateY(1px); }
+  .cmd-btn::before { content: "$ "; color: var(--accent); }
+  .cmd-btn[data-copy]::after { content: " copy"; font-size: .7em; color: var(--dim); }
   .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
+  .drafts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .drafts-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .88rem; }
   code.inline {
     font-family: var(--mono); font-size: .85em;
     background: var(--surface-2); border: 1px solid var(--line);
@@ -173,14 +205,8 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   .task-row { cursor: pointer; }
   .task-row:hover td { background: var(--surface-2); }
   .cell-id { color: var(--accent); font-family: var(--mono); font-variant-numeric: tabular-nums; }
-  .cell-title { font-weight: 550; white-space: normal; min-width: 220px; }
+  .cell-title { font-weight: 400; white-space: normal; min-width: 220px; }
   .cell-updated { font-family: var(--mono); color: var(--muted); }
-  .task-detail td { white-space: normal; background: var(--surface-2); border-top: none; }
-  .detail-desc { margin: 0 0 8px; color: var(--muted); }
-  .detail-empty { margin: 0; color: var(--dim); }
-  .ac-list { margin: 0; padding: 0; list-style: none; }
-  .ac { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; }
-  .ac.done span { text-decoration: line-through; color: var(--dim); }
 
   /* ---------- Footer ---------- */
   .footer {
@@ -237,24 +263,26 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   .step-label b { display: block; color: var(--text); font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .step.gate .step-label b { color: var(--warn); }
 
-  /* ---------- Dependency graph ---------- */
+  /* ---------- Dependency flow ---------- */
   .sub-head {
     font-size: .78rem; letter-spacing: 1.4px; text-transform: uppercase;
     color: var(--dim); margin: 30px 0 12px; font-weight: 600;
   }
-  .depgraph-wrap {
-    overflow-x: auto; background: var(--surface); border: 1px solid var(--line);
-    border-radius: 12px; padding: 14px;
+  .flow-wrap { display: grid; gap: 20px; }
+  .flow-block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 18px; }
+  .flow-block h4 { margin: 0 0 10px; color: var(--text); font-size: .82rem; font-weight: 500; letter-spacing: .4px; }
+  .flow-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .flow-card {
+    background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 10px;
+    padding: 10px 12px; cursor: pointer; transition: background .12s ease, border-color .12s ease;
   }
-  .depgraph { display: block; min-width: 640px; }
-  .depgraph .edge { fill: none; stroke: var(--line-strong); stroke-width: 1.4; transition: stroke .15s ease, stroke-width .15s ease; }
-  .depgraph .edge.hot { stroke: var(--accent); stroke-width: 2.2; }
-  .depgraph .node { cursor: pointer; outline: none; }
-  .depgraph .node-box { fill: var(--surface-2); stroke: var(--line-strong); transition: stroke .15s ease, filter .15s ease; }
-  .depgraph .node:hover .node-box, .depgraph .node:focus .node-box { stroke: var(--accent); filter: drop-shadow(0 0 8px rgba(92,200,255,.35)); }
-  .depgraph .node-id { fill: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
-  .depgraph .node-title { fill: var(--text); font-size: 11px; }
-  .depgraph .node-status { font-family: var(--mono); font-size: 9px; letter-spacing: .6px; }
+  .flow-card:hover { background: var(--surface); border-color: var(--accent); }
+  .flow-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+  .flow-card-id { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: .78rem; }
+  .flow-card-title { color: var(--text); font-size: .92rem; }
+  .flow-card-blockers { margin-top: 7px; font-size: .8rem; color: var(--dim); }
+  .flow-card-blockers .dep-link { margin-left: 4px; }
+  .flow-empty { color: var(--dim); font-size: .85rem; margin: 0; }
 
   @media (max-width:900px) {
     .layout { grid-template-columns: 1fr; }
@@ -298,12 +326,16 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 <section id="sec-01">
   <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
   <div id="quickactions" class="mount">
-    <div class="cmd-row">
-      <code class="cmd">backlog browser</code>
-      <code class="cmd">backlog board</code>
-      <code class="cmd">sbl dashboard --serve</code>
+    <div class="cmd-row" id="cmd-buttons">
+      <button type="button" class="cmd-btn" data-cmd="browser">backlog browser</button>
+      <button type="button" class="cmd-btn" data-cmd="board">backlog board</button>
+      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve">sbl dashboard --serve</button>
     </div>
     <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
+  </div>
+  <div id="drafts" class="mount">
+    <h3 class="sub-head">Drafts</h3>
+    <ul id="drafts-list" class="drafts-list"></ul>
   </div>
 </section>
 
@@ -318,7 +350,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 </section>
 
 <section id="sec-04">
-  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; expand &mdash; <span class="term" data-term="AC">AC</span>s inline</span></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
   <div id="tasks" class="mount">
     <div class="toolbar">
       <input id="taskfilter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
@@ -345,7 +377,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 <section id="sec-05">
   <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included</span></div>
   <div id="stepper" class="mount"></div>
-  <h3 class="sub-head">Dependency flow</h3>
+  <h3 class="sub-head">Flow</h3>
   <div id="depgraph" class="mount"></div>
 </section>
 
@@ -368,8 +400,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 </main>
 </div>
 
-<div id="sbl-backdrop" hidden></div>
-<aside id="sbl-detail" hidden aria-label="Task details"></aside>
+<dialog id="task-dialog" aria-label="Task details"></dialog>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
 <script type="application/json" id="sbl-data">{"project":{"name":"demo-project","description":"A demo \\u003cb>project\\u003c/b>"},"generatedAt":"2026-08-26T12:00:00.000Z","kitVersion":"0.1.0","statuses":[{"status":"Done","count":1},{"status":"In Progress","count":2},{"status":"To Do","count":1}],"milestones":[{"name":"M1","done":1,"total":2},{"name":"M2","done":0,"total":2}],"tasks":[{"id":"T-1","title":"Ship auth flow","status":"Done","priority":"high","assignee":"adam","updated":"2026-08-20","milestone":"M1","description":"Handles \\u003cscript>alert(1)\\u003c/script> safely","acs":[{"text":"login works","checked":true}]},{"id":"T-2","title":"Add OAuth refresh","status":"In Progress","priority":"medium","assignee":"kim","updated":"2026-08-21","milestone":"M1","acs":[{"text":"token rotation","checked":true},{"text":"docs updated","checked":false}]},{"id":"T-3","title":"Write README","status":"To Do","priority":"low","milestone":"M2","acs":[]},{"id":"T-4","title":"Polish UI","status":"In Progress","milestone":"M2","updated":"2026-08-22","acs":[{"text":"dark mode","checked":false}]}],"deps":[{"from":"T-2","to":"T-1"},{"from":"T-4","to":"T-2"}],"activity":[{"date":"2026-07-28","count":1},{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":2},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":1}],"glossary":[{"term":"AC","definition":"Acceptance criterion."},{"term":"Review Gate","definition":"Human checkpoint before proceeding."}],"source":"backlog-json"}</script>
@@ -430,37 +461,12 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     }
     rows.forEach(function (task) {
       var tr = el('tr', 'task-row');
+      tr.setAttribute('data-task', task.id);
       KEYS.forEach(function (k) {
         tr.appendChild(el('td', 'cell-' + k, field(task, k)));
       });
-      var detail = el('tr', 'task-detail');
-      var td = el('td');
-      td.colSpan = KEYS.length;
-      if (task.description) td.appendChild(el('p', 'detail-desc', task.description));
-      if (task.acs.length > 0) {
-        var list = el('ul', 'ac-list');
-        task.acs.forEach(function (ac) {
-          var li = el('li', ac.checked ? 'ac done' : 'ac');
-          var box = document.createElement('input');
-          box.type = 'checkbox';
-          box.checked = ac.checked;
-          box.disabled = true;
-          li.appendChild(box);
-          li.appendChild(document.createTextNode(ac.text));
-          list.appendChild(li);
-        });
-        td.appendChild(list);
-      } else {
-        td.appendChild(el('p', 'detail-empty', 'No acceptance criteria.'));
-      }
-      detail.style.display = 'none';
-      tr.addEventListener('click', function () {
-        var opening = detail.style.display === 'none';
-        detail.style.display = opening ? '' : 'none';
-        tr.classList.toggle('expanded', opening);
-      });
+      tr.addEventListener('click', function () { openDetail(task.id); });
       tbody.appendChild(tr);
-      tbody.appendChild(detail);
     });
   }
   document.querySelectorAll('#tasks-table th').forEach(function (th) {
@@ -503,6 +509,26 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     });
   });
   renderTasks();
+
+  /* ---------- Quick action buttons ---------- */
+  document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var copy = b.getAttribute('data-copy');
+      if (copy) { navigator.clipboard && navigator.clipboard.writeText(copy).catch(function(){}); return; }
+      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: b.getAttribute('data-cmd') }) })
+        .catch(function () { navigator.clipboard && navigator.clipboard.writeText(b.textContent || '').catch(function(){}); });
+    });
+  });
+
+  /* ---------- Drafts ---------- */
+  function renderDrafts(drafts) {
+    var list = document.getElementById('drafts-list');
+    if (!list) return;
+    list.textContent = '';
+    if (!drafts || drafts.length === 0) { list.appendChild(el('li', '', 'No drafts.')); return; }
+    drafts.forEach(function (d) { list.appendChild(el('li', '', d.id + ' \\u2014 ' + d.title)); });
+  }
+  renderDrafts(data.drafts);
 
   /* ---------- Shared diagram helpers ---------- */
   var SVGNS = 'http://www.w3.org/2000/svg';
@@ -755,9 +781,8 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     document.addEventListener('focusout', tipHide);
   }
 
-  /* ---------- Detail panel ---------- */
-  var panel = document.getElementById('sbl-detail');
-  var backdrop = document.getElementById('sbl-backdrop');
+  /* ---------- Detail dialog ---------- */
+  var dialog = document.getElementById('task-dialog');
   var depsOut = {};
   var depsIn = {};
   data.deps.forEach(function (d) {
@@ -771,11 +796,13 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     });
     return found;
   }
-  function closeDetail() {
-    if (panel) panel.hidden = true;
-    if (backdrop) backdrop.hidden = true;
+  function isDoneStatus(status) {
+    var s = String(status).toLowerCase();
+    return s === 'done' || s === 'complete' || s === 'completed';
   }
-  window.closeDetail = closeDetail;
+  function closeDetail() {
+    if (dialog && dialog.open) dialog.close();
+  }
   function acList(task) {
     var list = el('ul', 'ac-list');
     task.acs.forEach(function (ac) {
@@ -797,7 +824,6 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     ids.filter(function (id) { return findTask(id); }).forEach(function (id) {
       var btn = el('button', 'dep-link', id);
       btn.type = 'button';
-      btn.setAttribute('data-dep', id);
       btn.addEventListener('click', function () { openDetail(id); });
       row.appendChild(btn);
     });
@@ -805,10 +831,24 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     block.appendChild(row);
     return block;
   }
+  function metaRow(task) {
+    var row = el('div', 'meta-row');
+    function item(label, value) {
+      var s = el('span');
+      s.appendChild(el('span', 'meta-label', label + ': '));
+      s.appendChild(document.createTextNode(value || '—'));
+      return s;
+    }
+    row.appendChild(item('Milestone', task.milestone));
+    row.appendChild(item('Priority', task.priority));
+    row.appendChild(item('Assignee', task.assignee));
+    row.appendChild(item('Updated', task.updated));
+    return row;
+  }
   function openDetail(id) {
     var t = findTask(id);
-    if (!t || !panel) return;
-    panel.textContent = '';
+    if (!t || !dialog) return;
+    var content = el('div', 'dialog-content');
     var head = el('div', 'detail-head');
     head.appendChild(el('span', 'detail-id', t.id));
     var chip = el('span', 'status-chip', t.status);
@@ -819,21 +859,22 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     closeBtn.setAttribute('aria-label', 'Close details');
     closeBtn.addEventListener('click', closeDetail);
     head.appendChild(closeBtn);
-    panel.appendChild(head);
-    panel.appendChild(el('h3', 'detail-title', t.title));
-    panel.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
+    content.appendChild(head);
+    content.appendChild(el('h3', 'detail-title', t.title));
+    content.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
+    content.appendChild(metaRow(t));
     if (t.acs.length > 0) {
-      panel.appendChild(el('h4', '', 'Acceptance criteria'));
-      panel.appendChild(acList(t));
+      content.appendChild(el('h4', '', 'Acceptance criteria'));
+      content.appendChild(acList(t));
     }
-    panel.appendChild(depSection('Depends on', depsOut[id] || []));
-    panel.appendChild(depSection('Needed by', depsIn[id] || []));
-    panel.scrollTop = 0;
-    panel.hidden = false;
-    backdrop.hidden = false;
+    content.appendChild(depSection('Depends on', depsOut[id] || []));
+    content.appendChild(depSection('Needed by', depsIn[id] || []));
+    dialog.textContent = '';
+    dialog.appendChild(content);
+    dialog.showModal();
   }
   window.__sblOpenDetail = openDetail;
-  if (backdrop) backdrop.addEventListener('click', closeDetail);
+  if (dialog) dialog.addEventListener('click', function (ev) { if (ev.target === dialog) closeDetail(); });
 
   /* ---------- Keyboard shortcuts ---------- */
   document.addEventListener('keydown', function (ev) {
@@ -852,154 +893,71 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     }
   });
 
-  /* ---------- Dependency graph (mirrors src/dashboard/layering.ts semantics) ---------- */
-  function assignLayers(nodes, deps) {
-    var nodeSet = {};
-    nodes.forEach(function (n) { nodeSet[n] = true; });
-    var prereqs = {};
-    nodes.forEach(function (n) { prereqs[n] = []; });
-    deps.forEach(function (d) {
-      if (!nodeSet[d.from] || !nodeSet[d.to]) return; // dangling ref
-      if (prereqs[d.from].indexOf(d.to) === -1) prereqs[d.from].push(d.to);
-    });
-    var layers = {};
-    var remaining = {};
-    nodes.forEach(function (n) { remaining[n] = true; });
-    var left = nodes.length;
-    var current = 0;
-    function take(n) {
-      layers[n] = current;
-      delete remaining[n];
-      left -= 1;
-    }
-    while (left > 0) {
-      var ready = nodes.filter(function (n) {
-        if (!remaining[n]) return false;
-        return prereqs[n].every(function (p) { return !remaining[p]; });
-      });
-      current += 1;
-      if (ready.length === 0) {
-        // stalled behind a cycle: snapshot self-reachable members first, then
-        // append them as one group (mirrors cycleMembers() in layering.ts)
-        var cycleSnap = [];
-        nodes.forEach(function (start) {
-          if (!remaining[start]) return;
-          var seen = {};
-          var stack = prereqs[start].filter(function (p) { return remaining[p]; });
-          var found = false;
-          while (stack.length > 0 && !found) {
-            var cur = stack.pop();
-            if (cur === start) { found = true; break; }
-            if (seen[cur]) continue;
-            seen[cur] = true;
-            stack = stack.concat(prereqs[cur].filter(function (p) { return remaining[p]; }));
-          }
-          if (found) cycleSnap.push(start);
-        });
-        cycleSnap.forEach(take);
-        if (cycleSnap.length === 0) break; // unreachable safety net
-        continue;
-      }
-      ready.forEach(take);
-    }
-    var out = {};
-    nodes.forEach(function (n) { out[n] = layers[n] || 1; });
-    return out;
-  }
-
-  function hotEdges(id, on) {
-    document.querySelectorAll('.depgraph .edge').forEach(function (edge) {
-      var hit = edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id;
-      edge.classList.toggle('hot', on && hit);
-    });
-  }
-
-  function renderDepGraph(mount, tasks, deps) {
+  /* ---------- Dependency flow ---------- */
+  function renderFlow(mount, tasks) {
     mount.textContent = '';
-    if (tasks.length === 0) {
-      mount.appendChild(el('p', 'hint', 'No tasks to graph.'));
-      return;
-    }
-    var ids = tasks.map(function (t) { return t.id; });
-    var layers = assignLayers(ids, deps);
     var byId = {};
     tasks.forEach(function (t) { byId[t.id] = t; });
-    var maxLayer = 1;
-    ids.forEach(function (id) { if (layers[id] > maxLayer) maxLayer = layers[id]; });
-    var cols = [];
-    for (var i = 0; i < maxLayer; i++) cols.push([]);
-    ids.forEach(function (id) { cols[layers[id] - 1].push(byId[id]); });
-    var CHIP_W = 172, CHIP_H = 40, GAP_X = 84, GAP_Y = 14, PAD = 18;
-    var rows = 1;
-    cols.forEach(function (c) { if (c.length > rows) rows = c.length; });
-    var width = PAD * 2 + cols.length * CHIP_W + (cols.length - 1) * GAP_X;
-    var height = PAD * 2 + Math.max(rows, 1) * CHIP_H + (Math.max(rows, 1) - 1) * GAP_Y;
-    var wrap = el('div', 'depgraph-wrap');
-    var svg = svgEl('svg', {
-      viewBox: '0 0 ' + width + ' ' + height, width: width, height: height,
-      'class': 'depgraph', role: 'img', 'aria-label': 'Task dependency graph'
-    });
-    var defs = svgEl('defs');
-    var marker = svgEl('marker', { id: 'sbl-arrow', markerWidth: '9', markerHeight: '7', refX: '8.5', refY: '3.5', orient: 'auto' });
-    marker.appendChild(svgEl('polygon', { points: '0 0, 9 3.5, 0 7', fill: 'var(--line-strong)' }));
-    defs.appendChild(marker);
-    svg.appendChild(defs);
-    var pos = {};
-    cols.forEach(function (col, ci) {
-      col.forEach(function (t, ri) {
-        pos[t.id] = {
-          x: PAD + ci * (CHIP_W + GAP_X),
-          y: PAD + ri * (CHIP_H + GAP_Y)
-        };
+    var pending = tasks.filter(function (t) { return !isDoneStatus(t.status); });
+    var upNext = [];
+    var blocked = [];
+    pending.forEach(function (t) {
+      var blockers = (depsOut[t.id] || []).filter(function (id) {
+        var d = byId[id];
+        return d && !isDoneStatus(d.status);
       });
+      if (blockers.length === 0) upNext.push({ task: t, blockers: [] });
+      else blocked.push({ task: t, blockers: blockers });
     });
-    deps.forEach(function (d) {
-      if (!pos[d.from] || !pos[d.to] || d.from === d.to) return;
-      var a = pos[d.from];
-      var b = pos[d.to];
-      var x1 = a.x + CHIP_W, y1 = a.y + CHIP_H / 2, x2 = b.x, y2 = b.y + CHIP_H / 2;
-      var mx = (x1 + x2) / 2;
-      var path = svgEl('path', {
-        'class': 'edge', 'data-from': d.from, 'data-to': d.to,
-        d: 'M ' + x1 + ' ' + y1 + ' C ' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2,
-        'marker-end': 'url(#sbl-arrow)'
-      });
-      svg.appendChild(path);
-    });
-    cols.forEach(function (col) {
-      col.forEach(function (t) {
-        var p = pos[t.id];
-        var tone = toneOf(t.status);
-        var g = svgEl('g', { 'class': 'node', 'data-id': t.id, tabindex: '0', role: 'button', 'aria-label': t.id + ': ' + t.title });
-        attachTitle(g, t.id + ' \\u2014 ' + t.title + ' (' + t.status + ')' + (t.milestone ? ' [' + t.milestone + ']' : ''));
-        g.appendChild(svgEl('rect', { x: p.x, y: p.y, width: CHIP_W, height: CHIP_H, rx: 9, 'class': 'node-box' }));
-        g.appendChild(svgEl('rect', { x: p.x, y: p.y + 6, width: 4, height: CHIP_H - 12, rx: 2, fill: TONE_VAR[tone] }));
-        var idText = svgEl('text', { x: p.x + 13, y: p.y + 17, 'class': 'node-id' });
-        idText.textContent = t.id;
-        g.appendChild(idText);
-        var st = svgEl('text', { x: p.x + CHIP_W - 10, y: p.y + 16, 'text-anchor': 'end', 'class': 'node-status', fill: TONE_VAR[tone] });
-        st.textContent = String(t.status).toUpperCase();
-        g.appendChild(st);
-        var title = svgEl('text', { x: p.x + 13, y: p.y + 31, 'class': 'node-title' });
-        title.textContent = String(t.title).length > 26 ? String(t.title).slice(0, 25) + '\\u2026' : t.title;
-        g.appendChild(title);
-        g.addEventListener('mouseenter', function () { hotEdges(t.id, true); });
-        g.addEventListener('mouseleave', function () { hotEdges(t.id, false); });
-        g.addEventListener('click', function () { window.__sblOpenDetail(t.id); });
-        g.addEventListener('keydown', function (ev) {
-          if (ev.key === 'Enter' || ev.key === ' ') {
-            ev.preventDefault();
-            window.__sblOpenDetail(t.id);
+    function section(titleText, items, emptyText) {
+      var wrap = el('div', 'flow-block');
+      wrap.appendChild(el('h4', '', titleText));
+      if (items.length === 0) {
+        wrap.appendChild(el('p', 'flow-empty', emptyText));
+      } else {
+        var list = el('ul', 'flow-list');
+        items.forEach(function (item) {
+          var li = el('li', 'flow-card');
+          var head = el('div', 'flow-card-head');
+          head.appendChild(el('span', 'flow-card-id', item.task.id));
+          var chip = el('span', 'status-chip', item.task.status);
+          chip.setAttribute('data-tone', toneOf(item.task.status));
+          head.appendChild(chip);
+          li.appendChild(head);
+          li.appendChild(el('div', 'flow-card-title', item.task.title));
+          if (item.blockers.length > 0) {
+            var blockRow = el('div', 'flow-card-blockers');
+            blockRow.appendChild(document.createTextNode('Blocked by: '));
+            item.blockers.forEach(function (id, i) {
+              if (i > 0) blockRow.appendChild(document.createTextNode(', '));
+              var btn = el('button', 'dep-link', id);
+              btn.type = 'button';
+              btn.addEventListener('click', function () { openDetail(id); });
+              blockRow.appendChild(btn);
+            });
+            li.appendChild(blockRow);
           }
+          li.addEventListener('click', function (ev) {
+            if (ev.target.closest('.dep-link')) return;
+            openDetail(item.task.id);
+          });
+          list.appendChild(li);
         });
-        svg.appendChild(g);
-      });
-    });
-    wrap.appendChild(svg);
+        wrap.appendChild(list);
+      }
+      return wrap;
+    }
+    if (upNext.length === 0 && blocked.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No pending tasks — everything is done.'));
+      return;
+    }
+    var wrap = el('div', 'flow-wrap');
+    wrap.appendChild(section('Up Next', upNext, 'No tasks ready to start.'));
+    wrap.appendChild(section('Blocked', blocked, 'No blocked tasks.'));
     mount.appendChild(wrap);
   }
 
-  renderDepGraph($('#depgraph'), data.tasks, data.deps);
+  renderFlow($('#depgraph'), data.tasks);
 })();
 </script>
 </body>

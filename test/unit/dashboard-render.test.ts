@@ -158,6 +158,8 @@ describe('renderDashboard v2 structure', () => {
     ]) {
       expect(html).toContain(token);
     }
+    expect(html).toContain('@font-face');
+    expect(html).toContain("font-family: 'Inter'");
     expect(html).toContain('"Cascadia Code"');
     expect(html).toContain('Consolas');
     expect(html).toContain('"Segoe UI"');
@@ -174,6 +176,12 @@ describe('renderDashboard v2 structure', () => {
   it('references no external URLs', () => {
     expect(html).not.toContain('src="http');
     expect(html).not.toContain('href="http');
+  });
+
+  it('ships an inline SVG favicon', () => {
+    expect(html).toContain('<link rel="icon"');
+    expect(html).toContain('data:image/svg+xml');
+    expect(html).toContain("fill='%235cc8ff'");
   });
 });
 
@@ -271,45 +279,51 @@ describe('client diagrams: donut, bars, sparkline, stepper', () => {
   });
 });
 
-describe('client dependency graph', () => {
+describe('client dependency flow', () => {
   it('provides a #depgraph mount inside the feature cycle section', () => {
     const sec5 = /<section id="sec-05">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
     expect(sec5).toContain('id="depgraph"');
   });
 
-  it('ships an inline layered layout mirroring src/dashboard/layering.ts', () => {
+  it('ships a renderFlow() that classifies pending tasks as Up Next or Blocked', () => {
     const app = appScript();
-    expect(app).toContain('function assignLayers(');
-    expect(app).toContain("getElementById('sbl-data')");
-    // cyclic set is snapshotted against pristine `remaining` before any take()
-    expect(app).toContain('var cycleSnap');
-    // tautological guard (take() decrements left and remaining in lockstep) is gone
-    expect(app).not.toContain('Object.keys(remaining).length === left');
-    // safety net is progress-based, mirroring cyclic.size === 0 in layering.ts
-    expect(app).toContain('if (cycleSnap.length === 0) break;');
+    expect(app).toContain('function renderFlow(');
+    expect(app).toContain('Up Next');
+    expect(app).toContain('Blocked');
+    expect(app).toContain('Blocked by:');
   });
 
-  it('renders task chips as .node groups and edges as paths with hover/click wiring', () => {
+  it('uses isDoneStatus() to treat done/completed statuses as finished', () => {
     const app = appScript();
-    expect(app).toContain('function renderDepGraph(');
-    expect(app).toContain("'node'");
-    expect(app).toContain("'edge'");
-    expect(app).toContain('data-from');
-    expect(app).toContain('data-to');
-    expect(app).toContain("toggle('hot'");
-    expect(app).toContain('__sblOpenDetail');
+    expect(app).toContain('function isDoneStatus(');
+    expect(app).toContain("s === 'done'");
+    expect(app).toContain("s === 'complete'");
+  });
+
+  it('renders flow cards with status chips and blocker links', () => {
+    const app = appScript();
+    expect(app).toContain("'flow-card'");
+    expect(app).toContain("'flow-card-id'");
+    expect(app).toContain("'flow-card-title'");
+    expect(app).toContain("'flow-card-blockers'");
+    expect(app).toContain("'dep-link'");
   });
 });
 
 describe('tooltips, glossary terms and detail panel', () => {
-  it('ships the single floating tooltip element and detail panel shells', () => {
+  it('ships the single floating tooltip element and task dialog shell', () => {
     expect(html).toContain('id="sbl-tip"');
-    expect(html).toContain('id="sbl-detail"');
-    expect(html).toContain('id="sbl-backdrop"');
+    expect(html).toContain('<dialog id="task-dialog"');
+    expect(html).not.toContain('id="sbl-detail"');
+    expect(html).not.toContain('id="sbl-backdrop"');
+  });
+
+  it('renders task titles with normal font weight', () => {
+    expect(html).toMatch(/\.cell-title\s*\{[^}]*font-weight:\s*400/);
   });
 
   it('wraps the core glossary terms in static section copy', () => {
-    for (const term of ['AC', 'DoD', 'Milestone', 'Review Gate', 'TDD']) {
+    for (const term of ['DoD', 'Milestone', 'Review Gate', 'TDD']) {
       expect(html, `term span for ${term}`).toContain(`data-term="${term}"`);
       expect(html, `class=term for ${term}`).toMatch(
         new RegExp(`<span class="term" data-term="${term}">`),
@@ -324,10 +338,12 @@ describe('tooltips, glossary terms and detail panel', () => {
     expect(app).toContain("'[data-tip],[data-term]'");
   });
 
-  it('wires openDetail/closeDetail with backdrop, Esc close and clickable deps', () => {
+  it('wires openDetail/closeDetail with dialog.showModal/close, backdrop click and clickable deps', () => {
     const app = appScript();
     expect(app).toContain('function openDetail(');
     expect(app).toContain('function closeDetail(');
+    expect(app).toContain('dialog.showModal');
+    expect(app).toContain('dialog.close');
     expect(app).toContain("addEventListener('click'");
     expect(app).toContain('__sblOpenDetail');
     expect(app.match(/Escape/g)?.length).toBeGreaterThanOrEqual(1);
@@ -386,15 +402,15 @@ describe('carried Batch B review fixes', () => {
     );
   });
 
-  it('pins the dep-graph hover mechanism: CSS :hover on chips, JS .hot class on edges', () => {
-    // chosen mechanism: chip box highlight is pure CSS (:hover/:focus); edge
-    // highlighting is the JS-toggled .hot class. Either half going missing is a regression.
-    expect(html).toMatch(/\.depgraph \.node:hover \.node-box/);
-    expect(html).toMatch(/\.depgraph \.edge\.hot \{/);
+  it('task rows set data-task and open the modal on click', () => {
     const app = appScript();
-    expect(app).toContain('function hotEdges(');
-    expect(app).toContain("edge.classList.toggle('hot'");
-    expect(app).toMatch(/addEventListener\('mouseenter', function \(\) \{ hotEdges\(/);
-    expect(app).toMatch(/addEventListener\('mouseleave', function \(\) \{ hotEdges\(/);
+    expect(app).toContain("tr.setAttribute('data-task', task.id)");
+    expect(app).toContain("openDetail(task.id)");
+    expect(app).not.toContain("'task-detail'");
+  });
+
+  it('task titles are no longer bold in the table', () => {
+    const app = appScript();
+    expect(app).not.toMatch(/\.cell-title\s*\{[^}]*font-weight:\s*(bold|5\d\d|6\d\d|700)/);
   });
 });

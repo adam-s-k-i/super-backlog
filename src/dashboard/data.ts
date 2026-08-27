@@ -1,5 +1,5 @@
 // src/dashboard/data.ts
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
 import { resolveBacklogBin, runCapture } from '../lib/run.js';
@@ -38,6 +38,12 @@ export interface DashboardDep {
   to: string;
 }
 
+export interface DashboardDraft {
+  id: string;
+  title: string;
+  status: string;
+}
+
 export interface DashboardActivityBucket {
   date: string;
   count: number;
@@ -56,6 +62,7 @@ export interface DashboardData {
   milestones: DashboardMilestone[];
   tasks: DashboardTask[];
   deps: DashboardDep[];
+  drafts: DashboardDraft[];
   activity: DashboardActivityBucket[];
   glossary: DashboardGlossaryEntry[];
   source: 'backlog-json' | 'fallback-empty';
@@ -271,6 +278,27 @@ function readProjectGlossary(cwd: string): DashboardGlossaryEntry[] {
   }
 }
 
+function readDraftFile(path: string): DashboardDraft | null {
+  const keys = readSimpleKeys(path, ['id', 'title', 'status']);
+  const id = asString(keys.id);
+  const title = asString(keys.title);
+  const status = asString(keys.status);
+  if (!id || !title || !status) return null;
+  return { id, title, status };
+}
+
+export function readDrafts(cwd: string): DashboardDraft[] {
+  const draftsDir = join(cwd, 'backlog', 'drafts');
+  if (!existsSync(draftsDir)) return [];
+  const out: DashboardDraft[] = [];
+  for (const entry of readdirSync(draftsDir, { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+    const draft = readDraftFile(join(draftsDir, entry.name));
+    if (draft) out.push(draft);
+  }
+  return out.sort((a, b) => a.id.localeCompare(b.id));
+}
+
 function readProjectIdentity(cwd: string): { name: string; description: string } {
   const cfg = readSimpleKeys(join(cwd, 'backlog', 'config.yml'), [
     'project_name',
@@ -312,6 +340,7 @@ export function collectDashboardData(
     milestones: [],
     tasks: [],
     deps: [],
+    drafts: readDrafts(cwd),
     activity: computeActivity([], today),
     glossary: mergeGlossary(readProjectGlossary(cwd)),
     source: 'fallback-empty',
