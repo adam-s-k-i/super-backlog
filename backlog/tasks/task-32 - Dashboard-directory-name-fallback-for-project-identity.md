@@ -5,10 +5,12 @@ status: Done
 assignee:
   - '@adam'
 created_date: '2026-08-27 15:08'
-updated_date: '2026-08-27 15:12'
+updated_date: '2026-08-27 16:05'
 labels:
   - bug
 dependencies: []
+references:
+  - v0.9.0
 type: bug
 ordinal: 31000
 ---
@@ -31,6 +33,12 @@ readProjectIdentity in src/dashboard/data.ts falls back to 'Untitled project' wh
 <!-- SECTION:PLAN:BEGIN -->
 TDD: 1. Failing test in dashboard-data.test.ts: no config, no package.json -> project name is basename(cwd). 2. Add fallback in readProjectIdentity. 3. Precedence tests stay green. 4. Full suite.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Released in v0.9.0: GitHub release https://github.com/adam-s-k-i/super-backlog/releases/tag/v0.9.0, npm https://www.npmjs.com/package/super-backlog/v/0.9.0. CI, Deploy Pages and Release workflows green.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

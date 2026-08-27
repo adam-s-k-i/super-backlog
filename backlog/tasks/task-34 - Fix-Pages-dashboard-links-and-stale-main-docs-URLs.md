@@ -5,10 +5,12 @@ status: Done
 assignee:
   - '@adam'
 created_date: '2026-08-27 15:08'
-updated_date: '2026-08-27 15:25'
+updated_date: '2026-08-27 16:05'
 labels:
   - bug
 dependencies: []
+references:
+  - v0.9.0
 type: bug
 ordinal: 33000
 ---
@@ -31,6 +33,12 @@ VitePress SPA router intercepts clicks on /dashboard.html (not in the route map)
 <!-- SECTION:PLAN:BEGIN -->
 1. TDD: docs.test.ts regression tests (no /main/ raw URLs in docs, dashboard links carry target=_blank). 2. config.mts nav item + index.md landing button: target _blank/rel noreferrer. 3. quickstart.md /main/ -> /master/. 4. vitepress build + full suite green.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Released in v0.9.0: GitHub release https://github.com/adam-s-k-i/super-backlog/releases/tag/v0.9.0, npm https://www.npmjs.com/package/super-backlog/v/0.9.0. CI, Deploy Pages and Release workflows green.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

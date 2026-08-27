@@ -5,10 +5,12 @@ status: Done
 assignee:
   - '@adam'
 created_date: '2026-08-27 15:08'
-updated_date: '2026-08-27 15:21'
+updated_date: '2026-08-27 16:05'
 labels:
   - feature
 dependencies: []
+references:
+  - v0.9.0
 type: feature
 ordinal: 32000
 ---
@@ -32,6 +34,12 @@ In a project without package.json, init currently skips dependency installation 
 <!-- SECTION:PLAN:BEGIN -->
 1. Research planner/execute: where skipInstall/no-PM is decided. 2. TDD: failing integration test - init in dir without package.json creates minimal private package.json (name=basename) and installs. 3. Implement scaffold step before PM detection/install; skip when package.json or lockfile exists. 4. Doctor resolves backlog after such init. 5. Full suite.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Released in v0.9.0: GitHub release https://github.com/adam-s-k-i/super-backlog/releases/tag/v0.9.0, npm https://www.npmjs.com/package/super-backlog/v/0.9.0. CI, Deploy Pages and Release workflows green.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

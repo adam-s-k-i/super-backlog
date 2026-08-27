@@ -4,10 +4,12 @@ title: Auto-refresh README dashboard screenshot with curated demo data
 status: Done
 assignee: []
 created_date: '2026-08-27 15:08'
-updated_date: '2026-08-27 15:29'
+updated_date: '2026-08-27 16:05'
 labels:
   - feature
 dependencies: []
+references:
+  - v0.9.0
 type: feature
 ordinal: 34000
 ---
@@ -25,6 +27,12 @@ docs/assets/dashboard.png is captured manually and shows stale real-repo data. A
 - [x] #3 npm run screenshot works locally
 - [x] #4 Screenshot visually verified to show illustrative example data
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Released in v0.9.0: GitHub release https://github.com/adam-s-k-i/super-backlog/releases/tag/v0.9.0, npm https://www.npmjs.com/package/super-backlog/v/0.9.0. CI, Deploy Pages and Release workflows green.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
