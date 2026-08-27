@@ -1,6 +1,6 @@
 // src/init/execute.ts
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
@@ -208,6 +208,17 @@ export async function executeActions(
         runUpstreamInstall(cwd, action, ctx);
         applied++;
         break;
+      case 'scaffold-package-json': {
+        const pkgPath = join(cwd, 'package.json');
+        if (existsSync(pkgPath)) {
+          skipped++;
+        } else {
+          const minimal = { name: basename(cwd), private: true };
+          atomicWrite(pkgPath, `${JSON.stringify(minimal, null, 2)}\n`);
+          applied++;
+        }
+        break;
+      }
       case 'merge-json':
         applyMergeJson(cwd, action) ? applied++ : skipped++;
         break;

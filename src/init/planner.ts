@@ -13,9 +13,10 @@ export interface SkillsOp { kind: 'copy-skills' }
 export interface HookOp { kind: 'install-guard-hook' }
 export interface RefreshHookOp { kind: 'install-refresh-hook' }
 export interface UpstreamOp { kind: 'upstream-install'; pm: PM | 'none' } // skipped when SBL_SKIP_INSTALL
+export interface ScaffoldPkgOp { kind: 'scaffold-package-json' } // emitted when no package.json exists
 export interface DashboardOp { kind: 'generate-dashboard' }
 export interface ModelRouterOp { kind: 'install-model-router'; enabled: boolean }
-export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | RefreshHookOp | UpstreamOp | DashboardOp | ModelRouterOp;
+export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | RefreshHookOp | UpstreamOp | ScaffoldPkgOp | DashboardOp | ModelRouterOp;
 
 export interface InitOptions {
   projectName?: string;
@@ -58,19 +59,22 @@ export function planInit(
   const warnings: string[] = [];
 
   const degradedAuto = opts.pm === 'auto' && state.detectedPm === null;
+  // degraded auto means: no package.json (detectPackageManager only returns
+  // null then). One-command promise: scaffold a minimal package.json and
+  // proceed with npm instead of degrading to a manual-install warning.
+  const scaffold = degradedAuto && !opts.skipInstall;
 
-  if (!opts.skipInstall && !degradedAuto && opts.pm !== 'skip') {
-    if (opts.pm === 'auto' && state.detectedPm !== null) {
+  if (scaffold) {
+    actions.push({ kind: 'scaffold-package-json' });
+  }
+  if (!opts.skipInstall && opts.pm !== 'skip') {
+    if (scaffold) {
+      actions.push({ kind: 'upstream-install', pm: 'npm' });
+    } else if (opts.pm === 'auto' && state.detectedPm !== null) {
       actions.push({ kind: 'upstream-install', pm: state.detectedPm });
     } else if (opts.pm !== 'auto') {
       actions.push({ kind: 'upstream-install', pm: opts.pm });
     }
-  }
-  if (degradedAuto && !opts.skipInstall) {
-    warnings.push(
-      'no package manager detected - dependency installation and package.json merge were skipped; ' +
-      'install backlog.md and super-backlog manually, or re-run with --pm <npm|pnpm|bun>',
-    );
   }
 
   // opencode.json merge depends only on harness selection and applyPluginEntry
@@ -84,7 +88,7 @@ export function planInit(
     }
   }
 
-  if (!degradedAuto && state.pkgExists) {
+  if ((!degradedAuto && state.pkgExists) || scaffold) {
     actions.push({ kind: 'merge-json', path: 'package.json', transform: 'scripts-and-devdeps' });
   }
 

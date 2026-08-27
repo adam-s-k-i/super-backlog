@@ -28,14 +28,23 @@ describe('planInit', () => {
     expect(actions.map(a => a.kind)).not.toContain('upstream-install');
   });
 
-  it('warns and skips upstream without detected PM', () => {
+  it('scaffolds a minimal package.json and installs with npm when no PM is detected', () => {
     const { actions, warnings } = planInit({ ...base, detectedPm: null, pkgExists: false },
       { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: false }, '1.0.0');
-    expect(actions.map(a => a.kind)).not.toContain('upstream-install');
-    expect(warnings.join(' ')).toMatch(/no package manager detected/i);
-    expect(warnings.join(' ')).not.toMatch(/JSON merges/i); // opencode.json merge is NOT gated on PM
+    const kinds = actions.map(a => a.kind);
+    expect(kinds).toContain('scaffold-package-json');
+    expect(kinds.indexOf('scaffold-package-json')).toBeLessThan(kinds.indexOf('upstream-install'));
+    const upstream = actions.find(a => a.kind === 'upstream-install') as { pm: string };
+    expect(upstream.pm).toBe('npm');
+    expect(warnings.join(' ')).not.toMatch(/no package manager detected/i);
     const jsonOps = actions.filter(a => a.kind === 'merge-json') as Array<{ kind: 'merge-json'; path: string }>;
-    expect(jsonOps.map(a => a.path)).toEqual(['opencode.json']);
+    expect(jsonOps.map(a => a.path)).toEqual(['opencode.json', 'package.json']);
+  });
+
+  it('does not scaffold under --pm skip', () => {
+    const { actions } = planInit({ ...base, detectedPm: null, pkgExists: false },
+      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: false }, '1.0.0');
+    expect(actions.map(a => a.kind)).not.toContain('scaffold-package-json');
   });
 
   it('still warns about near-miss entry without package.json present', () => {

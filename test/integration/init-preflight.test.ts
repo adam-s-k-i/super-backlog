@@ -1,6 +1,6 @@
 // test/integration/init-preflight.test.ts
 import { describe, expect, it, vi } from 'vitest';
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -141,6 +141,31 @@ describe('sbl init preflight integration', () => {
       expect(code).toBe(4);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('scaffolds a minimal package.json when the directory has none', async () => {
+    const cwd = join(tempCwd('scaffold'), 'mein-projekt');
+    const previous = process.env.SBL_SKIP_INSTALL;
+    process.env.SBL_SKIP_INSTALL = '1';
+    try {
+      const code = await runInit(cwd, args({ pm: 'auto' }), {
+        preflight: () => okResult(),
+        doctor: () => 0,
+      });
+      expect(code).toBe(0);
+      const pkg = JSON.parse(
+        readFileSync(join(cwd, 'package.json'), 'utf8'),
+      ) as Record<string, unknown>;
+      expect(pkg.name).toBe('mein-projekt');
+      expect(pkg.private).toBe(true);
+      // scripts/devDeps merged onto the scaffolded file
+      expect(pkg.scripts).toBeDefined();
+      expect(pkg.devDependencies).toBeDefined();
+    } finally {
+      if (previous === undefined) delete process.env.SBL_SKIP_INSTALL;
+      else process.env.SBL_SKIP_INSTALL = previous;
+      rmSync(join(cwd, '..'), { recursive: true, force: true });
     }
   });
 

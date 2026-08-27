@@ -43,6 +43,8 @@ function describeAction(action: Action): string {
   switch (action.kind) {
     case 'upstream-install':
       return `upstream-install via ${action.pm}`;
+    case 'scaffold-package-json':
+      return 'scaffold-package-json package.json';
     case 'merge-json':
       return `merge-json ${action.path} (${action.transform})`;
     case 'inject-agents-block':
