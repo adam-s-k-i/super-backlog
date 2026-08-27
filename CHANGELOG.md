@@ -3,6 +3,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.9.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.8.1...v0.9.0) (2026-08-27)
+
+
+### Features
+
+* **docs:** auto-refresh README dashboard screenshot from curated demo data ([91373c4](https://github.com/adam-s-k-i/super-backlog/commit/91373c42781b5635af672f5ec466cb75ddf6bac9))
+* **init:** scaffold minimal package.json when absent ([25ccd83](https://github.com/adam-s-k-i/super-backlog/commit/25ccd83756bdacd62e6add6cf0ea3d7531efefdf))
+
+
+### Bug Fixes
+
+* **dashboard:** fall back to directory name for project identity ([359a122](https://github.com/adam-s-k-i/super-backlog/commit/359a12234586017dbaff78b9d5b90c1349dcced3))
+* **docs:** dashboard links bypass SPA router, installer URLs use master ([7fdaad9](https://github.com/adam-s-k-i/super-backlog/commit/7fdaad9304b88af740804eedafcdbc9fd8ed53ee))
+
 ## [0.8.1](https://github.com/adam-s-k-i/super-backlog/compare/v0.8.0...v0.8.1) (2026-08-27)
 
 
