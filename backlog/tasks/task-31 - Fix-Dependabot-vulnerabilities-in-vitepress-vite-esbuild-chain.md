@@ -1,11 +1,11 @@
 ---
 id: TASK-31
 title: Fix Dependabot vulnerabilities in vitepress/vite/esbuild chain
-status: In Progress
+status: Done
 assignee:
   - '@adam'
 created_date: '2026-08-27 13:14'
-updated_date: '2026-08-27 13:14'
+updated_date: '2026-08-27 13:36'
 labels:
   - bug
 dependencies: []
@@ -21,9 +21,9 @@ npm audit reports 4 open alerts on the default branch (1 high: vite path travers
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 npm audit reports 0 vulnerabilities
-- [ ] #2 VitePress docs build succeeds with the overridden versions
-- [ ] #3 vitest subtree keeps its own vite version (no downgrade)
+- [x] #1 npm audit reports 0 vulnerabilities
+- [x] #2 VitePress docs build succeeds with the overridden versions
+- [x] #3 vitest subtree keeps its own vite version (no downgrade)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -31,3 +31,15 @@ npm audit reports 4 open alerts on the default branch (1 high: vite path travers
 <!-- SECTION:PLAN:BEGIN -->
 1. Add npm overrides scoped to vitepress: vite ^6.4.3, esbuild ^0.25.0. 2. npm install, then npm audit -> expect 0. 3. Verify docs build (npx vitepress build) works with vite 6. 4. Verify vitest still uses vite 8 subtree; full test suite green. 5. Commit + push; Dependabot alerts should close.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nested overrides under vitepress alone were not enough: @vitejs/plugin-vue kept its own vite 5 copy, and the stale lockfile pinned it until a clean reinstall. vitest initially deduped down to vite 6.4.3; a second scoped override keeps it on vite 8. Rebase onto the 0.8.0 release required lockfile regeneration (delete lock + node_modules, npm install).
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Fixed all 4 Dependabot alerts via scoped npm overrides: vitepress subtree (incl. @vitejs/plugin-vue) now resolves vite ^6.4.3 + esbuild ^0.25.0, vitest subtree stays on vite 8. Verified: npm audit 0 vulnerabilities, npx vitepress build docs succeeds, full suite 305/305 green, master CI green, GitHub Dependabot API reports 0 open alerts.
+<!-- SECTION:FINAL_SUMMARY:END -->
