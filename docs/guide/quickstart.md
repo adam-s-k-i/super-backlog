@@ -4,8 +4,31 @@ Get super-backlog installed and running in a few commands.
 
 ## Install
 
+Use the official installer for your platform. Both check Node.js and npm, install super-backlog, and run `sbl init` without relying on `npx`.
+
+**Windows (PowerShell)** — works even when `npx` is blocked by Execution Policy:
+
+```powershell
+irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.ps1 | iex
+```
+
+**macOS / Linux**:
+
 ```bash
-npx super-backlog init
+curl -fsSL https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.sh | bash
+```
+
+If you already have Node and npm and prefer a manual install, run `sbl init` directly without `npx`:
+
+```bash
+# Global install
+npm install -g super-backlog
+sbl init
+sbl init --models
+
+# Local install
+npm install super-backlog
+node ./node_modules/super-backlog/dist/cli.js init
 ```
 
 `init` is idempotent — run it again any time to upgrade injected files to the latest kit version.
@@ -67,7 +90,7 @@ See [Harness support](./harness-support) for the full matrix.
 
 ## Windows PowerShell
 
-`npx super-backlog` may fail with an execution-policy error before the CLI starts. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or use `sbl doctor` for the exact policy and fix.
+If you prefer `npx` or a globally installed `sbl` command, PowerShell's Execution Policy may block `.ps1` shims. Use the installer above (`irm ... | iex`) to avoid this entirely. If you still want to use `npx`, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or use `sbl doctor` for the exact policy and fix.
 
 ## Next steps
 

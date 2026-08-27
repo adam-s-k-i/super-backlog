@@ -23,7 +23,7 @@ layout: page
   <div class="landing-features">
     <div class="feature">
       <h3>One-command install</h3>
-      <p>npx super-backlog init wires Backlog.md, Superpowers skills, npm scripts, and the dashboard into your project.</p>
+      <p>Run the one-line installer to wire Backlog.md, Superpowers skills, npm scripts, and the dashboard into your project.</p>
     </div>
     <div class="feature">
       <h3>Model router</h3>

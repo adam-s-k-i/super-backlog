@@ -19,15 +19,41 @@ Superpowers and Backlog.md are strong on their own, but nothing wires them toget
 
 ## Quickstart
 
-```bash
-npx super-backlog init          # install everything into the current project
-npx super-backlog init --models # install + enable the optional model router
-npm run board                   # open the Backlog.md kanban board
-sbl dashboard --serve           # live Project Dashboard on http://localhost:6428
-                                # (or: npx super-backlog dashboard --serve)
+Install super-backlog into the current project with the official installer for your platform:
+
+**Windows (PowerShell)** — bypasses Execution Policy automatically:
+
+```powershell
+irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.ps1 | iex
 ```
 
-On Windows PowerShell, `npx super-backlog init` may fail with an execution-policy error before the CLI starts. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once in PowerShell, or run `sbl doctor` for the exact policy and fix.
+**macOS / Linux**:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.sh | bash
+```
+
+Both installers check Node.js and npm, install `super-backlog`, and run `sbl init` without using `npx`, so they work even when `npx` is blocked by PowerShell's Execution Policy.
+
+**Already have Node and npm?** You can also install manually without `npx`:
+
+```bash
+# Global install
+npm install -g super-backlog
+sbl init
+sbl init --models
+
+# Local install
+npm install super-backlog
+node ./node_modules/super-backlog/dist/cli.js init
+```
+
+After installation:
+
+```bash
+npm run board                   # open the Backlog.md kanban board
+sbl dashboard --serve             # live Project Dashboard on http://localhost:6428
+```
 
 `init` is idempotent — safe to re-run any time; re-running with a newer kit version is the upgrade path for all injected files.
 

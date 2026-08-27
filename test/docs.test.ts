@@ -9,7 +9,7 @@ const troubleshooting = readFileSync(join(root, 'docs', 'guide', 'troubleshootin
 
 describe('README doc-rot guard', () => {
   it('contains the quickstart command', () => {
-    expect(readme).toContain('npx super-backlog init');
+    expect(readme).toContain('irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.ps1 | iex');
   });
 
   it('lists all four merged npm scripts with their commands', () => {
