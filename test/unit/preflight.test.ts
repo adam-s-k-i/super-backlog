@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { join } from 'node:path';
-import process from 'node:process';
 
 import {
   runPreflight,
@@ -8,11 +7,12 @@ import {
 } from '../../src/lib/preflight.js';
 import type { ExecutorResult } from '../../src/lib/powershell.js';
 
-// platform-agnostic project paths (must match join() output on every OS)
+// platform-agnostic project paths (must match join() output on every OS).
+// The shim name is always sbl.cmd because makeDeps fakes platform 'win32'.
 const PROJ = 'C:\\proj';
 const PKG_JSON = join(PROJ, 'package.json');
 const PKG_DIR = join(PROJ, 'node_modules', 'super-backlog');
-const SBL_SHIM = join(PROJ, 'node_modules', '.bin', process.platform === 'win32' ? 'sbl.cmd' : 'sbl');
+const SBL_SHIM = join(PROJ, 'node_modules', '.bin', 'sbl.cmd');
 
 interface Call {
   cmd: string;
