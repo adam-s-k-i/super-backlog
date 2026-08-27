@@ -95,11 +95,11 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
     expect(err).toMatch(/not valid JSON/i);
   });
 
-  it('warns about a blocking PowerShell policy without changing the exit code', () => {
+  it('surfaces a blocking PowerShell policy via the verification pass (exit 4)', () => {
     const { out, status } = runInit(dir, ['--pm', 'npm', '--no-dashboard', '--harness', 'opencode'], {
       SBL_FAKE_POLICY: 'Restricted',
     });
-    expect(status).toBe(0);
+    expect(status).toBe(4);
     expect(out).toContain('PowerShell execution policy "Restricted"');
     expect(out).toContain('Set-ExecutionPolicy -Scope CurrentUser RemoteSigned');
   });

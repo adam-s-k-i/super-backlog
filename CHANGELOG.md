@@ -3,6 +3,20 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.7.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.6.0...v0.7.0) (2026-08-27)
+
+
+### Features
+
+* **install:** self-healing install and uninstall flows ([e289989](https://github.com/adam-s-k-i/super-backlog/commit/e289989942092861a0f188fa842f4bef35ebb389))
+
+
+### Bug Fixes
+
+* **test:** align preflight shim probe with the faked win32 platform ([c291701](https://github.com/adam-s-k-i/super-backlog/commit/c2917011c0ef5ba26566e1bca2f6a4bbc8aac003))
+* **test:** make preflight unit tests platform-agnostic ([8272165](https://github.com/adam-s-k-i/super-backlog/commit/8272165d382f861546fb4f5a698b7fe13432d4ae))
+* **test:** raise vitest testTimeout to 30s for spawn-heavy e2e ([ee8e6b8](https://github.com/adam-s-k-i/super-backlog/commit/ee8e6b81ab8853cad4a6e07558140095bcef4cd5))
+
 ## [0.6.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.5.0...v0.6.0) (2026-08-27)
 
 
