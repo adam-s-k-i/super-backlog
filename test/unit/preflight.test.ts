@@ -1,10 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { join } from 'node:path';
+import process from 'node:process';
 
 import {
   runPreflight,
   type PreflightDeps,
 } from '../../src/lib/preflight.js';
 import type { ExecutorResult } from '../../src/lib/powershell.js';
+
+// platform-agnostic project paths (must match join() output on every OS)
+const PROJ = 'C:\\proj';
+const PKG_JSON = join(PROJ, 'package.json');
+const PKG_DIR = join(PROJ, 'node_modules', 'super-backlog');
+const SBL_SHIM = join(PROJ, 'node_modules', '.bin', process.platform === 'win32' ? 'sbl.cmd' : 'sbl');
 
 interface Call {
   cmd: string;
@@ -241,9 +249,9 @@ describe('runPreflight', () => {
   it('reinstalls dependencies when the backlog CLI is not resolvable', () => {
     const deps = makeDeps({
       backlogResults: [null, 'C:\\proj\\node_modules\\.bin\\backlog.cmd'],
-      existingPaths: ['C:\\proj\\package.json'],
+      existingPaths: [PKG_JSON],
     });
-    const result = runPreflight('C:\\proj', deps);
+    const result = runPreflight(PROJ, deps);
     expect(deps.calls.some((c) => c.args[0] === 'install' && c.cmd.startsWith('npm'))).toBe(true);
     expect(result.reports.find((r) => r.id === 'backlog-bin')?.status).toBe('fixed');
   });
@@ -251,9 +259,9 @@ describe('runPreflight', () => {
   it('reports failed with a manual command when npm install does not restore backlog', () => {
     const deps = makeDeps({
       backlogResults: [null, null],
-      existingPaths: ['C:\\proj\\package.json'],
+      existingPaths: [PKG_JSON],
     });
-    const result = runPreflight('C:\\proj', deps);
+    const result = runPreflight(PROJ, deps);
     const report = result.reports.find((r) => r.id === 'backlog-bin');
     expect(report?.status).toBe('failed');
     expect(report?.manualCommand).toBe('npm install');
@@ -261,19 +269,17 @@ describe('runPreflight', () => {
   });
 
   it('repairs a partial install where the package dir exists but the .bin shim is missing', () => {
-    const missingShim = 'C:\\proj\\node_modules\\.bin\\sbl.cmd';
-    const pkgDir = 'C:\\proj\\node_modules\\super-backlog';
     let shimRestored = false;
     const deps = makeDeps({
-      existingPaths: [pkgDir, 'C:\\proj\\package.json'],
-      exists: (p: string) => p === pkgDir || p === 'C:\\proj\\package.json' || (p === missingShim && shimRestored),
+      existingPaths: [PKG_DIR, PKG_JSON],
+      exists: (p: string) => p === PKG_DIR || p === PKG_JSON || (p === SBL_SHIM && shimRestored),
       executor: (cmd: string, args: string[]): ExecutorResult => {
         deps.calls.push({ cmd, args });
         if (args[0] === 'install') shimRestored = true;
         return { status: 0, stdout: '', stderr: '' };
       },
     });
-    const result = runPreflight('C:\\proj', deps);
+    const result = runPreflight(PROJ, deps);
     const report = result.reports.find((r) => r.id === 'partial-install');
     expect(report?.status).toBe('fixed');
     expect(deps.calls.some((c) => c.args[0] === 'install')).toBe(true);
@@ -281,13 +287,9 @@ describe('runPreflight', () => {
 
   it('reports partial-install ok when package and shim are consistent', () => {
     const deps = makeDeps({
-      existingPaths: [
-        'C:\\proj\\package.json',
-        'C:\\proj\\node_modules\\super-backlog',
-        'C:\\proj\\node_modules\\.bin\\sbl.cmd',
-      ],
+      existingPaths: [PKG_JSON, PKG_DIR, SBL_SHIM],
     });
-    const result = runPreflight('C:\\proj', deps);
+    const result = runPreflight(PROJ, deps);
     expect(result.reports.find((r) => r.id === 'partial-install')?.status).toBe('ok');
   });
 
@@ -297,7 +299,7 @@ describe('runPreflight', () => {
       nodeVersions: ['18.19.1'],
       confirm: () => false,
     });
-    const result = runPreflight('C:\\proj', deps);
+    const result = runPreflight(PROJ, deps);
     expect(result.reports.length).toBe(1);
     expect(result.reports[0].id).toBe('node-version');
     expect(result.ok).toBe(false);
@@ -307,9 +309,9 @@ describe('runPreflight', () => {
     const deps = makeDeps({
       units: ['backlog-bin', 'partial-install'],
       backlogResults: [null],
-      existingPaths: ['C:\\proj\\node_modules\\super-backlog'],
+      existingPaths: [PKG_DIR],
     });
-    const result = runPreflight('C:\\proj', deps);
+    const result = runPreflight(PROJ, deps);
     expect(result.reports.every((r) => r.status === 'skipped')).toBe(true);
     expect(deps.calls.some((c) => c.args[0] === 'install')).toBe(false);
     expect(result.ok).toBe(true);
