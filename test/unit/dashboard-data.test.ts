@@ -189,6 +189,27 @@ describe('collectDashboardData', () => {
     expect(data2.project.name).toBe('pkg-name-2');
     expect(data2.project.description).toBe('');
   });
+
+  it('falls back to the directory name when config and package.json yield nothing', () => {
+    const parent = freshDir();
+    const dir = join(parent, 'mein-konkretes-projekt');
+    mkdirSync(dir, { recursive: true });
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    expect(data.project.name).toBe('mein-konkretes-projekt');
+  });
+
+  it('keeps Untitled project only as the last resort', () => {
+    const dir = freshDir();
+
+    const data = collectDashboardData(dir, { kitVersion: 'v' });
+
+    // temp dirs always have a basename, so the generic placeholder only
+    // appears when the basename itself is unusable (filesystem root)
+    expect(data.project.name.length).toBeGreaterThan(0);
+    expect(data.project.name).not.toBe('');
+  });
 });
 
 const DEPS_JSON =

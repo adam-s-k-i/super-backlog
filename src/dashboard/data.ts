@@ -1,6 +1,6 @@
 // src/dashboard/data.ts
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import { resolveBacklogBin, runCapture } from '../lib/run.js';
 import { readSimpleKeys } from '../lib/yamlmini.js';
@@ -290,6 +290,7 @@ function readProjectIdentity(cwd: string): { name: string; description: string }
     asString(cfg['project_name']) ??
     asString(cfg['name']) ??
     asString(pkg?.['name']) ??
+    asString(basename(cwd)) ??
     'Untitled project';
   const description = asString(cfg['description']) ?? asString(pkg?.['description']) ?? '';
   return { name, description };
