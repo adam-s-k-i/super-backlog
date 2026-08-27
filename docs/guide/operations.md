@@ -21,7 +21,7 @@ coverage. This document is the operator manual.
 | Deploy Pages | `pages-deploy.yml` | push to master; dispatch | pages write, id-token write | previous site stays live; next Monthly deep check reports it |
 | Weekly QA | `qa-weekly.yml` | cron Mon 04:00 UTC; dispatch | issues write for report jobs | audit findings / outdated deps posted to their issues |
 | Monthly deep check | `qa-monthly.yml` | cron 1st of month 05:00 UTC; dispatch | issues write for healthcheck | opens issue `Pages healthcheck failing` (label `ci-failure`) |
-| PR hygiene | `pr-hygiene.yml` | pull_request events | minimal per job | required title check fails the PR |
+| PR hygiene | `pr-hygiene.yml` | pull_request events | minimal per job | required title check fails the PR; Docs-Gate blocks `feat:` PRs that change `src/` without a docs update |
 | Stale | `stale.yml` | cron daily 03:17 UTC; dispatch | issues/prs write | nothing to do |
 
 ## The release chain
