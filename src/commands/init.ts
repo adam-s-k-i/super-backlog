@@ -1,5 +1,5 @@
 // src/commands/init.ts
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import process from 'node:process';
 
@@ -9,6 +9,8 @@ import {
   isBlockingExecutionPolicy,
   policyWarningLines,
 } from '../lib/powershell.js';
+import { runPreflight, type PreflightDeps, type PreflightResult } from '../lib/preflight.js';
+import { runDoctor } from './doctor.js';
 import { KIT_VERSION } from '../lib/version.js';
 import { executeActions, InvalidJsonError, RefusalError, UpstreamError } from '../init/execute.js';
 import { planInit, type Action, type InitOptions, type InitState } from '../init/planner.js';
@@ -18,6 +20,15 @@ export interface ParsedArgs {
   values: Record<string, string | boolean | undefined>;
   positionals: string[];
 }
+
+export interface InitDeps {
+  preflight?: (cwd: string, deps: PreflightDeps) => PreflightResult;
+  doctor?: (cwd: string) => number;
+  confirm?: (question: string) => boolean;
+}
+
+/** Units that make sense before init; install-type fixes belong to init itself. */
+const INIT_PREFLIGHT_UNITS = ['node-version', 'execution-policy', 'npm-command'];
 
 const HARNESS_VALUES = ['opencode', 'claude'] as const;
 type Harness = (typeof HARNESS_VALUES)[number];
@@ -62,7 +73,22 @@ function maybePrintPolicyWarning(): void {
   }
 }
 
-export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
+/** Synchronous Y/n prompt; defaults to "no" when stdin is not interactive. */
+export function promptYesNo(question: string): boolean {
+  if (!process.stdin.isTTY) return false;
+  process.stdout.write(`${question} [y/N] `);
+  const buf = Buffer.alloc(64);
+  let n = 0;
+  try {
+    n = readSync(process.stdin.fd, buf, 0, 64, null);
+  } catch {
+    return false;
+  }
+  const answer = buf.subarray(0, n).toString('utf8').trim().toLowerCase();
+  return answer === 'y' || answer === 'yes';
+}
+
+export async function runInit(cwd: string, args: ParsedArgs, deps: InitDeps = {}): Promise<number> {
   const harnesses: Harness[] = [];
   const rawHarnesses = args.values.harness;
   const listed: unknown[] = Array.isArray(rawHarnesses)
@@ -129,6 +155,26 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
     return plan.warnings.length > 0 ? 4 : 0;
   }
 
+  const preflightRun = deps.preflight ?? runPreflight;
+  const preflightResult = preflightRun(cwd, {
+    units: INIT_PREFLIGHT_UNITS,
+    fixAll: args.values['fix-all'] === true,
+    confirm: deps.confirm ?? promptYesNo,
+    log: (line) => console.log(line),
+  });
+  const failed = preflightResult.reports.filter((r) => r.status === 'failed');
+  if (failed.length > 0) {
+    for (const f of failed) {
+      console.error(`error: preflight fix failed (${f.id}): ${f.detail}`);
+      if (f.manualCommand !== undefined) {
+        console.error(`       fix it manually: ${f.manualCommand}`);
+      }
+    }
+    return 1;
+  }
+  // needs-manual reports (declined or non-interactive consent) are surfaced with
+  // their manual command by preflight but must not change the exit code.
+
   try {
     const result = await executeActions(cwd, plan.actions, {
       version: KIT_VERSION,
@@ -140,8 +186,14 @@ export async function runInit(cwd: string, args: ParsedArgs): Promise<number> {
       `super-backlog init complete - planned ${plan.actions.length}, applied ${result.applied}, skipped ${result.skipped}`,
     );
     for (const warning of warnings) console.log(`warning: ${warning}`);
-    maybePrintPolicyWarning();
-    return warnings.length > 0 ? 4 : 0;
+    const doctor = deps.doctor ?? ((c: string) => runDoctor(c));
+    console.log('post-install verification (doctor):');
+    const doctorCode = doctor(cwd);
+    const unverified = doctorCode !== 0;
+    if (unverified) {
+      console.log('warning: post-install verification reported warnings (see doctor output above)');
+    }
+    return warnings.length > 0 || unverified ? 4 : 0;
   } catch (err) {
     if (err instanceof UpstreamError) {
       console.error(`error: upstream command failed: ${err.message}`);

@@ -31,10 +31,12 @@ init options:
   --no-models                     Explicitly opt out of the model router
   --no-dashboard                  Skip generating the project dashboard
   --no-refresh-hook               Skip the post-commit dashboard freshness hook
+  --fix-all                       Repair environment problems automatically (no prompts)
   --dry-run                       Show what would be done without writing anything
 
 uninstall options:
   --with-backlog                  Also permanently delete the backlog/ data directory
+  --fix-all                       Also remove the global npm package (no prompts)
 
 update options:
   (none)                          Refreshes injected files, skills, hook; prints upstream versions
@@ -81,6 +83,7 @@ async function main(argv: string[]): Promise<number> {
           'no-models': { type: 'boolean' },
           'no-dashboard': { type: 'boolean' },
           'no-refresh-hook': { type: 'boolean' },
+          'fix-all': { type: 'boolean' },
           'dry-run': { type: 'boolean' },
         },
       });
@@ -93,7 +96,7 @@ async function main(argv: string[]): Promise<number> {
       const parsed = parseArgs({
         args: rest,
         allowPositionals: true,
-        options: { 'with-backlog': { type: 'boolean' } },
+        options: { 'with-backlog': { type: 'boolean' }, 'fix-all': { type: 'boolean' } },
       });
       return runUninstall(process.cwd(), {
         values: parsed.values as Record<string, string | boolean | undefined>,

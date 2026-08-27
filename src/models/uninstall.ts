@@ -12,7 +12,7 @@ const ROUTER_FILES = [
   '.claude/agents/sbl-worker-cheap.md',
 ];
 
-type ReportLine = { verdict: 'removed' | 'kept' | 'skipped'; label: string };
+type ReportLine = { verdict: 'removed' | 'kept' | 'skipped' | 'error'; label: string };
 
 export function uninstallModelRouter(cwd: string, report: ReportLine[]): void {
   for (const rel of ROUTER_FILES) {

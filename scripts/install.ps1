@@ -1,9 +1,13 @@
 #!/usr/bin/env powershell
 # super-backlog installer for Windows
-# Recommended invocation (bypasses PowerShell Execution Policy):
-#   irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.ps1 | iex
+# Recommended invocation (works under the default Restricted execution policy):
+#   irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/master/scripts/install.ps1 | iex
 # Optional: install locally instead of globally
-#   irm ... | iex; -Local
+#   & ([scriptblock]::Create((irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/master/scripts/install.ps1))) -Local
+#
+# Self-healing (node version, execution policy, npm fallback, PATH) lives in the
+# CLI: this wrapper only bootstraps it. It calls the .cmd shims explicitly so a
+# restrictive PowerShell execution policy can never break the run.
 
 param(
     [switch]$Local,
@@ -22,6 +26,14 @@ function Write-Info($msg) { Write-Host "[sbl installer] $msg" -ForegroundColor C
 function Write-Ok($msg) { Write-Host "[sbl installer] $msg" -ForegroundColor Green }
 function Write-Err($msg) { Write-Host "[sbl installer] $msg" -ForegroundColor Red }
 
+# Resolve the .cmd shim explicitly: "npm"/"sbl" resolve to .ps1 shims in
+# PowerShell, which a Restricted/AllSigned execution policy refuses to load.
+function Find-CmdShim($name) {
+    $shim = Get-Command "$name.cmd" -ErrorAction SilentlyContinue
+    if ($shim) { return $shim.Source }
+    return $null
+}
+
 Write-Info "Installing super-backlog on Windows..."
 
 if (-not (Test-Command "node")) {
@@ -33,35 +45,46 @@ if (-not (Test-Command "node")) {
 $nodeVersion = node --version
 Write-Ok "Node.js found: $nodeVersion"
 
-if (-not (Test-Command "npm")) {
+$npm = Find-CmdShim "npm"
+if (-not $npm) {
     Write-Err "npm was not found. It should be installed together with Node.js."
     exit 1
 }
-Write-Ok "npm found: $(npm --version)"
+Write-Ok "npm found: $(& $npm --version)"
 
 $initArgs = @("init")
 if ($Models) { $initArgs += "--models" }
 
 if ($Local) {
     Write-Info "Installing super-backlog locally in the current directory..."
-    npm install $PackageName
+    & $npm install $PackageName
+    if ($LASTEXITCODE -ne 0) { Write-Err "npm install failed (exit $LASTEXITCODE)."; exit 1 }
     Write-Ok "Local installation complete."
 
-    $cli = Join-Path (Get-Location) "node_modules" $PackageName "dist" "cli.js"
+    $cli = Join-Path (Get-Location) "node_modules\$PackageName\dist\cli.js"
     if (-not (Test-Path $cli)) {
         Write-Err "Expected CLI entry not found: $cli"
         exit 1
     }
     & "node" $cli @initArgs
+    # exit 0 = ok, 4 = success with warnings (see CLI exit code contract)
+    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 4) { Write-Err "sbl init failed (exit $LASTEXITCODE)."; exit $LASTEXITCODE }
 } else {
     Write-Info "Installing super-backlog globally..."
-    npm install -g $PackageName
+    & $npm install -g $PackageName
+    if ($LASTEXITCODE -ne 0) { Write-Err "npm install -g failed (exit $LASTEXITCODE)."; exit 1 }
     Write-Ok "Global installation complete."
 
-    if (-not (Test-Command $CliName)) {
+    $sbl = Find-CmdShim $CliName
+    if (-not $sbl) {
         Write-Err "The '$CliName' command is not available after global install."
-        Write-Err "Make sure npm's global bin directory is on your PATH, then try again."
+        Write-Err "Run 'npm bin -g', add the printed directory to your PATH, open a new terminal, then run 'sbl init'."
         exit 1
     }
-    & $CliName @initArgs
+    & $sbl @initArgs
+    # exit 0 = ok, 4 = success with warnings (see CLI exit code contract)
+    if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne 4) { Write-Err "sbl init failed (exit $LASTEXITCODE)."; exit $LASTEXITCODE }
 }
+
+Write-Ok "super-backlog is ready. Run 'sbl doctor' to verify your environment."
+exit 0
