@@ -16,7 +16,7 @@ layout: page
   </p>
 
   <p class="landing-actions">
-    <a class="landing-btn primary" href="/super-backlog/guide/architecture">Get started</a>
+    <a class="landing-btn primary" href="/super-backlog/guide/quickstart">Quick start</a>
     <a class="landing-btn" href="/super-backlog/dashboard.html">Project Dashboard</a>
   </p>
 
@@ -26,12 +26,16 @@ layout: page
       <p>npx super-backlog init wires Backlog.md, Superpowers skills, npm scripts, and the dashboard into your project.</p>
     </div>
     <div class="feature">
-      <h3>Clean uninstall</h3>
-      <p>Ownership-proven removal keeps your task data unless you ask otherwise.</p>
+      <h3>Model router</h3>
+      <p>Add <code>--models</code> to route simple agents to cheaper tiers while keeping your main model for the hard work.</p>
     </div>
     <div class="feature">
       <h3>Live project dashboard</h3>
       <p>A single self-contained HTML file generated from your Backlog data — regenerated on every deploy right here.</p>
+    </div>
+    <div class="feature">
+      <h3>Clean uninstall</h3>
+      <p>Ownership-proven removal keeps your task data unless you ask otherwise.</p>
     </div>
   </div>
 </div>

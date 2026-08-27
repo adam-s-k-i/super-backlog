@@ -1,0 +1,76 @@
+# Quick start
+
+Get super-backlog installed and running in a few commands.
+
+## Install
+
+```bash
+npx super-backlog init
+```
+
+`init` is idempotent — run it again any time to upgrade injected files to the latest kit version.
+
+Add `--models` to also enable the optional [model router](#model-router-opt-in).
+
+## Daily commands
+
+| Command | What it does |
+| --- | --- |
+| `sbl init` | Wire Backlog.md, Superpowers skills, npm scripts, hooks, and dashboard into the current project. |
+| `sbl init --models` | Same as above, plus the optional model router. |
+| `npm run board` | Open the Backlog.md kanban board. |
+| `npm run tasks` | List Backlog tasks in the terminal. |
+| `npm run browser` | Open the Backlog browser UI. |
+| `npm run dashboard` | Regenerate `dashboard.html`. |
+| `sbl dashboard --serve` | Serve the dashboard with live reload on `http://localhost:6428`. |
+| `sbl update` | Refresh all injected files and print harness/plugin versions. |
+| `sbl doctor` | Check Node, PowerShell policy, and the `backlog` CLI. |
+| `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
+| `sbl uninstall --with-backlog` | Remove everything, including task data. |
+
+## Model router (opt-in)
+
+The model router routes cheap models to simple agents and keeps your main model for complex work.
+
+| Command | What it does |
+| --- | --- |
+| `sbl init --models` | Install the router and harness adapters. |
+| `sbl models enable` | Turn routing on. |
+| `sbl models disable` | Turn routing off. |
+| `sbl models show` | Show the current router config. |
+| `sbl models discover` | Discover available OpenCode models and rank them into tiers. |
+
+When enabled:
+
+- **OpenCode** uses a `chat.params` plugin to rewrite the model for `sbl-worker` (workhorse) and `sbl-worker-cheap` / `explore` (budget) agents.
+- **Claude Code** uses a `SessionStart` hook to update agent `model:` placeholders based on your current main model.
+- The dashboard server exposes `/api/models` and `/api/models/discover` for inspection.
+
+The router is removed cleanly by `sbl uninstall`.
+
+## Project dashboard
+
+```bash
+sbl dashboard --serve
+```
+
+Generates a self-contained `dashboard.html` with board status, milestones, tasks, dependencies, activity, and decisions. With `--serve` it watches `backlog/` and reloads automatically.
+
+By default `init` installs a post-commit hook that regenerates the dashboard whenever a commit touches `backlog/`. Opt out with `--no-refresh-hook`.
+
+## Harness support
+
+- **OpenCode** — plugin entry + file-based skills under `.opencode/skill/`.
+- **Claude Code** — file-based skills under `.claude/skills/` work immediately. `init` prints the marketplace plugin command to paste into Claude Code.
+
+See [Harness support](./harness-support) for the full matrix.
+
+## Windows PowerShell
+
+`npx super-backlog` may fail with an execution-policy error before the CLI starts. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once, or use `sbl doctor` for the exact policy and fix.
+
+## Next steps
+
+- Architecture deep-dive: [Architecture](./architecture)
+- Operations and release chain: [Operations](./operations)
+- Troubleshooting and exit codes: [Troubleshooting](./troubleshooting)

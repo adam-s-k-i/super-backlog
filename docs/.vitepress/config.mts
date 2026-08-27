@@ -9,6 +9,7 @@ export default defineConfig({
   themeConfig: {
     siteTitle: 'super-backlog',
     nav: [
+      { text: 'Quick start', link: '/guide/quickstart' },
       { text: 'Guide', link: '/guide/architecture' },
       { text: 'Dashboard', link: '/dashboard.html' },
       { text: 'GitHub', link: 'https://github.com/adam-s-k-i/super-backlog' }
@@ -17,6 +18,7 @@ export default defineConfig({
       {
         text: 'Guide',
         items: [
+          { text: 'Quick start', link: '/guide/quickstart' },
           { text: 'Architecture', link: '/guide/architecture' },
           { text: 'Harness support', link: '/guide/harness-support' },
           { text: 'Guard hook', link: '/guide/guard' },
