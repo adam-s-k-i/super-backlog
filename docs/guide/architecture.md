@@ -1,3 +1,7 @@
+---
+type: explanation
+---
+
 # Architecture
 
 super-backlog is a Node >= 20 CLI (TypeScript, ESM, zero runtime dependencies) that equips projects with Backlog.md + Superpowers. This document explains the three ideas it is built on: the glue-orchestrator role, the planner/executor change flow, and the ownership model that makes uninstall safe.

@@ -1,3 +1,7 @@
+---
+type: how-to
+---
+
 # Repository operations
 
 This project runs itself as far as possible. Every automated process is a

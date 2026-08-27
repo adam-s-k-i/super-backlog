@@ -1,3 +1,7 @@
+---
+type: how-to
+---
+
 # Publishing super-backlog
 
 Releases are fully automated. Merging Conventional-Commit PRs into `master`

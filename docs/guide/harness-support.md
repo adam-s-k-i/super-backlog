@@ -1,3 +1,7 @@
+---
+type: reference
+---
+
 # Harness support
 
 super-backlog v1 supports two agent harnesses (design decision D1): **OpenCode** and **Claude Code**. `sbl init` targets both by default; use `--harness opencode` or `--harness claude` to restrict.
