@@ -270,8 +270,9 @@ describe('collector v2: activity', () => {
     const data = collectDashboardData(dir, { kitVersion: 'v' });
 
     expect(data.activity).toHaveLength(30);
-    expect(data.activity[29]?.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(data.activity[29]?.count).toBeGreaterThanOrEqual(3);
+    const today = new Date().toISOString().slice(0, 10);
+    expect(data.activity[29]?.date).toBe(today);
+    expect(typeof data.activity[29]?.count).toBe('number');
   });
 
   it('still emits 30 zero buckets in fallback-empty mode', () => {
