@@ -15,7 +15,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # push the refreshed dashboard screenshot branch
+      pull-requests: write # open the screenshot refresh PR
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v4.2.2
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -25,6 +26,25 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: node dist/cli.js dashboard --no-open --out docs/public/dashboard.html
+      - run: node scripts/capture-dashboard.mjs
+      - name: Open PR when the README screenshot changed
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git diff --quiet docs/assets/dashboard.png; then
+            echo "screenshot unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B docs/dashboard-screenshot
+          git add docs/assets/dashboard.png
+          git commit -m "docs: refresh dashboard screenshot [skip ci]"
+          git push -f origin docs/dashboard-screenshot
+          gh pr create --title "docs: refresh dashboard screenshot" \
+            --body "Regenerated docs/assets/dashboard.png from the curated demo dataset (scripts/capture-dashboard.mjs)." \
+            --base master --head docs/dashboard-screenshot || echo "PR already exists"
       - run: npx vitepress build docs
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

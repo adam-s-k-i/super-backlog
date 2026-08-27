@@ -28,7 +28,8 @@
     "tasks": "backlog task list",
     "board": "backlog board",
     "browser": "backlog browser",
-    "dashboard": "super-backlog dashboard"
+    "dashboard": "super-backlog dashboard",
+    "screenshot": "npm run build && node scripts/capture-dashboard.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
