@@ -13,13 +13,13 @@ Use the official installer for your platform. Both check Node.js and npm, instal
 **Windows (PowerShell)** — works even when `npx` is blocked by Execution Policy:
 
 ```powershell
-irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/master/scripts/install.ps1 | iex
 ```
 
 **macOS / Linux**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adam-s-k-i/super-backlog/master/scripts/install.sh | bash
 ```
 
 If you already have Node and npm and prefer a manual install, run `sbl init` directly without `npx`:

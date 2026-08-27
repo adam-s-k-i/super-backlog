@@ -9,7 +9,29 @@ const troubleshooting = readFileSync(join(root, 'docs', 'guide', 'troubleshootin
 
 describe('README doc-rot guard', () => {
   it('contains the quickstart command', () => {
-    expect(readme).toContain('irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.ps1 | iex');
+    expect(readme).toContain('irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/master/scripts/install.ps1 | iex');
+  });
+
+  it('never references the stale /main/ branch in raw installer URLs', () => {
+    const docsQuickstart = readFileSync(join(root, 'docs', 'guide', 'quickstart.md'), 'utf8');
+    for (const text of [readme, docsQuickstart]) {
+      expect(text).not.toContain('raw.githubusercontent.com/adam-s-k-i/super-backlog/main/');
+      expect(text).toContain('raw.githubusercontent.com/adam-s-k-i/super-backlog/master/');
+    }
+  });
+
+  it('opens the dashboard links outside the SPA router (public static file)', () => {
+    // dashboard.html lives in docs/public, not in the VitePress route map -
+    // without target=_blank the SPA router swallows the click and shows its 404.
+    const vitepressConfig = readFileSync(join(root, 'docs', '.vitepress', 'config.mts'), 'utf8');
+    const navLine = vitepressConfig.split('\n').find((l) => l.includes("'Dashboard'"));
+    expect(navLine).toBeDefined();
+    expect(navLine).toContain("target: '_blank'");
+
+    const landing = readFileSync(join(root, 'docs', 'index.md'), 'utf8');
+    const dashLink = landing.split('\n').find((l) => l.includes('dashboard.html'));
+    expect(dashLink).toBeDefined();
+    expect(dashLink).toContain('target="_blank"');
   });
 
   it('lists all four merged npm scripts with their commands', () => {

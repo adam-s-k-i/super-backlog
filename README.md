@@ -24,13 +24,13 @@ Install super-backlog into the current project with the official installer for y
 **Windows (PowerShell)** — bypasses Execution Policy automatically:
 
 ```powershell
-irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.ps1 | iex
+irm https://raw.githubusercontent.com/adam-s-k-i/super-backlog/master/scripts/install.ps1 | iex
 ```
 
 **macOS / Linux**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/adam-s-k-i/super-backlog/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/adam-s-k-i/super-backlog/master/scripts/install.sh | bash
 ```
 
 Both installers check Node.js and npm, install `super-backlog`, and run `sbl init` without using `npx`, so they work even when `npx` is blocked by PowerShell's Execution Policy.

@@ -11,7 +11,9 @@ export default defineConfig({
     nav: [
       { text: 'Quick start', link: '/guide/quickstart' },
       { text: 'Guide', link: '/guide/architecture' },
-      { text: 'Dashboard', link: '/dashboard.html' },
+      // dashboard.html is a public static file outside the route map - open
+      // outside the SPA router or the click lands on the router's 404 page
+      { text: 'Dashboard', link: '/dashboard.html', target: '_blank', rel: 'noreferrer' },
       { text: 'GitHub', link: 'https://github.com/adam-s-k-i/super-backlog' }
     ],
     sidebar: [

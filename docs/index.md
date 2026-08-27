@@ -18,7 +18,7 @@ type: explanation
 
   <p class="landing-actions">
     <a class="landing-btn primary" href="/super-backlog/guide/quickstart">Quick start</a>
-    <a class="landing-btn" href="/super-backlog/dashboard.html">Project Dashboard</a>
+    <a class="landing-btn" href="/super-backlog/dashboard.html" target="_blank" rel="noreferrer">Project Dashboard</a>
   </p>
 
   <div class="landing-features">
