@@ -37,8 +37,22 @@ is the only manual act required to ship a release.
    repository `adam-s-k-i/super-backlog`, workflow file `publish.yml`,
    environment `(none)`. Until this is done, the publish step fails fast at
    `npm publish --provenance`.
-2. Enable GitHub Actions as the Pages source (done once via API, see
+2. Remove the legacy **NPM_TOKEN** repository secret from GitHub after the
+   first successful OIDC publish (the workflow no longer references it).
+3. Enable GitHub Actions as the Pages source (done once via API, see
    [Operations](operations.md)).
+
+## Verifying OIDC publishing
+
+A successful OIDC publish produces an npm attestation. You can confirm it
+with:
+
+```bash
+npm view super-backlog dist.attestations
+```
+
+If `provenance` is present, trusted publishing is active and `NPM_TOKEN` can
+be removed.
 
 ## Emergency manual fallback
 

@@ -5,7 +5,7 @@ status: Done
 assignee:
   - '@adam'
 created_date: '2026-08-27 21:56'
-updated_date: '2026-08-27 22:22'
+updated_date: '2026-08-27 22:32'
 labels: []
 dependencies: []
 ordinal: 41000
@@ -37,6 +37,8 @@ When a user edits tasks in the Backlog browser (backlog browser), our project da
 
 <!-- SECTION:NOTES:BEGIN -->
 Implementation: refactored server.ts to expose createReloadBroker() and createDebouncedReloader(). startServeServer wires the broker to /api/events and triggers reload broadcast after successful regeneration. Added EventSource client snippet to dashboard.html guarded by location.protocol so file:// stays silent. Added src/commands/serve.ts with sbl serve command that starts the dashboard server and spawns backlog browser --no-open --non-interactive; warns and continues if backlog CLI missing. Updated src/cli.ts help text and README.md. Added test/unit/serve-command.test.ts. Existing server-reload and integration/serve tests now pass.
+
+Verification pass (parallel session collision resolved): found and fixed an SSE spec bug introduced during the broker refactor - broadcast() emitted 'event: reload' without a data line; per the HTML standard EventSource never dispatches events with an empty data buffer, so browser clients would never have reloaded. Fix: broadcast now emits 'data: {}' with every event, with a code comment explaining why. Re-added test/unit/server-reload.test.ts (10 unit tests for createReloadBroker/createDebouncedReloader, including an assertion that broadcasts carry a data line) and refreshed the dashboard-render snapshot (stale id=sbl-live variant). Re-verified: full suite 356/356 green, tsc build clean, markdownlint+cspell clean.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
