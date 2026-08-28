@@ -3,10 +3,10 @@
 // System-changing fixes (node install, execution policy) require consent or fixAll;
 // safe fixes run unconditionally. Every fix is verified and reports a manual
 // fallback command on failure.
-import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { delimiter, join } from 'node:path';
 import process from 'node:process';
+import spawn from 'cross-spawn';
 
 import {
   getEffectiveExecutionPolicy,
@@ -49,12 +49,10 @@ export interface PreflightResult {
 }
 
 const defaultExecutor: Executor = (cmd, args) => {
-  // shell on win32 — .cmd/.ps1 shims (npm.cmd etc.) are not directly executable.
-  // Safe only because callers pass constant args; never pass user input here.
-  const r = spawnSync(cmd, args, {
+  // cross-spawn resolves .cmd shims on Windows without shell: true.
+  const r = spawn.sync(cmd, args, {
     encoding: 'utf8',
     windowsHide: true,
-    shell: process.platform === 'win32',
   });
   if (r.error) return { status: null, stdout: '', stderr: String(r.error.message) };
   return { status: r.status, stdout: r.stdout ?? '', stderr: r.stderr ?? '' };
@@ -157,13 +155,6 @@ function checkNpmCommand(ctx: Ctx): UnitReport {
   if (probe.status === 0) {
     ctx.npmCmd = 'npm';
     return { id, status: 'ok', detail: `npm ${probe.stdout.trim()}` };
-  }
-  if (ctx.platform === 'win32') {
-    const fallback = ctx.executor('npm.cmd', ['--version']);
-    if (fallback.status === 0) {
-      ctx.npmCmd = 'npm.cmd';
-      return { id, status: 'fixed', detail: 'npm not directly callable; using npm.cmd shim' };
-    }
   }
   return {
     id,
@@ -269,7 +260,7 @@ export function runPreflight(cwd: string, deps: PreflightDeps = {}): PreflightRe
     log: deps.log ?? ((line: string) => console.log(line)),
     confirm: deps.confirm,
     fixAll: deps.fixAll ?? false,
-    npmCmd: platform === 'win32' ? 'npm.cmd' : 'npm',
+    npmCmd: 'npm',
   };
 
   const unitNames: Array<[string, (ctx: Ctx) => UnitReport]> = [

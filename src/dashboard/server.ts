@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { isAbsolute, join } from 'node:path';
 import process from 'node:process';
+import crossSpawn from 'cross-spawn';
 
 import { createModelApiHandler } from '../models/dashboard-api.js';
 import { resolveBacklogBin } from '../lib/run.js';
@@ -76,11 +77,10 @@ export function createRunApiHandler(cwd: string): (req: IncomingMessage, res: Se
 
     const args = WHITELIST.get(payload.command)!;
     try {
-      const child = spawn(bin, args, {
+      const child = crossSpawn(bin, args, {
         cwd,
         detached: true,
         stdio: 'ignore',
-        shell: process.platform === 'win32',
       });
       child.on('error', () => {});
       child.unref();

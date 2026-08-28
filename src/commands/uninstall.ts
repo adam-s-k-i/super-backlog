@@ -1,8 +1,8 @@
 // src/commands/uninstall.ts
-import { spawnSync } from 'node:child_process';
+import process from 'node:process';
+import spawn from 'cross-spawn';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import process from 'node:process';
 
 import { findGitDir, POINTER_HEADING_RE } from '../init/execute.js';
 import { atomicWrite } from '../lib/atomic.js';
@@ -221,11 +221,10 @@ export function verifyRemnants(cwd: string): string[] {
 }
 
 function defaultRemoveGlobal(): number {
-  const cmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const r = spawnSync(cmd, ['uninstall', '-g', 'super-backlog'], {
+  const cmd = 'npm';
+  const r = spawn.sync(cmd, ['uninstall', '-g', 'super-backlog'], {
     encoding: 'utf8',
     windowsHide: true,
-    shell: process.platform === 'win32',
   });
   if (r.error) return 1;
   return r.status ?? 1;

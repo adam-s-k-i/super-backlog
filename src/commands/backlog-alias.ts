@@ -1,6 +1,6 @@
 // src/commands/backlog-alias.ts
-import { spawn, type ChildProcess } from 'node:child_process';
 import process from 'node:process';
+import spawn from 'cross-spawn';
 
 import { resolveBacklogBin } from '../lib/run.js';
 
@@ -12,10 +12,9 @@ export function runBacklogSubcommand(cwd: string, subcommand: string, args: stri
     return Promise.resolve(1);
   }
   return new Promise<number>((resolve) => {
-    const child: ChildProcess = spawn(bin, [subcommand, ...args], {
+    const child = spawn(bin, [subcommand, ...args], {
       cwd,
       stdio: 'inherit',
-      shell: process.platform === 'win32',
     });
     child.on('error', () => resolve(1));
     child.on('exit', (code) => resolve(code ?? 1));

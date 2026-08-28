@@ -1,8 +1,7 @@
-// src/commands/dashboard.ts
-import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
+import spawn from 'cross-spawn';
 
 import { collectDashboardData } from '../dashboard/data.js';
 import { renderDashboard } from '../dashboard/render.js';
@@ -28,7 +27,6 @@ function spawnBacklogBrowser(cwd: string): void {
       cwd,
       detached: true,
       stdio: 'ignore',
-      shell: process.platform === 'win32',
     });
     child.on('error', () => {});
     child.unref();

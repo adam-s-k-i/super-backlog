@@ -190,7 +190,7 @@ describe('runPreflight', () => {
     expect(result.reports.find((r) => r.id === 'execution-policy')?.status).toBe('skipped');
   });
 
-  it('falls back to npm.cmd on win32 when npm is not directly callable', () => {
+  it('reports npm-command failed on win32 when npm is not callable', () => {
     const deps = makeDeps({
       responses: {
         'npm --version': { status: null, stdout: '', stderr: 'not found' },
@@ -198,8 +198,9 @@ describe('runPreflight', () => {
     });
     const result = runPreflight('C:\\proj', deps);
     const report = result.reports.find((r) => r.id === 'npm-command');
-    expect(report?.status).toBe('fixed');
-    expect(deps.calls.some((c) => c.cmd === 'npm.cmd')).toBe(true);
+    expect(report?.status).toBe('failed');
+    expect(deps.calls.some((c) => c.cmd === 'npm.cmd')).toBe(false);
+    expect(deps.calls.some((c) => c.cmd === 'npm')).toBe(true);
   });
 
   it('still updates PATH but reports failed when sbl stays unresolvable', () => {

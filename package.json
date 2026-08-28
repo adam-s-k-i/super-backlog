@@ -32,6 +32,7 @@
     "screenshot": "npm run build && node scripts/capture-dashboard.mjs"
   },
   "devDependencies": {
+    "@types/cross-spawn": "^6.0.6",
     "@types/node": "^26.2.0",
     "backlog.md": "^1.50.1",
     "cspell": "^10.1.1",
@@ -56,5 +57,8 @@
         "vite": "^8.2.2"
       }
     }
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.6"
   }
 }

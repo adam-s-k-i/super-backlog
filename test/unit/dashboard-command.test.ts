@@ -6,15 +6,15 @@ vi.mock('../../src/dashboard/server.js', () => ({
   startServeServer: vi.fn(),
 }));
 
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
+vi.mock('cross-spawn', () => ({
+  default: vi.fn(),
 }));
 
 vi.mock('../../src/lib/run.js', () => ({
   resolveBacklogBin: vi.fn(),
 }));
 
-import { spawn } from 'node:child_process';
+import spawn from 'cross-spawn';
 import { startServeServer } from '../../src/dashboard/server.js';
 import { resolveBacklogBin } from '../../src/lib/run.js';
 import { runDashboard } from '../../src/commands/dashboard.js';
