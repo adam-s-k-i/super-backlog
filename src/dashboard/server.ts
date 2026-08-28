@@ -37,19 +37,6 @@ export function createRunApiHandler(cwd: string): (req: IncomingMessage, res: Se
       return;
     }
 
-    // Static dashboard pages (file:// or GitHub Pages) call this endpoint on
-    // localhost:6428; CORS lets their fetch through. The command whitelist
-    // (browser/board viewers only) keeps the exposed surface harmless.
-    res.setHeader('access-control-allow-origin', '*');
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204, {
-        'access-control-allow-methods': 'POST, OPTIONS',
-        'access-control-allow-headers': 'content-type',
-      });
-      res.end();
-      return;
-    }
-
     if (req.method !== 'POST') {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
       res.end('not found');

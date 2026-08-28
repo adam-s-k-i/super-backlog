@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
 import { atomicWrite } from '../lib/atomic.js';
-import { installGuardHook, installRefreshHook } from '../lib/hooks.js';
+import { installGuardHook } from '../lib/hooks.js';
 import { injectBlock } from '../lib/markers.js';
 import { applyPluginEntry } from '../lib/opencode.js';
 import { OwnershipError, renderSkill } from '../lib/ownership.js';
@@ -174,24 +174,6 @@ function applyCopySkills(cwd: string, version: string): boolean {
   return true;
 }
 
-async function applyGenerateDashboard(cwd: string, warnings: string[]): Promise<boolean> {
-  try {
-    // Non-literal specifier: the dashboard module lands in a later batch; a missing
-    // module must degrade to a warning here, never crash init.
-    const specifier = '../commands/dashboard.js';
-    const mod = (await import(specifier)) as {
-      generateDashboard?: (cwd: string, opts: { serve: boolean }) => unknown;
-    };
-    if (typeof mod.generateDashboard !== 'function') {
-      throw new Error('dashboard module does not export generateDashboard');
-    }
-    await mod.generateDashboard(cwd, { serve: false });
-  } catch (err) {
-    warnings.push(`dashboard generation skipped (${err instanceof Error ? err.message : String(err)})`);
-  }
-  return true;
-}
-
 export async function executeActions(
   cwd: string,
   actions: Action[],
@@ -243,20 +225,6 @@ export async function executeActions(
         }
         break;
       }
-      case 'install-refresh-hook': {
-        const gitDir = findGitDir(cwd);
-        if (!gitDir) {
-          warnings.push('no .git directory found - dashboard refresh hook not installed');
-          skipped++;
-        } else {
-          installRefreshHook(gitDir, ctx.version);
-          applied++;
-        }
-        break;
-      }
-      case 'generate-dashboard':
-        (await applyGenerateDashboard(cwd, warnings)) ? applied++ : skipped++;
-        break;
       case 'install-model-router': {
         const { installOpenCodeAdapter } = await import('../models/opencode.js');
         const { installClaudeAdapter } = await import('../models/claude.js');

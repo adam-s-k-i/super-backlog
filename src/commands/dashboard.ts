@@ -1,10 +1,14 @@
 // src/commands/dashboard.ts
-import { isAbsolute, join, resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import process from 'node:process';
 
 import { collectDashboardData } from '../dashboard/data.js';
 import { renderDashboard } from '../dashboard/render.js';
 import { DASHBOARD_PORT, startServeServer } from '../dashboard/server.js';
 import { atomicWrite } from '../lib/atomic.js';
+import { resolveBacklogBin } from '../lib/run.js';
 import { KIT_VERSION } from '../lib/version.js';
 import type { ParsedArgs } from './init.js';
 
@@ -13,33 +17,29 @@ async function regenerateInto(outPath: string, cwd: string): Promise<void> {
   atomicWrite(outPath, renderDashboard(data));
 }
 
-/**
- * Generate dashboard.html for the project; with `{ serve: true }`, start the
- * live-reload server afterwards (the listening socket keeps the process up).
- * Called by `sbl init` with serve disabled.
- */
-export async function generateDashboard(cwd: string, o: { serve: boolean }): Promise<string> {
-  const outPath = join(cwd, 'dashboard.html');
-  await regenerateInto(outPath, cwd);
-  if (o.serve) {
-    // Dynamic import keeps init resilient if the serve module is unavailable.
-    const specifier = '../dashboard/server.js';
-    const mod = (await import(specifier)) as {
-      startServeServer?: typeof startServeServer;
-    };
-    if (typeof mod.startServeServer !== 'function') {
-      throw new Error('serve module does not export startServeServer');
-    }
-    await mod.startServeServer(cwd, {
-      port: DASHBOARD_PORT,
-      regenerate: () => regenerateInto(outPath, cwd),
-      openBrowser: true,
-    });
+function spawnBacklogBrowser(cwd: string): void {
+  const bin = resolveBacklogBin(cwd);
+  if (!bin) {
+    console.warn('warning: backlog CLI not found; dashboard will serve without the Backlog browser');
+    return;
   }
-  return outPath;
+  try {
+    const child = spawn(bin, ['browser', '--no-open', '--non-interactive'], {
+      cwd,
+      detached: true,
+      stdio: 'ignore',
+      shell: process.platform === 'win32',
+    });
+    child.on('error', () => {});
+    child.unref();
+    console.log('started Backlog browser (dashboard still serves if browser fails)');
+  } catch {
+    console.warn('warning: failed to start Backlog browser; dashboard still serves');
+  }
 }
 
-/** CLI entry for `sbl dashboard [--serve] [--port N] [--no-open] [--out FILE]`. */
+/** CLI entry for `sbl dashboard [--port N] [--no-open]`. Starts a local server
+ * that watches backlog/ and regenerates a temp dashboard file on changes. */
 export async function runDashboard(cwd: string, args: ParsedArgs): Promise<number> {
   const values = args.values;
 
@@ -53,26 +53,26 @@ export async function runDashboard(cwd: string, args: ParsedArgs): Promise<numbe
     port = parsed;
   }
 
-  const serve = values['serve'] === true;
   const noOpen = values['no-open'] === true;
-  const outFile = values['out'] === undefined ? 'dashboard.html' : String(values['out']);
-  const outPath = isAbsolute(outFile) ? outFile : resolve(cwd, outFile);
+  const outPath = join(tmpdir(), `sbl-dashboard-${Date.now()}.html`);
 
   try {
     await regenerateInto(outPath, cwd);
     console.log(`dashboard written: ${outPath}`);
-    if (serve) {
-      console.log(`serving dashboard at http://127.0.0.1:${port}/ (press Ctrl+C to stop)`);
-      await startServeServer(cwd, {
-        port,
-        file: outPath,
-        regenerate: () => regenerateInto(outPath, cwd),
-        openBrowser: !noOpen,
-      });
-    }
+    console.log(`serving dashboard at http://127.0.0.1:${port}/ (press Ctrl+C to stop)`);
+
+    // Start backlog browser in parallel; don't await so the dashboard server can listen immediately.
+    spawnBacklogBrowser(cwd);
+
+    await startServeServer(cwd, {
+      port,
+      file: outPath,
+      regenerate: () => regenerateInto(outPath, cwd),
+      openBrowser: !noOpen,
+    });
     return 0;
   } catch (err) {
-    console.error(`error: dashboard generation failed (${err instanceof Error ? err.message : String(err)})`);
+    console.error(`error: dashboard serve failed (${err instanceof Error ? err.message : String(err)})`);
     return 1;
   }
 }

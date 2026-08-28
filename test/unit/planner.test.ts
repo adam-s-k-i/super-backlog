@@ -10,7 +10,7 @@ const base: InitState = {
 describe('planInit', () => {
   it('plans full flow for defaults', () => {
     const { actions, warnings } = planInit(base, {
-      harnesses: ['opencode', 'claude'], pm: 'auto', guard: false, dashboard: true, skipInstall: false,
+      harnesses: ['opencode', 'claude'], pm: 'auto', guard: false, skipInstall: false,
     }, '1.0.0');
     const kinds = actions.map(a => a.kind);
     expect(kinds).toContain('upstream-install');
@@ -19,18 +19,17 @@ describe('planInit', () => {
     expect(kinds).toContain('inject-agents-block');
     expect(kinds).toContain('write-claude-pointer');
     expect(kinds).toContain('copy-skills');
-    expect(kinds).toContain('generate-dashboard');
     expect(warnings).toEqual([]);
   });
 
   it('skips upstream when skipInstall', () => {
-    const { actions } = planInit(base, { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+    const { actions } = planInit(base, { harnesses: ['opencode'], pm: 'auto', guard: false, skipInstall: true }, '1.0.0');
     expect(actions.map(a => a.kind)).not.toContain('upstream-install');
   });
 
   it('scaffolds a minimal package.json and installs with npm when no PM is detected', () => {
     const { actions, warnings } = planInit({ ...base, detectedPm: null, pkgExists: false },
-      { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: false }, '1.0.0');
+      { harnesses: ['opencode'], pm: 'auto', guard: false, skipInstall: false }, '1.0.0');
     const kinds = actions.map(a => a.kind);
     expect(kinds).toContain('scaffold-package-json');
     expect(kinds.indexOf('scaffold-package-json')).toBeLessThan(kinds.indexOf('upstream-install'));
@@ -43,14 +42,14 @@ describe('planInit', () => {
 
   it('does not scaffold under --pm skip', () => {
     const { actions } = planInit({ ...base, detectedPm: null, pkgExists: false },
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: false }, '1.0.0');
+      { harnesses: ['opencode'], pm: 'skip', guard: false, skipInstall: false }, '1.0.0');
     expect(actions.map(a => a.kind)).not.toContain('scaffold-package-json');
   });
 
   it('still warns about near-miss entry without package.json present', () => {
     const { actions, warnings } = planInit(
       { ...base, detectedPm: null, pkgExists: false, opencodeConfig: { plugin: ['superpowers@git+https://example.com/fork.git'] } },
-      { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+      { harnesses: ['opencode'], pm: 'auto', guard: false, skipInstall: true }, '1.0.0');
     expect(actions.filter(a => a.kind === 'merge-json')).toHaveLength(0);
     expect(warnings.join(' ')).toMatch(/refusing/i);
   });
@@ -58,13 +57,13 @@ describe('planInit', () => {
   it('omits opencode merge on near-miss entry with warning', () => {
     const { actions, warnings } = planInit(
       { ...base, opencodeConfig: { plugin: ['superpowers@git+https://example.com/fork.git'] } },
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+      { harnesses: ['opencode'], pm: 'skip', guard: false, skipInstall: true }, '1.0.0');
     expect(actions.filter(a => a.kind === 'merge-json' && (a as any).path === 'opencode.json')).toHaveLength(0);
     expect(warnings.join(' ')).toMatch(/refusing/i);
   });
 
   it('claude-only skips opencode merge but still merges package.json', () => {
-    const { actions } = planInit(base, { harnesses: ['claude'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+    const { actions } = planInit(base, { harnesses: ['claude'], pm: 'skip', guard: false, skipInstall: true }, '1.0.0');
     const jsonOps = actions.filter(a => a.kind === 'merge-json') as Array<{ kind: 'merge-json'; path: string }>;
     expect(jsonOps.map(a => a.path)).toEqual(['package.json']);
     expect(actions.some(a => a.kind === 'write-claude-pointer')).toBe(true);
@@ -72,54 +71,29 @@ describe('planInit', () => {
 
   it('stays silent about a missing PM when install is skipped anyway', () => {
     const { actions, warnings } = planInit({ ...base, detectedPm: null },
-      { harnesses: ['opencode'], pm: 'auto', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+      { harnesses: ['opencode'], pm: 'auto', guard: false, skipInstall: true }, '1.0.0');
     expect(warnings).toEqual([]);
     expect(actions.map(a => a.kind)).not.toContain('upstream-install');
   });
 
   it('merges only opencode.json when package.json is absent', () => {
     const { actions } = planInit({ ...base, detectedPm: 'npm', pkgExists: false },
-      { harnesses: ['opencode', 'claude'], pm: 'skip', guard: false, dashboard: true, skipInstall: true }, '1.0.0');
+      { harnesses: ['opencode', 'claude'], pm: 'skip', guard: false, skipInstall: true }, '1.0.0');
     const jsonOps = actions.filter(a => a.kind === 'merge-json') as Array<{ kind: 'merge-json'; path: string }>;
     expect(jsonOps.map(a => a.path)).toEqual(['opencode.json']);
   });
 
-  it('omits dashboard generation when dashboard is off', () => {
-    const { actions } = planInit(base,
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
-    expect(actions.some(a => a.kind === 'generate-dashboard')).toBe(false);
-  });
-
   it('omits the claude pointer for opencode-only runs', () => {
     const { actions } = planInit(base,
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+      { harnesses: ['opencode'], pm: 'skip', guard: false, skipInstall: true }, '1.0.0');
     expect(actions.some(a => a.kind === 'write-claude-pointer')).toBe(false);
   });
 
   it('adds guard hook action only when requested', () => {
-    const with_ = planInit(base, { harnesses: ['opencode'], pm: 'skip', guard: true, dashboard: false, skipInstall: true }, '1.0.0');
-    const without = planInit(base, { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
+    const with_ = planInit(base, { harnesses: ['opencode'], pm: 'skip', guard: true, skipInstall: true }, '1.0.0');
+    const without = planInit(base, { harnesses: ['opencode'], pm: 'skip', guard: false, skipInstall: true }, '1.0.0');
     expect(with_.actions.some(a => a.kind === 'install-guard-hook')).toBe(true);
     expect(without.actions.some(a => a.kind === 'install-guard-hook')).toBe(false);
   });
 
-  it('plans the refresh hook by default and omits it under --no-refresh-hook', () => {
-    const def = planInit(base,
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
-    expect(def.actions.some(a => a.kind === 'install-refresh-hook')).toBe(true);
-    const off = planInit(base,
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true, refreshHook: false }, '1.0.0');
-    expect(off.actions.some(a => a.kind === 'install-refresh-hook')).toBe(false);
-    // explicit true behaves like the default
-    const on = planInit(base,
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true, refreshHook: true }, '1.0.0');
-    expect(on.actions.some(a => a.kind === 'install-refresh-hook')).toBe(true);
-  });
-
-  it('keeps install-refresh-hook independent of dashboard generation', () => {
-    const noDash = planInit(base,
-      { harnesses: ['opencode'], pm: 'skip', guard: false, dashboard: false, skipInstall: true }, '1.0.0');
-    expect(noDash.actions.some(a => a.kind === 'generate-dashboard')).toBe(false);
-    expect(noDash.actions.some(a => a.kind === 'install-refresh-hook')).toBe(true);
-  });
 });

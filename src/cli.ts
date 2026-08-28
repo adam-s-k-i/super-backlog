@@ -21,21 +21,19 @@ Commands:
   init        Install the kit into the current project
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
-  dashboard   Generate the single-file project dashboard (--serve for live mode)
-  serve       Start dashboard server and the Backlog browser together
+  dashboard   Start the project dashboard server (live-reload + Backlog browser)
+  serve       Deprecated alias for 'sbl dashboard'
   browser     Open the Backlog.md browser (delegates to backlog browser)
   board       Show the Backlog.md board (delegates to backlog board)
   models      Manage the model router (show, enable, disable, discover)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
 
-init options:
+  init options:
   --pm <auto|npm|pnpm|bun|skip>   Package manager to use (default: auto)
   --harness <opencode|claude>     Target harness; repeatable or comma-separated (default: both)
   --guard                         Install the integrity pre-commit hook (opt-in)
   --models                        Install the model router config during init (opt-in)
   --no-models                     Explicitly opt out of the model router
-  --no-dashboard                  Skip generating the project dashboard
-  --no-refresh-hook               Skip the post-commit dashboard freshness hook
   --fix-all                       Repair environment problems automatically (no prompts)
   --dry-run                       Show what would be done without writing anything
 
@@ -46,11 +44,9 @@ uninstall options:
 update options:
   (none)                          Refreshes injected files, skills, hook; prints upstream versions
 
-dashboard options:
-  --serve                         Live mode: watch backlog/ and regenerate on changes
-  --port <n>                      Port for --serve (default: 6428)
-  --no-open                       With --serve: do not open the browser automatically
-  --out <file>                    Output file name or path (default: dashboard.html)
+ dashboard options:
+   --port <n>                      Port for the dashboard server (default: 6428)
+   --no-open                       Do not open the dashboard browser automatically
 
 serve options:
   --port <n>                      Port for the dashboard server (default: 6428)
@@ -90,8 +86,6 @@ async function main(argv: string[]): Promise<number> {
           guard: { type: 'boolean' },
           models: { type: 'boolean' },
           'no-models': { type: 'boolean' },
-          'no-dashboard': { type: 'boolean' },
-          'no-refresh-hook': { type: 'boolean' },
           'fix-all': { type: 'boolean' },
           'dry-run': { type: 'boolean' },
         },
@@ -124,10 +118,8 @@ async function main(argv: string[]): Promise<number> {
         args: rest,
         allowPositionals: true,
         options: {
-          serve: { type: 'boolean' },
           port: { type: 'string' },
           'no-open': { type: 'boolean' },
-          out: { type: 'string' },
         },
       });
       return await runDashboard(process.cwd(), {
@@ -142,7 +134,6 @@ async function main(argv: string[]): Promise<number> {
         options: {
           port: { type: 'string' },
           'no-open': { type: 'boolean' },
-          out: { type: 'string' },
         },
       });
       return await runServe(process.cwd(), {

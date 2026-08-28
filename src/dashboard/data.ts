@@ -222,7 +222,7 @@ export const BUILT_IN_GLOSSARY: readonly DashboardGlossaryEntry[] = [
   { term: 'Backlog.md', definition: 'File-based task management CLI owning specs, statuses and history under backlog/.' },
   { term: 'Superpowers', definition: 'The methodology skill set that decides HOW the work is done.' },
   { term: 'Pipeline', definition: 'The nine workflow phases from Idea to Merge & archive.' },
-  { term: 'Freshness Hook', definition: 'A post-commit git hook that regenerates dashboard.html when commits touch backlog/.' },
+  { term: 'Freshness Hook', definition: 'Run `sbl dashboard` to serve a live dashboard that reloads automatically while the server is running.' },
 ];
 
 /** Split `## Term` headings plus their following non-heading block into entries; empty sections are skipped. */

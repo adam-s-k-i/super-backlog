@@ -11,9 +11,7 @@ function args(values: Record<string, unknown> = {}): ParsedArgs {
   return {
     values: {
       pm: 'skip',
-      'no-dashboard': true,
       harness: 'opencode',
-      'no-refresh-hook': true,
       ...values,
     } as Record<string, string | boolean | undefined>,
     positionals: [],

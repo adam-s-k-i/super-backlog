@@ -25,7 +25,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: node dist/cli.js dashboard --no-open --out docs/public/dashboard.html
+      - run: node scripts/generate-dashboard.mjs
       - run: node scripts/capture-dashboard.mjs
       - name: Open PR when the README screenshot changed
         if: github.event_name == 'push'

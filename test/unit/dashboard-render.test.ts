@@ -215,7 +215,8 @@ describe('renderDashboard footer', () => {
     const footer = /<footer[^>]*>([\s\S]*?)<\/footer>/.exec(html)?.[1] ?? '';
     expect(footer).toContain('2026-08-26T12:00:00.000Z');
     expect(footer).toContain('v0.1.0');
-    expect(footer).toContain('regenerated automatically on commits touching backlog/');
+    expect(footer).toContain('served live by');
+    expect(footer).toContain('sbl dashboard');
   });
 });
 
@@ -450,7 +451,7 @@ describe('quick action buttons', () => {
     for (const [title, cmd] of [
       ['Backlog Browser', 'backlog browser'],
       ['Backlog Board', 'backlog board'],
-      ['Live Dashboard', 'sbl dashboard --serve'],
+      ['Live Dashboard', 'sbl dashboard'],
     ] as const) {
       expect(row).toContain(`<span class="cmd-title">${title}</span>`);
       expect(row).toContain(`<span class="cmd-line">${cmd}</span>`);
@@ -462,7 +463,7 @@ describe('quick action buttons', () => {
     const row = m?.[1] ?? '';
     expect(row).toContain('data-cmd="browser"');
     expect(row).toContain('data-cmd="board"');
-    expect(row).toContain('data-copy="sbl dashboard --serve"');
+    expect(row).toContain('data-copy="sbl dashboard"');
   });
 
   it('drops the " copy" suffix from button styling', () => {
@@ -470,16 +471,17 @@ describe('quick action buttons', () => {
     expect(html).not.toContain('[data-copy]::after');
   });
 
-  it('posts data-cmd buttons to the local serve server when opened statically', () => {
+  it('posts data-cmd buttons to same-origin /api/run', () => {
     const app = appScript();
-    expect(app).toContain("location.protocol === 'file:'");
-    expect(app).toContain('127.0.0.1:6428');
-    expect(app).toContain('/api/run');
+    expect(app).toContain("fetch('/api/run'");
+    expect(app).not.toContain('127.0.0.1:6428');
+    expect(app).not.toContain("location.protocol === 'file:'");
   });
 
-  it('copies the real command and gives feedback when the server is unreachable', () => {
+  it('copies the Live Dashboard command via data-copy', () => {
     const app = appScript();
-    expect(app).toContain('clipboard');
+    expect(app).toContain('data-copy');
+    expect(app).toContain('copyCommand');
     expect(app).toMatch(/copied/i);
   });
 });

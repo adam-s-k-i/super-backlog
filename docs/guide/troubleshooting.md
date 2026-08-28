@@ -61,16 +61,14 @@ Then point `opencode.json` at the installed copy instead of the git spec:
 
 An automated check for this situation arrives with `sbl doctor` (v2 backlog).
 
-## Dashboard did not regenerate
+## Dashboard did not update
 
-If `dashboard.html` is stale after committing backlog changes:
+`sbl dashboard` watches `backlog/` while the server runs and regenerates the served HTML on changes. If the dashboard looks stale:
 
-1. **Hook installed?** `.git/hooks/post-commit` should contain a `# >>> super-backlog dashboard-refresh` block. If not, re-run `sbl init` (or `sbl update`) — it is skipped when init ran with `--no-refresh-hook`.
-2. **Commit touched `backlog/`?** The hook regenerates only when the commit's diff includes `backlog/*`.
-3. **Is node available?** The hook invokes `node` from your `PATH`.
-4. **Run it manually:** `npx super-backlog dashboard` (or `npm run dashboard`) — its error output points at the real cause.
-
-The hook never blocks commits: on failure it prints a one-line stderr note (`super-backlog: dashboard regeneration failed …`) while the commit still succeeds.
+1. **Is the server running?** `sbl dashboard` must be active for live reload; the dashboard is not a committed static file.
+2. **Did you change files under `backlog/`?** Only edits inside `backlog/` trigger a reload.
+3. **On Windows under Node 24** live reload is disabled due to a libuv bug; refresh the browser tab manually or restart the server.
+4. **Restart manually:** press `Ctrl+C` and run `sbl dashboard` again — any generation errors are printed to the terminal.
 
 ## Exit codes
 

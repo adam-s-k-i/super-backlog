@@ -43,13 +43,14 @@ Add `--models` to also enable the optional [model router](#model-router-opt-in).
 
 | Command | What it does |
 | --- | --- |
-| `sbl init` | Wire Backlog.md, Superpowers skills, npm scripts, hooks, and dashboard into the current project. |
+| `sbl init` | Wire Backlog.md, Superpowers skills, npm scripts, and hooks into the current project. |
 | `sbl init --models` | Same as above, plus the optional model router. |
 | `npm run board` | Open the Backlog.md kanban board. |
 | `npm run tasks` | List Backlog tasks in the terminal. |
 | `npm run browser` | Open the Backlog browser UI. |
-| `npm run dashboard` | Regenerate `dashboard.html`. |
-| `sbl dashboard --serve` | Serve the dashboard with live reload on `http://localhost:6428`. |
+| `npm run dashboard` | Start the live Project Dashboard server on `http://localhost:6428`. |
+| `sbl dashboard --port 8080` | Start the dashboard server on a custom port. |
+| `sbl serve` | Deprecated alias for `sbl dashboard`. |
 | `sbl update` | Refresh all injected files and print harness/plugin versions. |
 | `sbl doctor` | Check Node, PowerShell policy, and the `backlog` CLI. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
@@ -78,12 +79,18 @@ The router is removed cleanly by `sbl uninstall`.
 ## Project dashboard
 
 ```bash
-sbl dashboard --serve
+sbl dashboard
 ```
 
-Generates a self-contained `dashboard.html` with board status, milestones, tasks, dependencies, activity, and decisions. With `--serve` it watches `backlog/` and reloads automatically.
+Starts a local server on port `6428` that serves a self-contained Project Dashboard rendered from your backlog data: board status, milestones, tasks, dependencies, activity, and decisions. The server watches `backlog/` and reloads connected browser tabs automatically.
 
-By default `init` installs a post-commit hook that regenerates the dashboard whenever a commit touches `backlog/`. Opt out with `--no-refresh-hook`.
+Use `--port` to choose a different port and `--no-open` to prevent the browser from opening automatically:
+
+```bash
+sbl dashboard --port 8080 --no-open
+```
+
+There is no static `dashboard.html` written to your project; `sbl serve` is a deprecated alias for the same command.
 
 ## Harness support
 

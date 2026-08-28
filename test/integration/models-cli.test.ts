@@ -14,7 +14,7 @@ describe('sbl models CLI', () => {
   it('enables router via init --models and writes config', async () => {
     const cwd = join(tmpdir(), `sbl-models-${Date.now()}`);
     try {
-      const args = emptyArgs({ pm: 'skip', 'no-dashboard': true, models: true });
+      const args = emptyArgs({ pm: 'skip', models: true });
       await runInit(cwd, args);
       expect(existsSync(join(cwd, '.super-backlog/models.json'))).toBe(true);
       const raw = JSON.parse(readFileSync(join(cwd, '.super-backlog/models.json'), 'utf8'));
@@ -27,7 +27,7 @@ describe('sbl models CLI', () => {
   it('enable/disable subcommands toggle the config', async () => {
     const cwd = join(tmpdir(), `sbl-models-toggle-${Date.now()}`);
     try {
-      const args = emptyArgs({ pm: 'skip', 'no-dashboard': true, models: true });
+      const args = emptyArgs({ pm: 'skip', models: true });
       await runInit(cwd, args);
       expect(JSON.parse(readFileSync(join(cwd, '.super-backlog/models.json'), 'utf8')).enabled).toBe(true);
 

@@ -21,9 +21,7 @@ async function scaffold(cwd: string): Promise<void> {
     cwd,
     args({
       pm: 'skip',
-      'no-dashboard': true,
       harness: 'opencode',
-      'no-refresh-hook': true,
     }),
     { doctor: () => 0 },
   );

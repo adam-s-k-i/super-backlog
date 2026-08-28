@@ -46,7 +46,7 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
   afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
 
   it('writes manifest artifacts and is idempotent', () => {
-    const first = runInit(dir, ['--pm', 'npm', '--guard', '--no-dashboard']);
+    const first = runInit(dir, ['--pm', 'npm', '--guard']);
     expect(first.status).toBe(4); // success with warnings: manual claude plugin step
     expect(first.out).toContain('Claude Code: run /plugin install superpowers@claude-plugins-official inside Claude Code to enable the Superpowers plugin.');
     expect(first.out).toContain('warning: claude plugin install must be run manually');
@@ -65,20 +65,20 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
     expect(hook).toContain('super-backlog guard');
 
     // re-run: no duplication; instruction still printed for the claude harness
-    const second = runInit(dir, ['--pm', 'npm', '--guard', '--no-dashboard']);
+    const second = runInit(dir, ['--pm', 'npm', '--guard']);
     expect(second.out).toContain('/plugin install superpowers@claude-plugins-official');
     const oc2 = JSON.parse(readFileSync(join(dir, 'opencode.json'), 'utf8'));
     expect(oc2.plugin.filter(e => e.includes('superpowers'))).toHaveLength(1);
   });
 
   it('leaves the guard hook uninstalled unless --guard is passed', () => {
-    const { out } = runInit(dir, ['--no-dashboard']);
+    const { out } = runInit(dir, []);
     expect(out).toContain('/plugin install superpowers@claude-plugins-official');
     expect(existsSync(join(dir, '.git', 'hooks', 'pre-commit'))).toBe(false);
   });
 
   it('--dry-run changes nothing', () => {
-    execFileSync(process.execPath, [CLI, 'init', '--dry-run', '--no-dashboard'], {
+    execFileSync(process.execPath, [CLI, 'init', '--dry-run'], {
       cwd: dir, env: { ...process.env, SBL_SKIP_INSTALL: '1' },
     });
     expect(existsSync(join(dir, 'opencode.json'))).toBe(false);
@@ -88,7 +88,7 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
   it('exits 1 when package.json is malformed', () => {
     writeFileSync(join(dir, 'package.json'), '{ bad');
 
-    const { err, status } = runInit(dir, ['--pm', 'npm', '--no-dashboard']);
+    const { err, status } = runInit(dir, ['--pm', 'npm']);
 
     expect(status).toBe(1);
     expect(err).toContain('package.json');
@@ -96,7 +96,7 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
   });
 
   it('surfaces a blocking PowerShell policy via the verification pass (exit 4)', () => {
-    const { out, status } = runInit(dir, ['--pm', 'npm', '--no-dashboard', '--harness', 'opencode'], {
+    const { out, status } = runInit(dir, ['--pm', 'npm', '--harness', 'opencode'], {
       SBL_FAKE_POLICY: 'Restricted',
     });
     expect(status).toBe(4);
@@ -107,7 +107,7 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
   it('shows the policy warning in dry-run mode too', () => {
     const { out, status } = runInit(
       dir,
-      ['--pm', 'npm', '--no-dashboard', '--harness', 'opencode', '--dry-run'],
+      ['--pm', 'npm', '--harness', 'opencode', '--dry-run'],
       { SBL_FAKE_POLICY: 'Restricted' },
     );
     expect(status).toBe(0);

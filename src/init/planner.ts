@@ -11,20 +11,16 @@ export interface InjectOp { kind: 'inject-agents-block' }
 export interface PointerOp { kind: 'write-claude-pointer' }
 export interface SkillsOp { kind: 'copy-skills' }
 export interface HookOp { kind: 'install-guard-hook' }
-export interface RefreshHookOp { kind: 'install-refresh-hook' }
 export interface UpstreamOp { kind: 'upstream-install'; pm: PM | 'none' } // skipped when SBL_SKIP_INSTALL
 export interface ScaffoldPkgOp { kind: 'scaffold-package-json' } // emitted when no package.json exists
-export interface DashboardOp { kind: 'generate-dashboard' }
 export interface ModelRouterOp { kind: 'install-model-router'; enabled: boolean }
-export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | RefreshHookOp | UpstreamOp | ScaffoldPkgOp | DashboardOp | ModelRouterOp;
+export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | UpstreamOp | ScaffoldPkgOp | ModelRouterOp;
 
 export interface InitOptions {
   projectName?: string;
   harnesses: Array<'opencode' | 'claude'>;
   pm: PM | 'auto' | 'skip';
   guard: boolean;
-  dashboard: boolean;
-  refreshHook?: boolean; // default true; CLI passes --no-refresh-hook as false
   skipInstall: boolean;
   models?: boolean; // undefined = no router installation
 }
@@ -98,8 +94,6 @@ export function planInit(
   }
   if (opts.harnesses.includes('claude')) actions.push({ kind: 'write-claude-pointer' });
   if (opts.guard) actions.push({ kind: 'install-guard-hook' });
-  if (opts.refreshHook ?? true) actions.push({ kind: 'install-refresh-hook' });
-  if (opts.dashboard) actions.push({ kind: 'generate-dashboard' });
   if (opts.models === true) actions.push({ kind: 'install-model-router', enabled: true });
 
   return { actions, warnings };

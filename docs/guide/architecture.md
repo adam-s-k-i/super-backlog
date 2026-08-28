@@ -21,7 +21,7 @@ Rejected alternatives: vendoring/forking both upstreams (unmaintainable, loses u
 `init` follows detect → plan → execute:
 
 1. **Detect** (`src/commands/init.ts`) reads the current state before writing anything: package manager via lockfile, presence of `backlog/config.yml`, `AGENTS.md`, `CLAUDE.md`, `opencode.json`, `.claude/`, `package.json`.
-2. **Plan** (`src/init/planner.ts`) turns state + options into a declarative list of actions (`Action[]`) plus warnings. Actions are data, not effects: `upstream-install`, `merge-json` (opencode.json plugin entry; package.json scripts/devDeps), `inject-agents-block`, `write-claude-pointer`, `copy-skills`, `install-guard-hook`, `generate-dashboard`. Planning is pure and unit-tested without touching the filesystem.
+2. **Plan** (`src/init/planner.ts`) turns state + options into a declarative list of actions (`Action[]`) plus warnings. Actions are data, not effects: `upstream-install`, `merge-json` (opencode.json plugin entry; package.json scripts/devDeps), `inject-agents-block`, `write-claude-pointer`, `copy-skills`, `install-guard-hook`. Planning is pure and unit-tested without touching the filesystem.
 3. **Execute** (`src/init/execute.ts`) applies each action with all writes atomic (temp file + rename). It returns counts of applied/skipped plus warnings; degraded situations (e.g., no package manager detected, missing dashboard module) become warnings and exit code 4 instead of crashes.
 
 `--dry-run` runs steps 1–2 and prints the exact planned change set without executing.
@@ -35,7 +35,7 @@ Uninstall can be trusted because every artifact carries proof of who wrote it:
 | Markers | `AGENTS.md` block | byte-exact start `<!-- SUPER-BACKLOG:<version> START -->` / end `<!-- SUPER-BACKLOG END -->`; everything outside stays untouched |
 | Fingerprint line | skill files | first line after frontmatter matches `<!-- managed-by: super-backlog <version> -->`; files without it are kept |
 | Byte equality | npm scripts, opencode.json plugin entry | removed only when the value equals the kit's exact default; differing values are kept and reported |
-| Wholesale regeneration | `dashboard.html` | generated artifact, safe to delete/regenerate |
 | Appended marker block | `.git/hooks/pre-commit` | only the guarded block is removed |
+| Live server only | Project Dashboard | `sbl dashboard` serves a temporary HTML file; no static artifact is installed in the project |
 
 The governing principle: never modify files we cannot attribute ownership to. Anything ambiguous is reported as `kept` or `skipped`, never silently changed.

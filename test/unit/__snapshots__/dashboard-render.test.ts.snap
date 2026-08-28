@@ -332,7 +332,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     <div class="cmd-row" id="cmd-buttons">
       <button type="button" class="cmd-btn" data-cmd="browser"><span class="cmd-title">Backlog Browser</span><span class="cmd-line">backlog browser</span></button>
       <button type="button" class="cmd-btn" data-cmd="board"><span class="cmd-title">Backlog Board</span><span class="cmd-line">backlog board</span></button>
-      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard --serve</span></button>
+      <button type="button" class="cmd-btn" data-copy="sbl dashboard"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard</span></button>
     </div>
     <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
   </div>
@@ -397,7 +397,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 
 <footer class="footer">
   Generated 2026-08-26T12:00:00.000Z &middot; super-backlog v0.1.0 &middot; <span id="source-badge"></span> &middot;
-  regenerated automatically on commits touching backlog/.
+  served live by <code class="inline">sbl dashboard</code> &mdash; reloads automatically while the server is running.
 </footer>
 
 </main>
@@ -531,13 +531,9 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
       var copy = b.getAttribute('data-copy');
       if (copy) { copyCommand(b, copy); return; }
       var cmd = b.getAttribute('data-cmd');
-      // Static dashboard (file:// or GitHub Pages) has no same-origin API:
-      // reach the local serve server instead; fall back to clipboard copy.
-      var base = location.protocol === 'file:' || location.hostname !== '127.0.0.1' && location.hostname !== 'localhost'
-        ? 'http://127.0.0.1:6428' : '';
-      fetch(base + '/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
+      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
         .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \\u2713'); })
-        .catch(function () { copyCommand(b, 'backlog ' + cmd); });
+        .catch(function () {});
     });
   });
 

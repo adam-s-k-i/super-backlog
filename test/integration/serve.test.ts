@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { collectDashboardData } from '../../src/dashboard/data.js';
+import { renderDashboard } from '../../src/dashboard/render.js';
 import { startServeServer, recursiveWatchSupported } from '../../src/dashboard/server.js';
 
 let dirs: string[] = [];
@@ -17,6 +19,12 @@ function freshProject(): string {
   mkdirSync(join(dir, 'backlog'), { recursive: true });
   writeFileSync(join(dir, 'backlog', 'config.yml'), 'project_name: serve-demo\n');
   return dir;
+}
+
+async function writeProjectDashboard(dir: string): Promise<void> {
+  const data = collectDashboardData(dir, { kitVersion: 'test' });
+  const html = renderDashboard(await data);
+  writeFileSync(join(dir, 'dashboard.html'), html);
 }
 
 function fetchBody(port: number): Promise<string> {
@@ -76,12 +84,11 @@ function fetchApi(port: number, path: string): Promise<{ status: number; body: s
 
 describe('startServeServer', () => {
   it('serves latest dashboard bytes on an ephemeral port and regenerates on demand', async () => {
-    const { generateDashboard } = await import('../../src/commands/dashboard.js');
     const dir = freshProject();
-    await generateDashboard(dir, { serve: false });
+    await writeProjectDashboard(dir);
 
     const regenerate = async (): Promise<void> => {
-      await generateDashboard(dir, { serve: false });
+      await writeProjectDashboard(dir);
     };
     const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
     handles.push(handle);
@@ -152,9 +159,8 @@ describe('startServeServer', () => {
   });
 
   it('mounts model API in serve mode without breaking the static file handler', async () => {
-    const { generateDashboard } = await import('../../src/commands/dashboard.js');
     const dir = freshProject();
-    await generateDashboard(dir, { serve: false });
+    await writeProjectDashboard(dir);
 
     const handle = await startServeServer(dir, { port: 0, openBrowser: false });
     handles.push(handle);

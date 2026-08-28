@@ -15,11 +15,9 @@ describe('model router e2e lifecycle', () => {
     const cwd = join(tmpdir(), `sbl-router-e2e-${Date.now()}`);
     mkdirSync(cwd, { recursive: true });
     try {
-      // Use harness:'opencode' and 'no-refresh-hook':true to avoid .git/refresher warnings that would make runInit exit 4.
-      // doctor is stubbed: this test is about router files, not environment verification.
       const code = await runInit(
         cwd,
-        args({ pm: 'skip', 'no-dashboard': true, 'no-refresh-hook': true, harness: 'opencode', models: true }),
+        args({ pm: 'skip', harness: 'opencode', models: true }),
         { doctor: () => 0 },
       );
       expect(code).toBe(0);

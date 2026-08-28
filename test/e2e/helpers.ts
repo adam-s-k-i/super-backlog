@@ -42,7 +42,7 @@ export function runCli(dir: string, args: string[]): string {
 }
 
 export function scaffoldAndInit(
-  initArgs: string[] = ['init', '--pm', 'npm', '--guard', '--no-dashboard'],
+  initArgs: string[] = ['init', '--pm', 'npm', '--guard'],
 ): string {
   const dir = scaffoldProject();
   // init finishes as success-with-warnings (exit 4): the claude plugin install is printed, not run

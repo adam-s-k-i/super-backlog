@@ -57,10 +57,6 @@ function describeAction(action: Action): string {
       return 'install-model-router .super-backlog/models.json';
     case 'install-guard-hook':
       return 'install-guard-hook .git/hooks/pre-commit';
-    case 'install-refresh-hook':
-      return 'install-refresh-hook .git/hooks/post-commit';
-    case 'generate-dashboard':
-      return 'generate-dashboard';
     case 'write':
       return `write ${action.path}`;
   }
@@ -119,8 +115,6 @@ export async function runInit(cwd: string, args: ParsedArgs, deps: InitDeps = {}
   const pm = rawPm as PM | 'auto' | 'skip';
 
   const guard = args.values.guard === true; // opt-in per spec D8
-  const dashboard = args.values['no-dashboard'] !== true;
-  const refreshHook = args.values['no-refresh-hook'] !== true; // default on, opt-out flag
   const dryRun = args.values['dry-run'] === true;
   const models = args.values.models === true ? true : args.values['no-models'] === true ? false : undefined;
   const projectName = args.positionals[0] ?? basename(resolve(cwd));
@@ -146,7 +140,7 @@ export async function runInit(cwd: string, args: ParsedArgs, deps: InitDeps = {}
     pkgExists: existsSync(join(cwd, 'package.json')),
   };
 
-  const opts: InitOptions = { projectName, harnesses, pm, guard, dashboard, refreshHook, skipInstall: false, models };
+  const opts: InitOptions = { projectName, harnesses, pm, guard, skipInstall: false, models };
   const plan = planInit(state, opts, KIT_VERSION);
 
   if (dryRun) {

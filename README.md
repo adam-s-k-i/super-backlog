@@ -71,11 +71,10 @@ sbl dashboard --serve             # live Project Dashboard on http://localhost:6
 | `.opencode/skill/<skill>/SKILL.md` (3 glue skills) | skill templates | fingerprint header line |
 | `.claude/skills/<skill>/SKILL.md` | same templates | fingerprint header line |
 | `package.json` scripts | `tasks` → `backlog task list`, `board` → `backlog board`, `browser` → `backlog browser`, `dashboard` → `super-backlog dashboard` (never overwrite existing values) | merged, add-only-if-absent |
-| `dashboard.html` | generated Project Dashboard | regenerated wholesale |
-| `.git/hooks/post-commit` | dashboard freshness block — regenerates `dashboard.html` after commits that touch `backlog/` (default; opt out with `--no-refresh-hook`) | appended marker block |
+| `dashboard.html` | generated Project Dashboard | not installed in user projects; generated on demand by `sbl dashboard` |
 | `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
 
-Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--serve] [--port <n>] [--no-open] [--out <file>]` · `sbl serve [--port <n>] [--no-open] [--out <file>]`. See `sbl help` for every flag.
+Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--port <n>] [--no-open]` · `sbl serve [--port <n>] [--no-open]`. See `sbl help` for every flag.
 
 ## Model router (opt-in)
 
@@ -99,11 +98,11 @@ The router is fully owned by super-backlog and removed by `sbl uninstall`. See t
 
 ## Project Dashboard
 
-`sbl dashboard` generates a single self-contained `dashboard.html`: a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Activity (30-day sparkline), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline, diffs cleanly in git, hostable anywhere. Use `sbl dashboard --serve` for live mode: it watches `backlog/`, regenerates on change, and serves on port 6428; connected browser tabs reload automatically via Server-Sent Events. `sbl serve` starts the dashboard server and the Backlog browser together.
+`sbl dashboard` starts a local server that serves a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Activity (30-day sparkline), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline when served locally. The server watches `backlog/`, regenerates on change, and serves on port `6428`; connected browser tabs reload automatically via Server-Sent Events. `sbl serve` is a deprecated alias that behaves identically. `sbl dashboard` also launches the Backlog browser alongside the server so you can edit tasks while the dashboard updates.
 
 ### Keeping it fresh
 
-By default `init` installs a `post-commit` hook block that regenerates `dashboard.html` whenever the commit touched `backlog/`. The block is marker-delimited, so it composes with the guard hook and foreign hook content, `uninstall` removes exactly that block, and `update` refreshes it. It never blocks a commit: failures print a one-line stderr note and the exit status stays 0. Opt out with `--no-refresh-hook`.
+Run `sbl dashboard` whenever you want a live view of the board. The server regenerates the dashboard while it runs; stop it with `Ctrl+C`. There is no static `dashboard.html` installed in your project.
 
 ![Project Dashboard](docs/assets/dashboard.png)
 
