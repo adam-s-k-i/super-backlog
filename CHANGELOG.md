@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.3](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.2...v1.0.3) (2026-08-28)
+
+
+### Bug Fixes
+
+* **deps:** pin vitest peer esbuild to ^0.25.0 to keep lock cross-platform ([5a06d13](https://github.com/adam-s-k-i/super-backlog/commit/5a06d13eed44b4472ffc98c9d757e8bc4f32705e))
+
 ## [1.0.2](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.1...v1.0.2) (2026-08-28)
 
 
