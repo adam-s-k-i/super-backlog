@@ -53,6 +53,7 @@
     },
     "vitest": {
       "vite": "^8.2.2",
+      "esbuild": "^0.25.0",
       "@vitest/mocker": {
         "vite": "^8.2.2"
       }
