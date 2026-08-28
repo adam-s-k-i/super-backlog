@@ -166,15 +166,18 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 
   /* ---------- Quick actions ---------- */
   .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; }
   .cmd-btn {
-    font-family: var(--mono); font-size: .84rem; padding: 6px 14px; border-radius: 999px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+    padding: 10px 18px; border-radius: 10px; min-width: 180px; text-align: left;
     background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
     cursor: pointer;
   }
-  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); }
   .cmd-btn:active { transform: translateY(1px); }
-  .cmd-btn::before { content: "$ "; color: var(--accent); }
-  .cmd-btn[data-copy]::after { content: " copy"; font-size: .7em; color: var(--dim); }
+  .cmd-title { font-size: .95rem; font-weight: 600; color: var(--text); }
+  .cmd-btn:hover .cmd-title { color: var(--accent); }
+  .cmd-line { font-family: var(--mono); font-size: .72rem; color: var(--dim); }
   .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
   .drafts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .drafts-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .88rem; }
@@ -327,9 +330,9 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
-      <button type="button" class="cmd-btn" data-cmd="browser">backlog browser</button>
-      <button type="button" class="cmd-btn" data-cmd="board">backlog board</button>
-      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve">sbl dashboard --serve</button>
+      <button type="button" class="cmd-btn" data-cmd="browser"><span class="cmd-title">Backlog Browser</span><span class="cmd-line">backlog browser</span></button>
+      <button type="button" class="cmd-btn" data-cmd="board"><span class="cmd-title">Backlog Board</span><span class="cmd-line">backlog board</span></button>
+      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard --serve</span></button>
     </div>
     <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
   </div>
@@ -403,7 +406,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 <dialog id="task-dialog" aria-label="Task details"></dialog>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
-<script type="application/json" id="sbl-data">{"project":{"name":"demo-project","description":"A demo \\u003cb>project\\u003c/b>"},"generatedAt":"2026-08-26T12:00:00.000Z","kitVersion":"0.1.0","statuses":[{"status":"Done","count":1},{"status":"In Progress","count":2},{"status":"To Do","count":1}],"milestones":[{"name":"M1","done":1,"total":2},{"name":"M2","done":0,"total":2}],"tasks":[{"id":"T-1","title":"Ship auth flow","status":"Done","priority":"high","assignee":"adam","updated":"2026-08-20","milestone":"M1","description":"Handles \\u003cscript>alert(1)\\u003c/script> safely","acs":[{"text":"login works","checked":true}]},{"id":"T-2","title":"Add OAuth refresh","status":"In Progress","priority":"medium","assignee":"kim","updated":"2026-08-21","milestone":"M1","acs":[{"text":"token rotation","checked":true},{"text":"docs updated","checked":false}]},{"id":"T-3","title":"Write README","status":"To Do","priority":"low","milestone":"M2","acs":[]},{"id":"T-4","title":"Polish UI","status":"In Progress","milestone":"M2","updated":"2026-08-22","acs":[{"text":"dark mode","checked":false}]}],"deps":[{"from":"T-2","to":"T-1"},{"from":"T-4","to":"T-2"}],"activity":[{"date":"2026-07-28","count":1},{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":2},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":1}],"glossary":[{"term":"AC","definition":"Acceptance criterion."},{"term":"Review Gate","definition":"Human checkpoint before proceeding."}],"source":"backlog-json"}</script>
+<script type="application/json" id="sbl-data">{"project":{"name":"demo-project","description":"A demo \\u003cb>project\\u003c/b>"},"generatedAt":"2026-08-26T12:00:00.000Z","kitVersion":"0.1.0","statuses":[{"status":"Done","count":1},{"status":"In Progress","count":2},{"status":"To Do","count":1}],"milestones":[{"name":"M1","done":1,"total":2},{"name":"M2","done":0,"total":2}],"tasks":[{"id":"T-1","title":"Ship auth flow","status":"Done","priority":"high","assignee":"adam","updated":"2026-08-20","milestone":"M1","description":"Handles \\u003cscript>alert(1)\\u003c/script> safely","acs":[{"text":"login works","checked":true}]},{"id":"T-2","title":"Add OAuth refresh","status":"In Progress","priority":"medium","assignee":"kim","updated":"2026-08-21","milestone":"M1","acs":[{"text":"token rotation","checked":true},{"text":"docs updated","checked":false}]},{"id":"T-3","title":"Write README","status":"To Do","priority":"low","milestone":"M2","acs":[]},{"id":"T-4","title":"Polish UI","status":"In Progress","milestone":"M2","updated":"2026-08-22","acs":[{"text":"dark mode","checked":false}]}],"deps":[{"from":"T-2","to":"T-1"},{"from":"T-4","to":"T-2"}],"activity":[{"date":"2026-07-28","count":1},{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":2},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":1}],"glossary":[{"term":"AC","definition":"Acceptance criterion."},{"term":"Review Gate","definition":"Human checkpoint before proceeding."}],"drafts":[{"id":"DRAFT-1","title":"Idea: offline mode","file":"draft-1.md"}],"source":"backlog-json"}</script>
 <script type="application/json" id="sbl-glossary">[{"term":"AC","definition":"Acceptance criterion."},{"term":"Review Gate","definition":"Human checkpoint before proceeding."}]</script>
 <script type="application/json" id="sbl-phases">[{"n":1,"name":"Idea","gate":"User states a need; capture it before doing anything else"},{"n":2,"name":"Brainstorming","gate":"Explore intent, requirements and design before any creative work"},{"n":3,"name":"Design gate","gate":"Human approves the design document"},{"n":4,"name":"Spec-to-backlog","gate":"Decompose the approved design into reviewed tasks with acceptance criteria"},{"n":5,"name":"Review gate","gate":"Human reviews specs and acceptance criteria before any code exists"},{"n":6,"name":"Plan-before-code","gate":"A written implementation plan is approved by the human"},{"n":7,"name":"TDD implementation","gate":"Failing test first, then code; one task per session/PR"},{"n":8,"name":"Verification & final summary","gate":"Run tests/lint/typecheck; verification evidence before success claims"},{"n":9,"name":"Merge & archive","gate":"Merge the branch, then close/archive the task via the backlog CLI"}]</script>
 <script id="sbl-app">
@@ -511,12 +514,30 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   renderTasks();
 
   /* ---------- Quick action buttons ---------- */
+  function cmdFeedback(btn, text) {
+    var title = btn.querySelector('.cmd-title');
+    if (!title || btn.getAttribute('data-busy')) return;
+    btn.setAttribute('data-busy', '1');
+    var orig = title.textContent;
+    title.textContent = text;
+    setTimeout(function () { title.textContent = orig; btn.removeAttribute('data-busy'); }, 1200);
+  }
+  function copyCommand(btn, command) {
+    if (navigator.clipboard) navigator.clipboard.writeText(command).catch(function () {});
+    cmdFeedback(btn, 'copied \\u2713');
+  }
   document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
     b.addEventListener('click', function () {
       var copy = b.getAttribute('data-copy');
-      if (copy) { navigator.clipboard && navigator.clipboard.writeText(copy).catch(function(){}); return; }
-      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: b.getAttribute('data-cmd') }) })
-        .catch(function () { navigator.clipboard && navigator.clipboard.writeText(b.textContent || '').catch(function(){}); });
+      if (copy) { copyCommand(b, copy); return; }
+      var cmd = b.getAttribute('data-cmd');
+      // Static dashboard (file:// or GitHub Pages) has no same-origin API:
+      // reach the local serve server instead; fall back to clipboard copy.
+      var base = location.protocol === 'file:' || location.hostname !== '127.0.0.1' && location.hostname !== 'localhost'
+        ? 'http://127.0.0.1:6428' : '';
+      fetch(base + '/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
+        .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \\u2713'); })
+        .catch(function () { copyCommand(b, 'backlog ' + cmd); });
     });
   });
 

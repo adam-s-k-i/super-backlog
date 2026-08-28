@@ -27,10 +27,25 @@
     --danger-bg:#331718;
     --mono:"Cascadia Code",Consolas,"Courier New",monospace;
   }
+  @font-face {
+    font-family: 'Inter';
+    src: local('Inter'), local('Inter-Regular');
+    font-weight: 400; font-style: normal;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: local('Inter Medium'), local('Inter-Medium');
+    font-weight: 500; font-style: normal;
+  }
+  @font-face {
+    font-family: 'Inter';
+    src: local('Inter SemiBold'), local('Inter-SemiBold');
+    font-weight: 600; font-style: normal;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
-    font-family: "Segoe UI", system-ui, sans-serif;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background:
       radial-gradient(1100px 500px at 85% -10%, var(--bg-glow-1), transparent 60%),
       radial-gradient(900px 500px at -10% 30%, var(--bg-glow-2), transparent 55%),
@@ -92,15 +107,22 @@
   }
 
   /* ---------- Detail panel ---------- */
-  #sbl-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4,7,12,.55); }
-  #sbl-detail {
-    position: fixed; top: 0; right: 0; z-index: 50; height: 100vh; width: min(400px, 92vw);
-    overflow-y: auto; padding: 22px 24px 32px;
-    background: var(--surface); border-left: 1px solid var(--line-strong);
-    box-shadow: -18px 0 44px rgba(0,0,0,.45);
-    animation: sbl-slide-in .18s ease-out;
+  #task-dialog {
+    width: min(640px, 92vw); max-height: 85vh; overflow-y: auto; padding: 0;
+    border: 1px solid var(--line-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 24px 80px rgba(0,0,0,.55);
   }
-  @keyframes sbl-slide-in { from { transform: translateX(26px); opacity: 0; } to { transform: none; opacity: 1; } }
+  #task-dialog::backdrop {
+    background: rgba(4,7,12,.65);
+    backdrop-filter: blur(2px);
+  }
+  #task-dialog[open] { animation: sbl-dialog-in .18s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    #task-dialog[open] { animation: none; }
+  }
+  @keyframes sbl-dialog-in { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+  .dialog-content { padding: 22px 24px 28px; }
   .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
   .status-chip { font-family: var(--mono); font-size: .68rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--muted); white-space: nowrap; }
@@ -110,9 +132,12 @@
   .status-chip[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
   .detail-close { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 1.3rem; cursor: pointer; line-height: 1; }
   .detail-close:hover { color: var(--danger); }
-  .detail-title { font-size: 1.06rem; margin-bottom: 8px; overflow-wrap: anywhere; }
-  #sbl-detail .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
-  #sbl-detail h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
+  .detail-title { font-size: 1.18rem; font-weight: 600; margin-bottom: 8px; overflow-wrap: anywhere; }
+  #task-dialog .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
+  #task-dialog h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; color: var(--muted); }
+  .meta-row span { display: flex; align-items: center; gap: 4px; }
+  .meta-label { color: var(--dim); }
   .dep-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .dep-link {
     font-family: var(--mono); font-size: .74rem; padding: 2px 10px; border-radius: 999px;
@@ -138,15 +163,18 @@
 
   /* ---------- Quick actions ---------- */
   .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; }
   .cmd-btn {
-    font-family: var(--mono); font-size: .84rem; padding: 6px 14px; border-radius: 999px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+    padding: 10px 18px; border-radius: 10px; min-width: 180px; text-align: left;
     background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
     cursor: pointer;
   }
-  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); }
   .cmd-btn:active { transform: translateY(1px); }
-  .cmd-btn::before { content: "$ "; color: var(--accent); }
-  .cmd-btn[data-copy]::after { content: " copy"; font-size: .7em; color: var(--dim); }
+  .cmd-title { font-size: .95rem; font-weight: 600; color: var(--text); }
+  .cmd-btn:hover .cmd-title { color: var(--accent); }
+  .cmd-line { font-family: var(--mono); font-size: .72rem; color: var(--dim); }
   .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
   .drafts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .drafts-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .88rem; }
@@ -177,14 +205,8 @@
   .task-row { cursor: pointer; }
   .task-row:hover td { background: var(--surface-2); }
   .cell-id { color: var(--accent); font-family: var(--mono); font-variant-numeric: tabular-nums; }
-  .cell-title { font-weight: 550; white-space: normal; min-width: 220px; }
+  .cell-title { font-weight: 400; white-space: normal; min-width: 220px; }
   .cell-updated { font-family: var(--mono); color: var(--muted); }
-  .task-detail td { white-space: normal; background: var(--surface-2); border-top: none; }
-  .detail-desc { margin: 0 0 8px; color: var(--muted); }
-  .detail-empty { margin: 0; color: var(--dim); }
-  .ac-list { margin: 0; padding: 0; list-style: none; }
-  .ac { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; }
-  .ac.done span { text-decoration: line-through; color: var(--dim); }
 
   /* ---------- Footer ---------- */
   .footer {
@@ -241,24 +263,26 @@
   .step-label b { display: block; color: var(--text); font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .step.gate .step-label b { color: var(--warn); }
 
-  /* ---------- Dependency graph ---------- */
+  /* ---------- Dependency flow ---------- */
   .sub-head {
     font-size: .78rem; letter-spacing: 1.4px; text-transform: uppercase;
     color: var(--dim); margin: 30px 0 12px; font-weight: 600;
   }
-  .depgraph-wrap {
-    overflow-x: auto; background: var(--surface); border: 1px solid var(--line);
-    border-radius: 12px; padding: 14px;
+  .flow-wrap { display: grid; gap: 20px; }
+  .flow-block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 18px; }
+  .flow-block h4 { margin: 0 0 10px; color: var(--text); font-size: .82rem; font-weight: 500; letter-spacing: .4px; }
+  .flow-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .flow-card {
+    background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 10px;
+    padding: 10px 12px; cursor: pointer; transition: background .12s ease, border-color .12s ease;
   }
-  .depgraph { display: block; min-width: 640px; }
-  .depgraph .edge { fill: none; stroke: var(--line-strong); stroke-width: 1.4; transition: stroke .15s ease, stroke-width .15s ease; }
-  .depgraph .edge.hot { stroke: var(--accent); stroke-width: 2.2; }
-  .depgraph .node { cursor: pointer; outline: none; }
-  .depgraph .node-box { fill: var(--surface-2); stroke: var(--line-strong); transition: stroke .15s ease, filter .15s ease; }
-  .depgraph .node:hover .node-box, .depgraph .node:focus .node-box { stroke: var(--accent); filter: drop-shadow(0 0 8px rgba(92,200,255,.35)); }
-  .depgraph .node-id { fill: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 700; }
-  .depgraph .node-title { fill: var(--text); font-size: 11px; }
-  .depgraph .node-status { font-family: var(--mono); font-size: 9px; letter-spacing: .6px; }
+  .flow-card:hover { background: var(--surface); border-color: var(--accent); }
+  .flow-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+  .flow-card-id { font-family: var(--mono); color: var(--accent); font-weight: 700; font-size: .78rem; }
+  .flow-card-title { color: var(--text); font-size: .92rem; }
+  .flow-card-blockers { margin-top: 7px; font-size: .8rem; color: var(--dim); }
+  .flow-card-blockers .dep-link { margin-left: 4px; }
+  .flow-empty { color: var(--dim); font-size: .85rem; margin: 0; }
 
   @media (max-width:900px) {
     .layout { grid-template-columns: 1fr; }
@@ -290,9 +314,8 @@
   <div class="legend">
     <h4>Status</h4>
     <div class="pill-row" id="pills">
-      <button type="button" class="pill" data-status="Done" data-count="36" data-tone="ok"><span class="n">36</span> Done</button>
+      <button type="button" class="pill" data-status="Done" data-count="42" data-tone="ok"><span class="n">42</span> Done</button>
       <button type="button" class="pill" data-status="In Progress" data-count="1" data-tone="accent"><span class="n">1</span> In Progress</button>
-      <button type="button" class="pill" data-status="To Do" data-count="3" data-tone="dim"><span class="n">3</span> To Do</button>
     </div>
   </div>
 </aside>
@@ -303,9 +326,9 @@
   <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
-      <button type="button" class="cmd-btn" data-cmd="browser">backlog browser</button>
-      <button type="button" class="cmd-btn" data-cmd="board">backlog board</button>
-      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve">sbl dashboard --serve</button>
+      <button type="button" class="cmd-btn" data-cmd="browser"><span class="cmd-title">Backlog Browser</span><span class="cmd-line">backlog browser</span></button>
+      <button type="button" class="cmd-btn" data-cmd="board"><span class="cmd-title">Backlog Board</span><span class="cmd-line">backlog board</span></button>
+      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard --serve</span></button>
     </div>
     <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
   </div>
@@ -326,7 +349,7 @@
 </section>
 
 <section id="sec-04">
-  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; expand &mdash; <span class="term" data-term="AC">AC</span>s inline</span></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
   <div id="tasks" class="mount">
     <div class="toolbar">
       <input id="taskfilter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
@@ -353,7 +376,7 @@
 <section id="sec-05">
   <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included</span></div>
   <div id="stepper" class="mount"></div>
-  <h3 class="sub-head">Dependency flow</h3>
+  <h3 class="sub-head">Flow</h3>
   <div id="depgraph" class="mount"></div>
 </section>
 
@@ -369,18 +392,17 @@
 </section>
 
 <footer class="footer">
-  Generated 2026-08-27T21:00:18.429Z &middot; super-backlog v0.9.0 &middot; <span id="source-badge"></span> &middot;
+  Generated 2026-08-28T11:55:45.704Z &middot; super-backlog v0.10.0 &middot; <span id="source-badge"></span> &middot;
   regenerated automatically on commits touching backlog/.
 </footer>
 
 </main>
 </div>
 
-<div id="sbl-backdrop" hidden></div>
-<aside id="sbl-detail" hidden aria-label="Task details"></aside>
+<dialog id="task-dialog" aria-label="Task details"></dialog>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
-<script type="application/json" id="sbl-data">{"project":{"name":"super-backlog","description":"One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard."},"generatedAt":"2026-08-27T21:00:18.429Z","kitVersion":"0.9.0","statuses":[{"status":"Done","count":36},{"status":"In Progress","count":1},{"status":"To Do","count":3}],"milestones":[{"name":"m-0","done":5,"total":5}],"tasks":[{"id":"TASK-9","title":"Automate PR and issue hygiene (templates, labels, title check, auto-merge, stale)","status":"Done","priority":"high","acs":[]},{"id":"TASK-10","title":"Set up release-please release pipeline on master","status":"Done","priority":"high","acs":[]},{"id":"TASK-11","title":"Add tag-triggered publish workflow with OIDC provenance","status":"To Do","priority":"high","acs":[]},{"id":"TASK-17","title":"Windows PowerShell execution policy: quickstart docs, init warning, sbl doctor","status":"Done","priority":"high","acs":[]},{"id":"TASK-18","title":"Fix release pipeline: package.json repository field + duplicate GitHub Release step","status":"Done","priority":"high","acs":[]},{"id":"TASK-20","title":"Fix release.yml Publish job skipped when release-please creates a release","status":"Done","priority":"high","acs":[]},{"id":"TASK-12","title":"Schedule weekly and monthly QA workflows","status":"Done","priority":"medium","acs":[]},{"id":"TASK-13","title":"Harden repository security (pinning enforcement, least privilege, CODEOWNERS)","status":"Done","priority":"medium","acs":[]},{"id":"TASK-14","title":"Document operations: workflows, cadence, failure behavior, setup checklist","status":"Done","priority":"medium","acs":[]},{"id":"TASK-1","title":"v1.0.1: unify invalid-JSON exit codes and fix planner warning text","status":"Done","acs":[]},{"id":"TASK-2","title":"Add CI matrix workflow (windows + ubuntu)","status":"Done","acs":[]},{"id":"TASK-3","title":"Capture Project Dashboard screenshot for README","status":"Done","acs":[]},{"id":"TASK-4","title":"Prepare npm publish (v0.1.0)","status":"Done","acs":[]},{"id":"TASK-5","title":"Roadmap skills: backlog-status-report and task-review-gate","status":"Done","acs":[]},{"id":"TASK-6","title":"Add styleguide gate to CI (markdownlint-cli2 + cspell)","status":"Done","acs":[]},{"id":"TASK-7","title":"Build tested automation gate scripts (title regex, pack list, SHA pinning)","status":"Done","acs":[]},{"id":"TASK-8","title":"Publish VitePress docs site with live dashboard to GitHub Pages","status":"Done","acs":[]},{"id":"TASK-15","title":"Dashboard v2: HTS-style project cockpit with freshness hook","status":"Done","acs":[]},{"id":"TASK-16","title":"Fix CLI under Node 24 (weekly QA matrix finding)","status":"Done","acs":[]},{"id":"TASK-19","title":"Migrate npm publish to OIDC trusted publishing and retire NPM_TOKEN","status":"To Do","acs":[]},{"id":"TASK-21","title":"Add robust cross-platform installer scripts","status":"Done","acs":[]},{"id":"TASK-22","title":"Preflight module: check/fix/verify units","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-23","title":"sbl init: preflight integration and --fix-all flag","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-24","title":"Slim installer wrapper scripts (install.ps1/install.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-25","title":"Harden sbl uninstall: error collection, verification, self-removal","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-26","title":"Uninstall wrapper scripts (uninstall.ps1/uninstall.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-27","title":"Add check-docs-required gate script with unit tests","status":"Done","acs":[]},{"id":"TASK-28","title":"Wire Docs-Gate job into pr-hygiene workflow","status":"Done","acs":[]},{"id":"TASK-29","title":"Add documentation style guide and backfill type frontmatter","status":"Done","acs":[]},{"id":"TASK-30","title":"Harden docs freshness gate: sidebar matching, parsing edge cases, self-exemption note","status":"Done","acs":[]},{"id":"TASK-31","title":"Fix Dependabot vulnerabilities in vitepress/vite/esbuild chain","status":"Done","acs":[]},{"id":"TASK-32","title":"Dashboard: directory-name fallback for project identity","status":"Done","acs":[]},{"id":"TASK-33","title":"init: scaffold minimal package.json when absent","status":"Done","acs":[]},{"id":"TASK-34","title":"Fix Pages dashboard links and stale /main/ docs URLs","status":"Done","acs":[]},{"id":"TASK-35","title":"Auto-refresh README dashboard screenshot with curated demo data","status":"Done","acs":[]},{"id":"TASK-36","title":"Project Dashboard: render quick-action commands as executable buttons","status":"Done","acs":[]},{"id":"TASK-37","title":"Project Dashboard: integrate drafts into the dashboard","status":"Done","acs":[]},{"id":"TASK-38","title":"Project Dashboard: add a custom browser icon","status":"Done","acs":[]},{"id":"TASK-39","title":"Investigate task count mismatch between Backlog browser and Project Dashboard","status":"In Progress","acs":[]},{"id":"TASK-40","title":"Unify kit commands under sbl aliases","status":"To Do","acs":[]}],"deps":[],"drafts":[],"activity":[{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":0},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":0},{"date":"2026-08-27","count":40}],"glossary":[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}],"source":"backlog-json"}</script>
+<script type="application/json" id="sbl-data">{"project":{"name":"super-backlog","description":"One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard."},"generatedAt":"2026-08-28T11:55:45.704Z","kitVersion":"0.10.0","statuses":[{"status":"Done","count":42},{"status":"In Progress","count":1}],"milestones":[{"name":"m-0","done":5,"total":5}],"tasks":[{"id":"TASK-9","title":"Automate PR and issue hygiene (templates, labels, title check, auto-merge, stale)","status":"Done","priority":"high","acs":[]},{"id":"TASK-10","title":"Set up release-please release pipeline on master","status":"Done","priority":"high","acs":[]},{"id":"TASK-17","title":"Windows PowerShell execution policy: quickstart docs, init warning, sbl doctor","status":"Done","priority":"high","acs":[]},{"id":"TASK-18","title":"Fix release pipeline: package.json repository field + duplicate GitHub Release step","status":"Done","priority":"high","acs":[]},{"id":"TASK-20","title":"Fix release.yml Publish job skipped when release-please creates a release","status":"Done","priority":"high","acs":[]},{"id":"TASK-12","title":"Schedule weekly and monthly QA workflows","status":"Done","priority":"medium","acs":[]},{"id":"TASK-13","title":"Harden repository security (pinning enforcement, least privilege, CODEOWNERS)","status":"Done","priority":"medium","acs":[]},{"id":"TASK-14","title":"Document operations: workflows, cadence, failure behavior, setup checklist","status":"Done","priority":"medium","acs":[]},{"id":"TASK-1","title":"v1.0.1: unify invalid-JSON exit codes and fix planner warning text","status":"Done","acs":[]},{"id":"TASK-2","title":"Add CI matrix workflow (windows + ubuntu)","status":"Done","acs":[]},{"id":"TASK-3","title":"Capture Project Dashboard screenshot for README","status":"Done","acs":[]},{"id":"TASK-4","title":"Prepare npm publish (v0.1.0)","status":"Done","acs":[]},{"id":"TASK-5","title":"Roadmap skills: backlog-status-report and task-review-gate","status":"Done","acs":[]},{"id":"TASK-6","title":"Add styleguide gate to CI (markdownlint-cli2 + cspell)","status":"Done","acs":[]},{"id":"TASK-7","title":"Build tested automation gate scripts (title regex, pack list, SHA pinning)","status":"Done","acs":[]},{"id":"TASK-8","title":"Publish VitePress docs site with live dashboard to GitHub Pages","status":"Done","acs":[]},{"id":"TASK-15","title":"Dashboard v2: HTS-style project cockpit with freshness hook","status":"Done","acs":[]},{"id":"TASK-16","title":"Fix CLI under Node 24 (weekly QA matrix finding)","status":"Done","acs":[]},{"id":"TASK-19","title":"Migrate npm publish to OIDC trusted publishing and retire NPM_TOKEN","status":"Done","acs":[]},{"id":"TASK-21","title":"Add robust cross-platform installer scripts","status":"Done","acs":[]},{"id":"TASK-22","title":"Preflight module: check/fix/verify units","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-23","title":"sbl init: preflight integration and --fix-all flag","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-24","title":"Slim installer wrapper scripts (install.ps1/install.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-25","title":"Harden sbl uninstall: error collection, verification, self-removal","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-26","title":"Uninstall wrapper scripts (uninstall.ps1/uninstall.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-27","title":"Add check-docs-required gate script with unit tests","status":"Done","acs":[]},{"id":"TASK-28","title":"Wire Docs-Gate job into pr-hygiene workflow","status":"Done","acs":[]},{"id":"TASK-29","title":"Add documentation style guide and backfill type frontmatter","status":"Done","acs":[]},{"id":"TASK-30","title":"Harden docs freshness gate: sidebar matching, parsing edge cases, self-exemption note","status":"Done","acs":[]},{"id":"TASK-31","title":"Fix Dependabot vulnerabilities in vitepress/vite/esbuild chain","status":"Done","acs":[]},{"id":"TASK-32","title":"Dashboard: directory-name fallback for project identity","status":"Done","acs":[]},{"id":"TASK-33","title":"init: scaffold minimal package.json when absent","status":"Done","acs":[]},{"id":"TASK-34","title":"Fix Pages dashboard links and stale /main/ docs URLs","status":"Done","acs":[]},{"id":"TASK-35","title":"Auto-refresh README dashboard screenshot with curated demo data","status":"Done","acs":[]},{"id":"TASK-36","title":"Project Dashboard: render quick-action commands as executable buttons","status":"Done","acs":[]},{"id":"TASK-37","title":"Project Dashboard: integrate drafts into the dashboard","status":"Done","acs":[]},{"id":"TASK-38","title":"Project Dashboard: add a custom browser icon","status":"Done","acs":[]},{"id":"TASK-39","title":"Investigate task count mismatch between Backlog browser and Project Dashboard","status":"Done","acs":[]},{"id":"TASK-40","title":"Unify kit commands under sbl aliases","status":"Done","acs":[]},{"id":"TASK-41","title":"Project Dashboard: modal task details, Inter font, non-bold titles, and Up Next/Blocked flow","status":"Done","acs":[]},{"id":"TASK-42","title":"Dashboard live-sync with Backlog browser (SSE live-reload + combined serve)","status":"Done","acs":[]},{"id":"TASK-43","title":"Release v0.10.0 with dashboard live-sync (SSE + sbl serve)","status":"Done","acs":[]},{"id":"TASK-44","title":"Dashboard quick actions: localhost fallback for static mode + button restyle","status":"In Progress","acs":[]}],"deps":[],"drafts":[],"activity":[{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":0},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":0},{"date":"2026-08-27","count":0},{"date":"2026-08-28","count":43}],"glossary":[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}],"source":"backlog-json"}</script>
 <script type="application/json" id="sbl-glossary">[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"A post-commit git hook that regenerates dashboard.html when commits touch backlog/."}]</script>
 <script type="application/json" id="sbl-phases">[{"n":1,"name":"Idea","gate":"User states a need; capture it before doing anything else"},{"n":2,"name":"Brainstorming","gate":"Explore intent, requirements and design before any creative work"},{"n":3,"name":"Design gate","gate":"Human approves the design document"},{"n":4,"name":"Spec-to-backlog","gate":"Decompose the approved design into reviewed tasks with acceptance criteria"},{"n":5,"name":"Review gate","gate":"Human reviews specs and acceptance criteria before any code exists"},{"n":6,"name":"Plan-before-code","gate":"A written implementation plan is approved by the human"},{"n":7,"name":"TDD implementation","gate":"Failing test first, then code; one task per session/PR"},{"n":8,"name":"Verification & final summary","gate":"Run tests/lint/typecheck; verification evidence before success claims"},{"n":9,"name":"Merge & archive","gate":"Merge the branch, then close/archive the task via the backlog CLI"}]</script>
 <script id="sbl-app">
@@ -438,37 +460,12 @@
     }
     rows.forEach(function (task) {
       var tr = el('tr', 'task-row');
+      tr.setAttribute('data-task', task.id);
       KEYS.forEach(function (k) {
         tr.appendChild(el('td', 'cell-' + k, field(task, k)));
       });
-      var detail = el('tr', 'task-detail');
-      var td = el('td');
-      td.colSpan = KEYS.length;
-      if (task.description) td.appendChild(el('p', 'detail-desc', task.description));
-      if (task.acs.length > 0) {
-        var list = el('ul', 'ac-list');
-        task.acs.forEach(function (ac) {
-          var li = el('li', ac.checked ? 'ac done' : 'ac');
-          var box = document.createElement('input');
-          box.type = 'checkbox';
-          box.checked = ac.checked;
-          box.disabled = true;
-          li.appendChild(box);
-          li.appendChild(document.createTextNode(ac.text));
-          list.appendChild(li);
-        });
-        td.appendChild(list);
-      } else {
-        td.appendChild(el('p', 'detail-empty', 'No acceptance criteria.'));
-      }
-      detail.style.display = 'none';
-      tr.addEventListener('click', function () {
-        var opening = detail.style.display === 'none';
-        detail.style.display = opening ? '' : 'none';
-        tr.classList.toggle('expanded', opening);
-      });
+      tr.addEventListener('click', function () { openDetail(task.id); });
       tbody.appendChild(tr);
-      tbody.appendChild(detail);
     });
   }
   document.querySelectorAll('#tasks-table th').forEach(function (th) {
@@ -513,12 +510,30 @@
   renderTasks();
 
   /* ---------- Quick action buttons ---------- */
+  function cmdFeedback(btn, text) {
+    var title = btn.querySelector('.cmd-title');
+    if (!title || btn.getAttribute('data-busy')) return;
+    btn.setAttribute('data-busy', '1');
+    var orig = title.textContent;
+    title.textContent = text;
+    setTimeout(function () { title.textContent = orig; btn.removeAttribute('data-busy'); }, 1200);
+  }
+  function copyCommand(btn, command) {
+    if (navigator.clipboard) navigator.clipboard.writeText(command).catch(function () {});
+    cmdFeedback(btn, 'copied \u2713');
+  }
   document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
     b.addEventListener('click', function () {
       var copy = b.getAttribute('data-copy');
-      if (copy) { navigator.clipboard && navigator.clipboard.writeText(copy).catch(function(){}); return; }
-      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: b.getAttribute('data-cmd') }) })
-        .catch(function () { navigator.clipboard && navigator.clipboard.writeText(b.textContent || '').catch(function(){}); });
+      if (copy) { copyCommand(b, copy); return; }
+      var cmd = b.getAttribute('data-cmd');
+      // Static dashboard (file:// or GitHub Pages) has no same-origin API:
+      // reach the local serve server instead; fall back to clipboard copy.
+      var base = location.protocol === 'file:' || location.hostname !== '127.0.0.1' && location.hostname !== 'localhost'
+        ? 'http://127.0.0.1:6428' : '';
+      fetch(base + '/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
+        .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \u2713'); })
+        .catch(function () { copyCommand(b, 'backlog ' + cmd); });
     });
   });
 
@@ -783,9 +798,8 @@
     document.addEventListener('focusout', tipHide);
   }
 
-  /* ---------- Detail panel ---------- */
-  var panel = document.getElementById('sbl-detail');
-  var backdrop = document.getElementById('sbl-backdrop');
+  /* ---------- Detail dialog ---------- */
+  var dialog = document.getElementById('task-dialog');
   var depsOut = {};
   var depsIn = {};
   data.deps.forEach(function (d) {
@@ -799,11 +813,13 @@
     });
     return found;
   }
-  function closeDetail() {
-    if (panel) panel.hidden = true;
-    if (backdrop) backdrop.hidden = true;
+  function isDoneStatus(status) {
+    var s = String(status).toLowerCase();
+    return s === 'done' || s === 'complete' || s === 'completed';
   }
-  window.closeDetail = closeDetail;
+  function closeDetail() {
+    if (dialog && dialog.open) dialog.close();
+  }
   function acList(task) {
     var list = el('ul', 'ac-list');
     task.acs.forEach(function (ac) {
@@ -825,7 +841,6 @@
     ids.filter(function (id) { return findTask(id); }).forEach(function (id) {
       var btn = el('button', 'dep-link', id);
       btn.type = 'button';
-      btn.setAttribute('data-dep', id);
       btn.addEventListener('click', function () { openDetail(id); });
       row.appendChild(btn);
     });
@@ -833,10 +848,24 @@
     block.appendChild(row);
     return block;
   }
+  function metaRow(task) {
+    var row = el('div', 'meta-row');
+    function item(label, value) {
+      var s = el('span');
+      s.appendChild(el('span', 'meta-label', label + ': '));
+      s.appendChild(document.createTextNode(value || '—'));
+      return s;
+    }
+    row.appendChild(item('Milestone', task.milestone));
+    row.appendChild(item('Priority', task.priority));
+    row.appendChild(item('Assignee', task.assignee));
+    row.appendChild(item('Updated', task.updated));
+    return row;
+  }
   function openDetail(id) {
     var t = findTask(id);
-    if (!t || !panel) return;
-    panel.textContent = '';
+    if (!t || !dialog) return;
+    var content = el('div', 'dialog-content');
     var head = el('div', 'detail-head');
     head.appendChild(el('span', 'detail-id', t.id));
     var chip = el('span', 'status-chip', t.status);
@@ -847,21 +876,22 @@
     closeBtn.setAttribute('aria-label', 'Close details');
     closeBtn.addEventListener('click', closeDetail);
     head.appendChild(closeBtn);
-    panel.appendChild(head);
-    panel.appendChild(el('h3', 'detail-title', t.title));
-    panel.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
+    content.appendChild(head);
+    content.appendChild(el('h3', 'detail-title', t.title));
+    content.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
+    content.appendChild(metaRow(t));
     if (t.acs.length > 0) {
-      panel.appendChild(el('h4', '', 'Acceptance criteria'));
-      panel.appendChild(acList(t));
+      content.appendChild(el('h4', '', 'Acceptance criteria'));
+      content.appendChild(acList(t));
     }
-    panel.appendChild(depSection('Depends on', depsOut[id] || []));
-    panel.appendChild(depSection('Needed by', depsIn[id] || []));
-    panel.scrollTop = 0;
-    panel.hidden = false;
-    backdrop.hidden = false;
+    content.appendChild(depSection('Depends on', depsOut[id] || []));
+    content.appendChild(depSection('Needed by', depsIn[id] || []));
+    dialog.textContent = '';
+    dialog.appendChild(content);
+    dialog.showModal();
   }
   window.__sblOpenDetail = openDetail;
-  if (backdrop) backdrop.addEventListener('click', closeDetail);
+  if (dialog) dialog.addEventListener('click', function (ev) { if (ev.target === dialog) closeDetail(); });
 
   /* ---------- Keyboard shortcuts ---------- */
   document.addEventListener('keydown', function (ev) {
@@ -880,154 +910,79 @@
     }
   });
 
-  /* ---------- Dependency graph (mirrors src/dashboard/layering.ts semantics) ---------- */
-  function assignLayers(nodes, deps) {
-    var nodeSet = {};
-    nodes.forEach(function (n) { nodeSet[n] = true; });
-    var prereqs = {};
-    nodes.forEach(function (n) { prereqs[n] = []; });
-    deps.forEach(function (d) {
-      if (!nodeSet[d.from] || !nodeSet[d.to]) return; // dangling ref
-      if (prereqs[d.from].indexOf(d.to) === -1) prereqs[d.from].push(d.to);
-    });
-    var layers = {};
-    var remaining = {};
-    nodes.forEach(function (n) { remaining[n] = true; });
-    var left = nodes.length;
-    var current = 0;
-    function take(n) {
-      layers[n] = current;
-      delete remaining[n];
-      left -= 1;
-    }
-    while (left > 0) {
-      var ready = nodes.filter(function (n) {
-        if (!remaining[n]) return false;
-        return prereqs[n].every(function (p) { return !remaining[p]; });
-      });
-      current += 1;
-      if (ready.length === 0) {
-        // stalled behind a cycle: snapshot self-reachable members first, then
-        // append them as one group (mirrors cycleMembers() in layering.ts)
-        var cycleSnap = [];
-        nodes.forEach(function (start) {
-          if (!remaining[start]) return;
-          var seen = {};
-          var stack = prereqs[start].filter(function (p) { return remaining[p]; });
-          var found = false;
-          while (stack.length > 0 && !found) {
-            var cur = stack.pop();
-            if (cur === start) { found = true; break; }
-            if (seen[cur]) continue;
-            seen[cur] = true;
-            stack = stack.concat(prereqs[cur].filter(function (p) { return remaining[p]; }));
-          }
-          if (found) cycleSnap.push(start);
-        });
-        cycleSnap.forEach(take);
-        if (cycleSnap.length === 0) break; // unreachable safety net
-        continue;
-      }
-      ready.forEach(take);
-    }
-    var out = {};
-    nodes.forEach(function (n) { out[n] = layers[n] || 1; });
-    return out;
-  }
-
-  function hotEdges(id, on) {
-    document.querySelectorAll('.depgraph .edge').forEach(function (edge) {
-      var hit = edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id;
-      edge.classList.toggle('hot', on && hit);
-    });
-  }
-
-  function renderDepGraph(mount, tasks, deps) {
+  /* ---------- Dependency flow ---------- */
+  function renderFlow(mount, tasks) {
     mount.textContent = '';
-    if (tasks.length === 0) {
-      mount.appendChild(el('p', 'hint', 'No tasks to graph.'));
-      return;
-    }
-    var ids = tasks.map(function (t) { return t.id; });
-    var layers = assignLayers(ids, deps);
     var byId = {};
     tasks.forEach(function (t) { byId[t.id] = t; });
-    var maxLayer = 1;
-    ids.forEach(function (id) { if (layers[id] > maxLayer) maxLayer = layers[id]; });
-    var cols = [];
-    for (var i = 0; i < maxLayer; i++) cols.push([]);
-    ids.forEach(function (id) { cols[layers[id] - 1].push(byId[id]); });
-    var CHIP_W = 172, CHIP_H = 40, GAP_X = 84, GAP_Y = 14, PAD = 18;
-    var rows = 1;
-    cols.forEach(function (c) { if (c.length > rows) rows = c.length; });
-    var width = PAD * 2 + cols.length * CHIP_W + (cols.length - 1) * GAP_X;
-    var height = PAD * 2 + Math.max(rows, 1) * CHIP_H + (Math.max(rows, 1) - 1) * GAP_Y;
-    var wrap = el('div', 'depgraph-wrap');
-    var svg = svgEl('svg', {
-      viewBox: '0 0 ' + width + ' ' + height, width: width, height: height,
-      'class': 'depgraph', role: 'img', 'aria-label': 'Task dependency graph'
-    });
-    var defs = svgEl('defs');
-    var marker = svgEl('marker', { id: 'sbl-arrow', markerWidth: '9', markerHeight: '7', refX: '8.5', refY: '3.5', orient: 'auto' });
-    marker.appendChild(svgEl('polygon', { points: '0 0, 9 3.5, 0 7', fill: 'var(--line-strong)' }));
-    defs.appendChild(marker);
-    svg.appendChild(defs);
-    var pos = {};
-    cols.forEach(function (col, ci) {
-      col.forEach(function (t, ri) {
-        pos[t.id] = {
-          x: PAD + ci * (CHIP_W + GAP_X),
-          y: PAD + ri * (CHIP_H + GAP_Y)
-        };
+    var pending = tasks.filter(function (t) { return !isDoneStatus(t.status); });
+    var upNext = [];
+    var blocked = [];
+    pending.forEach(function (t) {
+      var blockers = (depsOut[t.id] || []).filter(function (id) {
+        var d = byId[id];
+        return d && !isDoneStatus(d.status);
       });
+      if (blockers.length === 0) upNext.push({ task: t, blockers: [] });
+      else blocked.push({ task: t, blockers: blockers });
     });
-    deps.forEach(function (d) {
-      if (!pos[d.from] || !pos[d.to] || d.from === d.to) return;
-      var a = pos[d.from];
-      var b = pos[d.to];
-      var x1 = a.x + CHIP_W, y1 = a.y + CHIP_H / 2, x2 = b.x, y2 = b.y + CHIP_H / 2;
-      var mx = (x1 + x2) / 2;
-      var path = svgEl('path', {
-        'class': 'edge', 'data-from': d.from, 'data-to': d.to,
-        d: 'M ' + x1 + ' ' + y1 + ' C ' + mx + ' ' + y1 + ', ' + mx + ' ' + y2 + ', ' + x2 + ' ' + y2,
-        'marker-end': 'url(#sbl-arrow)'
-      });
-      svg.appendChild(path);
-    });
-    cols.forEach(function (col) {
-      col.forEach(function (t) {
-        var p = pos[t.id];
-        var tone = toneOf(t.status);
-        var g = svgEl('g', { 'class': 'node', 'data-id': t.id, tabindex: '0', role: 'button', 'aria-label': t.id + ': ' + t.title });
-        attachTitle(g, t.id + ' \u2014 ' + t.title + ' (' + t.status + ')' + (t.milestone ? ' [' + t.milestone + ']' : ''));
-        g.appendChild(svgEl('rect', { x: p.x, y: p.y, width: CHIP_W, height: CHIP_H, rx: 9, 'class': 'node-box' }));
-        g.appendChild(svgEl('rect', { x: p.x, y: p.y + 6, width: 4, height: CHIP_H - 12, rx: 2, fill: TONE_VAR[tone] }));
-        var idText = svgEl('text', { x: p.x + 13, y: p.y + 17, 'class': 'node-id' });
-        idText.textContent = t.id;
-        g.appendChild(idText);
-        var st = svgEl('text', { x: p.x + CHIP_W - 10, y: p.y + 16, 'text-anchor': 'end', 'class': 'node-status', fill: TONE_VAR[tone] });
-        st.textContent = String(t.status).toUpperCase();
-        g.appendChild(st);
-        var title = svgEl('text', { x: p.x + 13, y: p.y + 31, 'class': 'node-title' });
-        title.textContent = String(t.title).length > 26 ? String(t.title).slice(0, 25) + '\u2026' : t.title;
-        g.appendChild(title);
-        g.addEventListener('mouseenter', function () { hotEdges(t.id, true); });
-        g.addEventListener('mouseleave', function () { hotEdges(t.id, false); });
-        g.addEventListener('click', function () { window.__sblOpenDetail(t.id); });
-        g.addEventListener('keydown', function (ev) {
-          if (ev.key === 'Enter' || ev.key === ' ') {
-            ev.preventDefault();
-            window.__sblOpenDetail(t.id);
+    function section(titleText, items, emptyText) {
+      var wrap = el('div', 'flow-block');
+      wrap.appendChild(el('h4', '', titleText));
+      if (items.length === 0) {
+        wrap.appendChild(el('p', 'flow-empty', emptyText));
+      } else {
+        var list = el('ul', 'flow-list');
+        items.forEach(function (item) {
+          var li = el('li', 'flow-card');
+          var head = el('div', 'flow-card-head');
+          head.appendChild(el('span', 'flow-card-id', item.task.id));
+          var chip = el('span', 'status-chip', item.task.status);
+          chip.setAttribute('data-tone', toneOf(item.task.status));
+          head.appendChild(chip);
+          li.appendChild(head);
+          li.appendChild(el('div', 'flow-card-title', item.task.title));
+          if (item.blockers.length > 0) {
+            var blockRow = el('div', 'flow-card-blockers');
+            blockRow.appendChild(document.createTextNode('Blocked by: '));
+            item.blockers.forEach(function (id, i) {
+              if (i > 0) blockRow.appendChild(document.createTextNode(', '));
+              var btn = el('button', 'dep-link', id);
+              btn.type = 'button';
+              btn.addEventListener('click', function () { openDetail(id); });
+              blockRow.appendChild(btn);
+            });
+            li.appendChild(blockRow);
           }
+          li.addEventListener('click', function (ev) {
+            if (ev.target.closest('.dep-link')) return;
+            openDetail(item.task.id);
+          });
+          list.appendChild(li);
         });
-        svg.appendChild(g);
-      });
-    });
-    wrap.appendChild(svg);
+        wrap.appendChild(list);
+      }
+      return wrap;
+    }
+    if (upNext.length === 0 && blocked.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No pending tasks — everything is done.'));
+      return;
+    }
+    var wrap = el('div', 'flow-wrap');
+    wrap.appendChild(section('Up Next', upNext, 'No tasks ready to start.'));
+    wrap.appendChild(section('Blocked', blocked, 'No blocked tasks.'));
     mount.appendChild(wrap);
   }
 
-  renderDepGraph($('#depgraph'), data.tasks, data.deps);
+  renderFlow($('#depgraph'), data.tasks);
+})();
+</script>
+<script>
+(function () {
+  if (!window.EventSource || (location.protocol !== 'http:' && location.protocol !== 'https:')) return;
+  var es = new EventSource('/api/events');
+  es.addEventListener('reload', function () { location.reload(); });
+  es.addEventListener('error', function () {});
 })();
 </script>
 </body>

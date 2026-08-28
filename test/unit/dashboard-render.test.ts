@@ -57,6 +57,9 @@ const SAMPLE: DashboardData = {
     { term: 'AC', definition: 'Acceptance criterion.' },
     { term: 'Review Gate', definition: 'Human checkpoint before proceeding.' },
   ],
+  drafts: [
+    { id: 'DRAFT-1', title: 'Idea: offline mode', file: 'draft-1.md' },
+  ],
   source: 'backlog-json',
 };
 
@@ -434,5 +437,61 @@ describe('live-reload script', () => {
     const live = liveScript();
     expect(live).toContain('location.protocol');
     expect(live).toMatch(/https?/);
+  });
+});
+
+describe('quick action buttons', () => {
+  it('renders three card buttons with prominent title and dim command line', () => {
+    const m = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html);
+    expect(m).toBeTruthy();
+    const row = m?.[1] ?? '';
+    const buttons = row.match(/<button/g) ?? [];
+    expect(buttons).toHaveLength(3);
+    for (const [title, cmd] of [
+      ['Backlog Browser', 'backlog browser'],
+      ['Backlog Board', 'backlog board'],
+      ['Live Dashboard', 'sbl dashboard --serve'],
+    ] as const) {
+      expect(row).toContain(`<span class="cmd-title">${title}</span>`);
+      expect(row).toContain(`<span class="cmd-line">${cmd}</span>`);
+    }
+  });
+
+  it('keeps the executable data-cmd on browser/board and data-copy on the serve button', () => {
+    const m = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html);
+    const row = m?.[1] ?? '';
+    expect(row).toContain('data-cmd="browser"');
+    expect(row).toContain('data-cmd="board"');
+    expect(row).toContain('data-copy="sbl dashboard --serve"');
+  });
+
+  it('drops the " copy" suffix from button styling', () => {
+    expect(html).not.toContain('content: " copy"');
+    expect(html).not.toContain('[data-copy]::after');
+  });
+
+  it('posts data-cmd buttons to the local serve server when opened statically', () => {
+    const app = appScript();
+    expect(app).toContain("location.protocol === 'file:'");
+    expect(app).toContain('127.0.0.1:6428');
+    expect(app).toContain('/api/run');
+  });
+
+  it('copies the real command and gives feedback when the server is unreachable', () => {
+    const app = appScript();
+    expect(app).toContain('clipboard');
+    expect(app).toMatch(/copied/i);
+  });
+});
+
+describe('drafts rendering', () => {
+  it('embeds drafts in the data island', () => {
+    const island = islandOf(html, 'sbl-data');
+    expect(island).toContain('"drafts"');
+  });
+
+  it('calls renderDrafts with the collected drafts', () => {
+    const app = appScript();
+    expect(app).toContain('renderDrafts(data.drafts)');
   });
 });

@@ -163,15 +163,18 @@
 
   /* ---------- Quick actions ---------- */
   .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; }
   .cmd-btn {
-    font-family: var(--mono); font-size: .84rem; padding: 6px 14px; border-radius: 999px;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+    padding: 10px 18px; border-radius: 10px; min-width: 180px; text-align: left;
     background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
     cursor: pointer;
   }
-  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); color: var(--accent); }
+  .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); }
   .cmd-btn:active { transform: translateY(1px); }
-  .cmd-btn::before { content: "$ "; color: var(--accent); }
-  .cmd-btn[data-copy]::after { content: " copy"; font-size: .7em; color: var(--dim); }
+  .cmd-title { font-size: .95rem; font-weight: 600; color: var(--text); }
+  .cmd-btn:hover .cmd-title { color: var(--accent); }
+  .cmd-line { font-family: var(--mono); font-size: .72rem; color: var(--dim); }
   .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
   .drafts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .drafts-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .88rem; }
@@ -322,9 +325,9 @@
   <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
-      <button type="button" class="cmd-btn" data-cmd="browser">backlog browser</button>
-      <button type="button" class="cmd-btn" data-cmd="board">backlog board</button>
-      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve">sbl dashboard --serve</button>
+      <button type="button" class="cmd-btn" data-cmd="browser"><span class="cmd-title">Backlog Browser</span><span class="cmd-line">backlog browser</span></button>
+      <button type="button" class="cmd-btn" data-cmd="board"><span class="cmd-title">Backlog Board</span><span class="cmd-line">backlog board</span></button>
+      <button type="button" class="cmd-btn" data-copy="sbl dashboard --serve"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard --serve</span></button>
     </div>
     <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
   </div>
@@ -506,12 +509,30 @@
   renderTasks();
 
   /* ---------- Quick action buttons ---------- */
+  function cmdFeedback(btn, text) {
+    var title = btn.querySelector('.cmd-title');
+    if (!title || btn.getAttribute('data-busy')) return;
+    btn.setAttribute('data-busy', '1');
+    var orig = title.textContent;
+    title.textContent = text;
+    setTimeout(function () { title.textContent = orig; btn.removeAttribute('data-busy'); }, 1200);
+  }
+  function copyCommand(btn, command) {
+    if (navigator.clipboard) navigator.clipboard.writeText(command).catch(function () {});
+    cmdFeedback(btn, 'copied \u2713');
+  }
   document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
     b.addEventListener('click', function () {
       var copy = b.getAttribute('data-copy');
-      if (copy) { navigator.clipboard && navigator.clipboard.writeText(copy).catch(function(){}); return; }
-      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: b.getAttribute('data-cmd') }) })
-        .catch(function () { navigator.clipboard && navigator.clipboard.writeText(b.textContent || '').catch(function(){}); });
+      if (copy) { copyCommand(b, copy); return; }
+      var cmd = b.getAttribute('data-cmd');
+      // Static dashboard (file:// or GitHub Pages) has no same-origin API:
+      // reach the local serve server instead; fall back to clipboard copy.
+      var base = location.protocol === 'file:' || location.hostname !== '127.0.0.1' && location.hostname !== 'localhost'
+        ? 'http://127.0.0.1:6428' : '';
+      fetch(base + '/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
+        .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \u2713'); })
+        .catch(function () { copyCommand(b, 'backlog ' + cmd); });
     });
   });
 
