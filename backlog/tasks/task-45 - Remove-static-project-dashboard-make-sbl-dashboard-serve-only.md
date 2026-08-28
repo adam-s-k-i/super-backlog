@@ -4,7 +4,7 @@ title: Remove static project dashboard; make sbl dashboard serve-only
 status: Done
 assignee: []
 created_date: '2026-08-28 16:24'
-updated_date: '2026-08-28 16:55'
+updated_date: '2026-08-28 17:33'
 labels: []
 dependencies: []
 ordinal: 44000
@@ -37,6 +37,15 @@ Drop the static project dashboard.html artifact from user projects. sbl dashboar
 <!-- SECTION:NOTES:BEGIN -->
 Removed src/dashboard/regen.ts and test/e2e/hook-regen.e2e.test.ts; updated dashboard template footer/button text and unit snapshot; updated README/docs.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-28 17:33
+---
+npm publish v1.0.0 succeeded after changing npm Trusted Publisher workflow filename from publish.yml to release.yml; GitHub release v1.0.0 and npm package now live.
+---
+<!-- COMMENTS:END -->
 
 ## Final Summary
 
