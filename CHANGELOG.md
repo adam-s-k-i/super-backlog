@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.2](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.1...v1.0.2) (2026-08-28)
+
+
+### Bug Fixes
+
+* regenerate package-lock.json to include missing peer dependency ([99bd371](https://github.com/adam-s-k-i/super-backlog/commit/99bd371899cb620e610e64425ca9ef083a2e5fda))
+
 ## [1.0.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.0...v1.0.1) (2026-08-28)
 
 
