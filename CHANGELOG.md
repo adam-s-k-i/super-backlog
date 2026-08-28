@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.0...v1.0.1) (2026-08-28)
+
+
+### Bug Fixes
+
+* replace shell:true spawns with cross-spawn to silence DEP0190 ([23a061e](https://github.com/adam-s-k-i/super-backlog/commit/23a061ef5b50d7ecbc27127d1f9c26c785bbc132))
+
 ## [1.0.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.10.2...v1.0.0) (2026-08-28)
 
 
