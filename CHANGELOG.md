@@ -3,6 +3,17 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.0](https://github.com/adam-s-k-i/super-backlog/compare/v0.10.2...v1.0.0) (2026-08-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* make sbl dashboard serve-only and remove static project dashboard
+
+### Features
+
+* make sbl dashboard serve-only and remove static project dashboard ([c3fee87](https://github.com/adam-s-k-i/super-backlog/commit/c3fee87f34568d966c4e2ffec1c5201f149ced05))
+
 ## [0.10.2](https://github.com/adam-s-k-i/super-backlog/compare/v0.10.1...v0.10.2) (2026-08-28)
 
 
