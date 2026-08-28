@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.10.2](https://github.com/adam-s-k-i/super-backlog/compare/v0.10.1...v0.10.2) (2026-08-28)
+
+
+### Bug Fixes
+
+* **dashboard:** quick-action static fallback, card restyle and CORS ([78ca1c4](https://github.com/adam-s-k-i/super-backlog/commit/78ca1c49434dc4479654392eebf6ad2eb6898456))
+
 ## [0.10.1](https://github.com/adam-s-k-i/super-backlog/compare/v0.10.0...v0.10.1) (2026-08-27)
 
 
