@@ -3,6 +3,14 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.1.1...v1.2.0) (2026-08-29)
+
+
+### Features
+
+* compact clickable feature-cycle stepper and sidebar update badge ([#46](https://github.com/adam-s-k-i/super-backlog/issues/46)) ([12cbf06](https://github.com/adam-s-k-i/super-backlog/commit/12cbf06407446869767b852f66cb7a703d349846))
+* single Backlog button opens the Backlog.md UI in a managed overlay ([#48](https://github.com/adam-s-k-i/super-backlog/issues/48)) ([e5054a8](https://github.com/adam-s-k-i/super-backlog/commit/e5054a87b90bd628f66e225a7a7ea72f179ad867))
+
 ## [1.1.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.1.0...v1.1.1) (2026-08-29)
 
 
