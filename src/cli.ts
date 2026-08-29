@@ -70,7 +70,7 @@ export async function runCli(argv: string[]): Promise<number> {
     return 0;
   }
 
-  void applyVersionHint(KIT_VERSION, {
+  await applyVersionHint(KIT_VERSION, {
     home: homedir(),
     now: () => new Date(),
     fetchLatest: defaultFetchLatest,
