@@ -91,6 +91,16 @@ sbl dashboard --port 8080 --no-open
 
 There is no static `dashboard.html` written to your project.
 
+### Backlog button
+
+The Board &amp; Quick Actions section has a single **Backlog** button. Clicking
+it makes the dashboard hub start a `backlog browser` process for the current
+project on a free local port (reused while it is alive, stopped when the hub
+stops) and opens the full Backlog.md UI — board, tasks, documents, decisions —
+in a near-fullscreen overlay. Use the overlay's "open in new tab" link for a
+standalone browser tab. If the `backlog` CLI is not installed, the button
+reports the failure and nothing is spawned.
+
 ### Feature Cycle steps
 
 The Feature Cycle section shows the nine workflow phases as a compact stepper —
