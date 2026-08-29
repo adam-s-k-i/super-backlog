@@ -122,6 +122,38 @@
     #task-dialog[open] { animation: none; }
   }
   @keyframes sbl-dialog-in { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* ---------- Backlog browser overlay ---------- */
+  #backlog-dialog {
+    width: 96vw; height: 94vh; max-width: none; max-height: none; padding: 0;
+    display: none; flex-direction: column;
+    border: 1px solid var(--line-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  }
+  #backlog-dialog[open] { display: flex; animation: sbl-dialog-in .18s ease-out; }
+  #backlog-dialog::backdrop { background: rgba(4,7,12,.65); backdrop-filter: blur(2px); }
+  @media (prefers-reduced-motion: reduce) {
+    #backlog-dialog[open] { animation: none; }
+  }
+  .backlog-dialog-bar {
+    display: flex; align-items: center; gap: 14px; padding: 8px 14px;
+    border-bottom: 1px solid var(--line-strong); background: var(--surface-2);
+  }
+  .backlog-dialog-title { font-weight: 700; font-size: .9rem; }
+  .backlog-dialog-bar a {
+    margin-left: auto; font-family: var(--mono); font-size: .72rem;
+    color: var(--muted); text-decoration: none;
+  }
+  .backlog-dialog-bar a:hover { color: var(--accent); }
+  #backlog-close {
+    font: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer;
+    color: var(--muted); background: none; border: 1px solid transparent;
+    border-radius: 8px; padding: 4px 10px;
+  }
+  #backlog-close:hover { color: var(--text); border-color: var(--line); }
+  #backlog-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #backlog-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
   .dialog-content { padding: 22px 24px 28px; }
   .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
@@ -375,14 +407,12 @@
 <main>
 
 <section id="sec-01">
-  <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">the full Backlog.md UI &middot; one click away</span></div>
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
-      <button type="button" class="cmd-btn" data-cmd="browser"><span class="cmd-title">Backlog Browser</span><span class="cmd-line">backlog browser</span></button>
-      <button type="button" class="cmd-btn" data-cmd="board"><span class="cmd-title">Backlog Board</span><span class="cmd-line">backlog board</span></button>
-      <button type="button" class="cmd-btn" data-copy="sbl dashboard"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard</span></button>
+      <button type="button" class="cmd-btn" id="backlog-btn"><span class="cmd-title">Backlog</span><span class="cmd-line">board &middot; tasks &middot; docs &middot; decisions</span></button>
     </div>
-    <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
+    <p class="hint">Opens the Backlog.md browser in an overlay &mdash; served locally per project, started on demand.</p>
   </div>
   <div id="drafts" class="mount">
     <h3 class="sub-head">Drafts</h3>
@@ -453,6 +483,15 @@
 </div>
 
 <dialog id="task-dialog" aria-label="Task details"></dialog>
+
+<dialog id="backlog-dialog" aria-label="Backlog browser">
+  <div class="backlog-dialog-bar">
+    <span class="backlog-dialog-title">Backlog</span>
+    <a id="backlog-open-tab" href="#" target="_blank" rel="noopener">open in new tab</a>
+    <button type="button" id="backlog-close" aria-label="Close">&#215;</button>
+  </div>
+  <iframe id="backlog-frame" title="Backlog.md browser"></iframe>
+</dialog>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
 <script type="application/json" id="sbl-data">__SBL_DATA_JSON__</script>
@@ -575,26 +614,51 @@
   /* ---------- Quick action buttons ---------- */
   function cmdFeedback(btn, text) {
     var title = btn.querySelector('.cmd-title');
-    if (!title || btn.getAttribute('data-busy')) return;
-    btn.setAttribute('data-busy', '1');
-    var orig = title.textContent;
+    if (!title) return;
+    if (btn.__sblFbTimer) {
+      clearTimeout(btn.__sblFbTimer); /* newer feedback overrides the pending one */
+    } else {
+      btn.__sblFbOrig = title.textContent;
+    }
     title.textContent = text;
-    setTimeout(function () { title.textContent = orig; btn.removeAttribute('data-busy'); }, 1200);
+    btn.__sblFbTimer = setTimeout(function () {
+      title.textContent = btn.__sblFbOrig;
+      btn.__sblFbTimer = null;
+    }, 1200);
   }
   function copyCommand(btn, command) {
     if (navigator.clipboard) navigator.clipboard.writeText(command).catch(function () {});
     cmdFeedback(btn, 'copied \u2713');
   }
-  document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var copy = b.getAttribute('data-copy');
-      if (copy) { copyCommand(b, copy); return; }
-      var cmd = b.getAttribute('data-cmd');
-      fetch('api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
-        .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \u2713'); })
-        .catch(function () {});
+  var backlogBtn = document.getElementById('backlog-btn');
+  var backlogDialog = document.getElementById('backlog-dialog');
+  var backlogFrame = document.getElementById('backlog-frame');
+  var backlogTab = document.getElementById('backlog-open-tab');
+  function openBacklog(url) {
+    if (!backlogDialog || !backlogFrame) return;
+    if (backlogFrame.getAttribute('src') !== url) backlogFrame.setAttribute('src', url);
+    if (backlogTab) backlogTab.setAttribute('href', url);
+    backlogDialog.showModal();
+  }
+  if (backlogBtn) {
+    backlogBtn.addEventListener('click', function () {
+      cmdFeedback(backlogBtn, 'starting\u2026');
+      fetch('api/backlog-browser', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (r) {
+          if (!r.ok || !r.data || !r.data.url) throw new Error('start failed');
+          openBacklog(r.data.url);
+        })
+        .catch(function () { cmdFeedback(backlogBtn, 'failed \u2717'); });
     });
-  });
+  }
+  var backlogClose = document.getElementById('backlog-close');
+  if (backlogClose && backlogDialog) {
+    backlogClose.addEventListener('click', function () { backlogDialog.close(); });
+    backlogDialog.addEventListener('click', function (e) {
+      if (e.target === backlogDialog) backlogDialog.close();
+    });
+  }
 
   /* ---------- Drafts ---------- */
   function renderDrafts(drafts) {
