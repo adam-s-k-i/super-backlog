@@ -3,6 +3,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.2.0...v1.3.0) (2026-08-29)
+
+
+### Features
+
+* centered, detailed task dialog and modern CLI field mapping ([#49](https://github.com/adam-s-k-i/super-backlog/issues/49)) ([#50](https://github.com/adam-s-k-i/super-backlog/issues/50)) ([4f02ebb](https://github.com/adam-s-k-i/super-backlog/commit/4f02ebbabd92ff576629098921024012f42889db))
+* **dashboard:** enrich task details from task markdown files ([#53](https://github.com/adam-s-k-i/super-backlog/issues/53)) ([f990626](https://github.com/adam-s-k-i/super-backlog/commit/f990626f0af86a11d2f0df2193e12c0eb670485f))
+* model router modal with enable/disable endpoints ([#54](https://github.com/adam-s-k-i/super-backlog/issues/54)) ([3d4053c](https://github.com/adam-s-k-i/super-backlog/commit/3d4053c79887571eb242b1ef9d94821c98211c85))
+
 ## [1.2.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.1.1...v1.2.0) (2026-08-29)
 
 
