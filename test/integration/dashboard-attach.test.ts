@@ -61,6 +61,53 @@ describe('runDashboard attach', () => {
     expect(page.status).toBe(200);
   });
 
+  it('rejects a --port that differs from the live hub without registering', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'sbl-attach-home-'));
+    const secondCwd = fixture('slug-c');
+    dirs.push(home, secondCwd);
+    const hub = await startHubServer({ port: 0, token: 'tok' });
+    handles.push(hub);
+    writeHubState(home, { pid: process.pid, port: hub.port, token: 'tok' });
+
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const startHub = vi.fn(async () => {
+      throw new Error('should not become hub');
+    });
+    const otherPort = hub.port === 65535 ? hub.port - 1 : hub.port + 1;
+    const code = await runDashboard(
+      secondCwd,
+      { values: { 'no-open': true, port: String(otherPort) }, positionals: [] },
+      { homedir: () => home, startHub, openBrowser: () => {} },
+    );
+    expect(code).toBe(1);
+    expect(startHub).not.toHaveBeenCalled();
+    expect(err.mock.calls.map(String).join('\n')).toContain(`already running on ${hub.port}`);
+    const page = await req(hub.port, '/p/slug-c/');
+    expect(page.status).toBe(404);
+  });
+
+  it('attaches when --port matches the live hub port', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'sbl-attach-home-'));
+    const secondCwd = fixture('slug-d');
+    dirs.push(home, secondCwd);
+    const hub = await startHubServer({ port: 0, token: 'tok' });
+    handles.push(hub);
+    writeHubState(home, { pid: process.pid, port: hub.port, token: 'tok' });
+
+    const startHub = vi.fn(async () => {
+      throw new Error('should not become hub');
+    });
+    const code = await runDashboard(
+      secondCwd,
+      { values: { 'no-open': true, port: String(hub.port) }, positionals: [] },
+      { homedir: () => home, startHub, openBrowser: () => {} },
+    );
+    expect(code).toBe(0);
+    expect(startHub).not.toHaveBeenCalled();
+    const page = await req(hub.port, '/p/slug-d/');
+    expect(page.status).toBe(200);
+  });
+
   it('returns 1 on slug collision and prints both paths', async () => {
     const home = mkdtempSync(join(tmpdir(), 'sbl-attach-home-'));
     const a = fixture('Same');

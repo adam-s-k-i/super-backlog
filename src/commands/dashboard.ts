@@ -180,6 +180,10 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
         undefined,
       );
       if (status.status === 200) {
+        if (values['port'] !== undefined && port !== state.port) {
+          console.error(`error: a hub is already running on ${state.port}`);
+          return 1;
+        }
         return await attachToHub({
           cwd,
           port: state.port,
