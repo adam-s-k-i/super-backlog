@@ -52,8 +52,7 @@ After installation:
 
 ```bash
 npm run board                   # open the Backlog.md kanban board
-sbl serve                       # dashboard server + Backlog browser with live reload
-sbl dashboard --serve             # live Project Dashboard on http://localhost:6428
+sbl dashboard                   # live Project Dashboard on http://localhost:6428
 ```
 
 `init` is idempotent — safe to re-run any time; re-running with a newer kit version is the upgrade path for all injected files.
@@ -74,7 +73,7 @@ sbl dashboard --serve             # live Project Dashboard on http://localhost:6
 | `dashboard.html` | generated Project Dashboard | not installed in user projects; generated on demand by `sbl dashboard` |
 | `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
 
-Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--port <n>] [--no-open]` · `sbl serve [--port <n>] [--no-open]`. See `sbl help` for every flag.
+Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--port <n>] [--no-open]`. See `sbl help` for every flag.
 
 ## Model router (opt-in)
 
@@ -92,13 +91,13 @@ When enabled:
 
 - **OpenCode** — the plugin `sbl-model-router.js` rewrites `chat.params` for the `sbl-worker` (workhorse) and `sbl-worker-cheap` / `explore` (budget) agents.
 - **Claude Code** — agent files carry a `model:` placeholder that is updated by a `SessionStart` hook based on your current main model.
-- **Dashboard** — `sbl dashboard --serve` exposes `/api/models` and `/api/models/discover`.
+- **Dashboard** — `sbl dashboard` exposes `/api/models` and `/api/models/discover`.
 
 The router is fully owned by super-backlog and removed by `sbl uninstall`. See the [model router design](docs/superpowers/specs/2026-08-26-sbl-model-router-design.md) for details.
 
 ## Project Dashboard
 
-`sbl dashboard` starts a local server that serves a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Activity (30-day sparkline), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline when served locally. The server watches `backlog/`, regenerates on change, and serves on port `6428`; connected browser tabs reload automatically via Server-Sent Events. `sbl serve` is a deprecated alias that behaves identically. `sbl dashboard` also launches the Backlog browser alongside the server so you can edit tasks while the dashboard updates.
+`sbl dashboard` starts a local server that serves a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Activity (30-day sparkline), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline when served locally. The server watches `backlog/`, regenerates on change, and serves on port `6428`; connected browser tabs reload automatically via Server-Sent Events. `sbl dashboard` also launches the Backlog browser alongside the server so you can edit tasks while the dashboard updates.
 
 ### Keeping it fresh
 

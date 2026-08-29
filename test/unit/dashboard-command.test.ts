@@ -18,7 +18,6 @@ import spawn from 'cross-spawn';
 import { startServeServer } from '../../src/dashboard/server.js';
 import { resolveBacklogBin } from '../../src/lib/run.js';
 import { runDashboard } from '../../src/commands/dashboard.js';
-import { runServe } from '../../src/commands/serve.js';
 
 describe('runDashboard', () => {
   beforeEach(() => {
@@ -78,13 +77,5 @@ describe('runDashboard', () => {
     const [, opts] = vi.mocked(startServeServer).mock.calls[0] as [string, { file?: string }];
     expect(opts.file).not.toBe('/tmp/dashboard.html');
     expect(opts.file).toMatch(/\.html$/);
-  });
-});
-
-describe('runServe', () => {
-  it('delegates to runDashboard as an alias', async () => {
-    const code = await runServe('/tmp', { values: { port: '1234' }, positionals: [] });
-    expect(code).toBe(0);
-    expect(startServeServer).toHaveBeenCalledWith('/tmp', expect.objectContaining({ port: 1234 }));
   });
 });

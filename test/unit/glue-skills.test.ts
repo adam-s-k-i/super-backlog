@@ -20,7 +20,8 @@ describe('skill-backlog-status-report.md', () => {
     expect(t).toMatch(/never change task status/i);
   });
   it('points to the visual surfaces', () => {
-    expect(t).toContain('sbl dashboard --serve');
+    expect(t).toContain('sbl dashboard');
+    expect(t).not.toContain('--serve');
     expect(t).toContain('backlog browser');
   });
 });
