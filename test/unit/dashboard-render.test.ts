@@ -495,47 +495,36 @@ describe('live-reload script', () => {
   });
 });
 
-describe('quick action buttons', () => {
-  it('renders three card buttons with prominent title and dim command line', () => {
+describe('backlog quick action', () => {
+  it('renders a single Backlog button in section 01', () => {
     const m = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html);
     expect(m).toBeTruthy();
     const row = m?.[1] ?? '';
     const buttons = row.match(/<button/g) ?? [];
-    expect(buttons).toHaveLength(3);
-    for (const [title, cmd] of [
-      ['Backlog Browser', 'backlog browser'],
-      ['Backlog Board', 'backlog board'],
-      ['Live Dashboard', 'sbl dashboard'],
-    ] as const) {
-      expect(row).toContain(`<span class="cmd-title">${title}</span>`);
-      expect(row).toContain(`<span class="cmd-line">${cmd}</span>`);
-    }
+    expect(buttons).toHaveLength(1);
+    expect(row).toContain('id="backlog-btn"');
+    expect(row).toContain('<span class="cmd-title">Backlog</span>');
+    expect(row).not.toContain('data-cmd=');
+    expect(row).not.toContain('data-copy=');
   });
 
-  it('keeps the executable data-cmd on browser/board and data-copy on the serve button', () => {
-    const m = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html);
-    const row = m?.[1] ?? '';
-    expect(row).toContain('data-cmd="browser"');
-    expect(row).toContain('data-cmd="board"');
-    expect(row).toContain('data-copy="sbl dashboard"');
+  it('ships the near-fullscreen backlog dialog with iframe, new-tab link and close button', () => {
+    expect(html).toContain('<dialog id="backlog-dialog"');
+    expect(html).toContain('id="backlog-frame"');
+    expect(html).toContain('id="backlog-open-tab"');
+    expect(html).toContain('id="backlog-close"');
   });
 
-  it('drops the " copy" suffix from button styling', () => {
-    expect(html).not.toContain('content: " copy"');
-    expect(html).not.toContain('[data-copy]::after');
-  });
-
-  it('posts data-cmd buttons to same-origin /api/run', () => {
+  it('posts to the managed backlog-browser endpoint and opens the dialog', () => {
     const app = appScript();
-    expect(app).toContain("fetch('api/run'");
-    expect(app).not.toContain("fetch('/api/run'");
-    expect(app).not.toContain('127.0.0.1:6428');
-    expect(app).not.toContain("location.protocol === 'file:'");
+    expect(app).toContain("fetch('api/backlog-browser'");
+    expect(app).not.toContain("fetch('api/run'");
+    expect(app).not.toContain('data-cmd');
+    expect(app).toContain('backlogDialog.showModal');
   });
 
-  it('copies the Live Dashboard command via data-copy', () => {
+  it('keeps the copy feedback machinery used by phase commands and the badge', () => {
     const app = appScript();
-    expect(app).toContain('data-copy');
     expect(app).toContain('copyCommand');
     expect(app).toMatch(/copied/i);
   });

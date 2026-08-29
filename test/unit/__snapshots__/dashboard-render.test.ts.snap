@@ -125,6 +125,38 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     #task-dialog[open] { animation: none; }
   }
   @keyframes sbl-dialog-in { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  /* ---------- Backlog browser overlay ---------- */
+  #backlog-dialog {
+    width: 96vw; height: 94vh; max-width: none; max-height: none; padding: 0;
+    display: none; flex-direction: column;
+    border: 1px solid var(--line-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  }
+  #backlog-dialog[open] { display: flex; animation: sbl-dialog-in .18s ease-out; }
+  #backlog-dialog::backdrop { background: rgba(4,7,12,.65); backdrop-filter: blur(2px); }
+  @media (prefers-reduced-motion: reduce) {
+    #backlog-dialog[open] { animation: none; }
+  }
+  .backlog-dialog-bar {
+    display: flex; align-items: center; gap: 14px; padding: 8px 14px;
+    border-bottom: 1px solid var(--line-strong); background: var(--surface-2);
+  }
+  .backlog-dialog-title { font-weight: 700; font-size: .9rem; }
+  .backlog-dialog-bar a {
+    margin-left: auto; font-family: var(--mono); font-size: .72rem;
+    color: var(--muted); text-decoration: none;
+  }
+  .backlog-dialog-bar a:hover { color: var(--accent); }
+  #backlog-close {
+    font: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer;
+    color: var(--muted); background: none; border: 1px solid transparent;
+    border-radius: 8px; padding: 4px 10px;
+  }
+  #backlog-close:hover { color: var(--text); border-color: var(--line); }
+  #backlog-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #backlog-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
   .dialog-content { padding: 22px 24px 28px; }
   .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
   .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
@@ -380,14 +412,12 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 <main>
 
 <section id="sec-01">
-  <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">the full Backlog.md UI &middot; one click away</span></div>
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
-      <button type="button" class="cmd-btn" data-cmd="browser"><span class="cmd-title">Backlog Browser</span><span class="cmd-line">backlog browser</span></button>
-      <button type="button" class="cmd-btn" data-cmd="board"><span class="cmd-title">Backlog Board</span><span class="cmd-line">backlog board</span></button>
-      <button type="button" class="cmd-btn" data-copy="sbl dashboard"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard</span></button>
+      <button type="button" class="cmd-btn" id="backlog-btn"><span class="cmd-title">Backlog</span><span class="cmd-line">board &middot; tasks &middot; docs &middot; decisions</span></button>
     </div>
-    <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
+    <p class="hint">Opens the Backlog.md browser in an overlay &mdash; served locally per project, started on demand.</p>
   </div>
   <div id="drafts" class="mount">
     <h3 class="sub-head">Drafts</h3>
@@ -458,6 +488,15 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 </div>
 
 <dialog id="task-dialog" aria-label="Task details"></dialog>
+
+<dialog id="backlog-dialog" aria-label="Backlog browser">
+  <div class="backlog-dialog-bar">
+    <span class="backlog-dialog-title">Backlog</span>
+    <a id="backlog-open-tab" href="#" target="_blank" rel="noopener">open in new tab</a>
+    <button type="button" id="backlog-close" aria-label="Close">&#215;</button>
+  </div>
+  <iframe id="backlog-frame" title="Backlog.md browser"></iframe>
+</dialog>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
 <script type="application/json" id="sbl-data">{"project":{"name":"demo-project","description":"A demo \\u003cb>project\\u003c/b>"},"generatedAt":"2026-08-26T12:00:00.000Z","kitVersion":"0.1.0","latestVersion":"9.9.9","statuses":[{"status":"Done","count":1},{"status":"In Progress","count":2},{"status":"To Do","count":1}],"milestones":[{"name":"M1","done":1,"total":2},{"name":"M2","done":0,"total":2}],"tasks":[{"id":"T-1","title":"Ship auth flow","status":"Done","priority":"high","assignee":"adam","updated":"2026-08-20","milestone":"M1","description":"Handles \\u003cscript>alert(1)\\u003c/script> safely","acs":[{"text":"login works","checked":true}]},{"id":"T-2","title":"Add OAuth refresh","status":"In Progress","priority":"medium","assignee":"kim","updated":"2026-08-21","milestone":"M1","acs":[{"text":"token rotation","checked":true},{"text":"docs updated","checked":false}]},{"id":"T-3","title":"Write README","status":"To Do","priority":"low","milestone":"M2","acs":[]},{"id":"T-4","title":"Polish UI","status":"In Progress","milestone":"M2","updated":"2026-08-22","acs":[{"text":"dark mode","checked":false}]}],"deps":[{"from":"T-2","to":"T-1"},{"from":"T-4","to":"T-2"}],"activity":[{"date":"2026-07-28","count":1},{"date":"2026-07-29","count":0},{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":2},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":1}],"glossary":[{"term":"AC","definition":"Acceptance criterion."},{"term":"Review Gate","definition":"Human checkpoint before proceeding."}],"drafts":[{"id":"DRAFT-1","title":"Idea: offline mode","file":"draft-1.md"}],"source":"backlog-json"}</script>
@@ -590,16 +629,35 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     if (navigator.clipboard) navigator.clipboard.writeText(command).catch(function () {});
     cmdFeedback(btn, 'copied \\u2713');
   }
-  document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var copy = b.getAttribute('data-copy');
-      if (copy) { copyCommand(b, copy); return; }
-      var cmd = b.getAttribute('data-cmd');
-      fetch('api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
-        .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \\u2713'); })
-        .catch(function () {});
+  var backlogBtn = document.getElementById('backlog-btn');
+  var backlogDialog = document.getElementById('backlog-dialog');
+  var backlogFrame = document.getElementById('backlog-frame');
+  var backlogTab = document.getElementById('backlog-open-tab');
+  function openBacklog(url) {
+    if (!backlogDialog || !backlogFrame) return;
+    if (backlogFrame.getAttribute('src') !== url) backlogFrame.setAttribute('src', url);
+    if (backlogTab) backlogTab.setAttribute('href', url);
+    backlogDialog.showModal();
+  }
+  if (backlogBtn) {
+    backlogBtn.addEventListener('click', function () {
+      cmdFeedback(backlogBtn, 'starting\\u2026');
+      fetch('api/backlog-browser', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (r) {
+          if (!r.ok || !r.data || !r.data.url) throw new Error('start failed');
+          openBacklog(r.data.url);
+        })
+        .catch(function () { cmdFeedback(backlogBtn, 'failed \\u2717'); });
     });
-  });
+  }
+  var backlogClose = document.getElementById('backlog-close');
+  if (backlogClose && backlogDialog) {
+    backlogClose.addEventListener('click', function () { backlogDialog.close(); });
+    backlogDialog.addEventListener('click', function (e) {
+      if (e.target === backlogDialog) backlogDialog.close();
+    });
+  }
 
   /* ---------- Drafts ---------- */
   function renderDrafts(drafts) {
