@@ -339,6 +339,73 @@ function readProjectIdentity(cwd: string): { name: string; description: string }
   return { name, description };
 }
 
+interface TaskFileDetail {
+  id?: string;
+  description?: string;
+  acs: DashboardAC[];
+}
+
+function sectionBetween(content: string, begin: string, end: string): string | undefined {
+  const from = content.indexOf(begin);
+  if (from === -1) return undefined;
+  const to = content.indexOf(end, from + begin.length);
+  if (to === -1) return undefined;
+  const text = content.slice(from + begin.length, to).trim();
+  return text === '' ? undefined : text;
+}
+
+/** Parse one backlog task markdown file via its explicit section markers. */
+export function parseTaskFile(content: string): TaskFileDetail {
+  const idMatch = /^id:\s*['"]?([^'"\r\n]+)['"]?\s*$/m.exec(content);
+  const description = sectionBetween(
+    content,
+    '<!-- SECTION:DESCRIPTION:BEGIN -->',
+    '<!-- SECTION:DESCRIPTION:END -->',
+  );
+  const acs: DashboardAC[] = [];
+  const acBlock = sectionBetween(content, '<!-- AC:BEGIN -->', '<!-- AC:END -->');
+  if (acBlock !== undefined) {
+    for (const line of acBlock.split(/\r?\n/)) {
+      const m = /^-\s*\[( |x|X)\]\s*(?:#\d+\s*)?(.+)$/.exec(line.trim());
+      if (m) acs.push({ text: m[2]!.trim(), checked: m[1]!.toLowerCase() === 'x' });
+    }
+  }
+  return { id: idMatch?.[1]?.trim(), description, acs };
+}
+
+/**
+ * Fill description/ACs from backlog/tasks/*.md where `task list --json`
+ * (schemaVersion 1) does not carry them. The CLI stays the source of truth
+ * for the list and statuses; files only supply missing detail fields.
+ */
+export function enrichTasksFromFiles(cwd: string, tasks: DashboardTask[]): DashboardTask[] {
+  const dir = join(cwd, 'backlog', 'tasks');
+  let files: string[];
+  try {
+    files = readdirSync(dir).filter((f) => f.endsWith('.md'));
+  } catch {
+    return tasks;
+  }
+  const byId = new Map<string, TaskFileDetail>();
+  for (const file of files) {
+    try {
+      const detail = parseTaskFile(readFileSync(join(dir, file), 'utf8'));
+      if (detail.id !== undefined) byId.set(detail.id.toUpperCase(), detail);
+    } catch {
+      // unreadable file -> no enrichment for that task
+    }
+  }
+  return tasks.map((t) => {
+    const detail = byId.get(t.id.toUpperCase());
+    if (!detail) return t;
+    return {
+      ...t,
+      description: t.description ?? detail.description,
+      acs: t.acs.length > 0 ? t.acs : detail.acs,
+    };
+  });
+}
+
 function readLatestVersion(home: string, kitVersion: string): string | null {
   try {
     const raw = readFileSync(join(home, '.super-backlog', 'version-check.json'), 'utf8');
@@ -378,7 +445,7 @@ export function collectDashboardData(
     const res = runCapture(bin, ['task', 'list', '--json'], cwd);
     if (res.status !== 0) return base;
     const rawTasks = parseTasksJson(res.stdout);
-    const tasks = normalizeTasks(rawTasks);
+    const tasks = enrichTasksFromFiles(cwd, normalizeTasks(rawTasks));
     return {
       ...base,
       tasks,

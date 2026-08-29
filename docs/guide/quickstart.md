@@ -107,7 +107,9 @@ Clicking a task row opens a centered detail dialog: title and status up top
 (the header stays visible while scrolling), metadata as a labelled grid with
 priority colouring, the description in readable paragraphs, acceptance
 criteria with a progress bar, dependency chips with done-markers, and a
-copyable `backlog task edit <id>` command to jump into editing.
+copyable `backlog task edit <id>` command to jump into editing. Descriptions
+and acceptance criteria are read from the task markdown files, so the dialog
+stays complete even where `backlog task list --json` omits them.
 
 ### Feature Cycle steps
 

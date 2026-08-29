@@ -1,9 +1,10 @@
 ---
 id: TASK-50
 title: 'Dashboard: task detail data source for descriptions and ACs'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 16:42'
+updated_date: '2026-08-29 17:12'
 labels: []
 dependencies: []
 ordinal: 48000
@@ -17,6 +18,6 @@ backlog task list --json (schemaVersion 1) carries no description or acceptance 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Detail dialog shows description and ACs for real backlog data
-- [ ] #2 Collection stays fast for 100+ tasks
+- [x] #1 Detail dialog shows description and ACs for real backlog data
+- [x] #2 Collection stays fast for 100+ tasks
 <!-- AC:END -->
