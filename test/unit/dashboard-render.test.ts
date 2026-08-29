@@ -19,6 +19,7 @@ const SAMPLE: DashboardData = {
   project: { name: 'demo-project', description: 'A demo <b>project</b>' },
   generatedAt: '2026-08-26T12:00:00.000Z',
   kitVersion: '0.1.0',
+  latestVersion: '9.9.9',
   statuses: [
     { status: 'Done', count: 1 },
     { status: 'In Progress', count: 2 },
@@ -385,6 +386,26 @@ describe('PIPELINE_PHASES', () => {
       'Verification & final summary',
       'Merge & archive',
     ]);
+  });
+
+  it('carries a copyable command for the tool-driven phases and none for human gates', () => {
+    const byN = new Map(PIPELINE_PHASES.map((p) => [p.n, p]));
+    expect(byN.get(2)?.command).toBe('/superpowers:brainstorming');
+    expect(byN.get(4)?.command).toBe('/spec-to-backlog');
+    expect(byN.get(5)?.command).toBe('/task-review-gate');
+    expect(byN.get(6)?.command).toBe('/superpowers:writing-plans');
+    expect(byN.get(7)?.command).toBe('/superpowers:subagent-driven-development');
+    expect(byN.get(8)?.command).toBe('/superpowers:verification-before-completion');
+    expect(byN.get(9)?.command).toBe('backlog task archive <id>');
+    expect(byN.get(1)?.command).toBeUndefined();
+    expect(byN.get(3)?.command).toBeUndefined();
+  });
+
+  it('ships the phase commands through the sbl-phases island', () => {
+    const island = islandOf(html, 'sbl-phases');
+    const phases = JSON.parse(island) as Array<Record<string, unknown>>;
+    expect(phases.filter((p) => typeof p['command'] === 'string')).toHaveLength(7);
+    expect(island).toContain('/superpowers:brainstorming');
   });
 
   it('stays consistent with the injected workflow-block.md phase table', () => {

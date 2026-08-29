@@ -52,6 +52,45 @@ afterEach(() => {
   dirs = [];
 });
 
+function homeWithVersionCache(latest: string): string {
+  const home = freshDir('sbl-home-');
+  mkdirSync(join(home, '.super-backlog'), { recursive: true });
+  writeFileSync(
+    join(home, '.super-backlog', 'version-check.json'),
+    JSON.stringify({ checkedAt: '2026-08-29T00:00:00.000Z', latest }),
+  );
+  return home;
+}
+
+describe('collectDashboardData latestVersion', () => {
+  it('exposes the cached latest version when it is newer than the kit version', () => {
+    const cwd = freshDir();
+    const data = collectDashboardData(cwd, { kitVersion: '1.0.0', home: homeWithVersionCache('9.9.9') });
+    expect(data.latestVersion).toBe('9.9.9');
+  });
+
+  it('is null when the cached version is not newer', () => {
+    const cwd = freshDir();
+    const data = collectDashboardData(cwd, { kitVersion: '1.0.0', home: homeWithVersionCache('1.0.0') });
+    expect(data.latestVersion).toBeNull();
+  });
+
+  it('is null when no cache file exists', () => {
+    const cwd = freshDir();
+    const data = collectDashboardData(cwd, { kitVersion: '1.0.0', home: freshDir('sbl-home-empty-') });
+    expect(data.latestVersion).toBeNull();
+  });
+
+  it('is null when the cache file is invalid JSON', () => {
+    const cwd = freshDir();
+    const home = freshDir('sbl-home-bad-');
+    mkdirSync(join(home, '.super-backlog'), { recursive: true });
+    writeFileSync(join(home, '.super-backlog', 'version-check.json'), 'not json');
+    const data = collectDashboardData(cwd, { kitVersion: '1.0.0', home });
+    expect(data.latestVersion).toBeNull();
+  });
+});
+
 describe('parseTasksJson', () => {
   it('accepts the {tasks:[...]} wrapper shape', () => {
     const raw = parseTasksJson(HAPPY_JSON);
