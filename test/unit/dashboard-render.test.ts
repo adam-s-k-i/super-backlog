@@ -429,7 +429,8 @@ describe('live-reload script', () => {
   it('embeds an EventSource client that reloads on the reload event', () => {
     const live = liveScript();
     expect(live).not.toBe('');
-    expect(live).toContain("new EventSource('/api/events')");
+    expect(live).toContain("new EventSource('api/events')");
+    expect(html).not.toContain("EventSource('/api/events')");
     expect(live).toContain("'reload'");
     expect(live).toContain('location.reload()');
   });
@@ -473,7 +474,8 @@ describe('quick action buttons', () => {
 
   it('posts data-cmd buttons to same-origin /api/run', () => {
     const app = appScript();
-    expect(app).toContain("fetch('/api/run'");
+    expect(app).toContain("fetch('api/run'");
+    expect(app).not.toContain("fetch('/api/run'");
     expect(app).not.toContain('127.0.0.1:6428');
     expect(app).not.toContain("location.protocol === 'file:'");
   });

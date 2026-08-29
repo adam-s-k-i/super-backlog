@@ -1,13 +1,10 @@
 // src/dashboard/server.ts
 import { spawn } from 'node:child_process';
-import { watch, type FSWatcher } from 'node:fs';
-import { readFile } from 'node:fs/promises';
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { isAbsolute, join } from 'node:path';
 import process from 'node:process';
 import crossSpawn from 'cross-spawn';
 
-import { createModelApiHandler } from '../models/dashboard-api.js';
 import { resolveBacklogBin } from '../lib/run.js';
 
 export const DASHBOARD_PORT = 6428;
@@ -190,25 +187,6 @@ export function createDebouncedReloader(
   return { trigger, cancel };
 }
 
-function createApiHandler(
-  cwd: string,
-  broker: ReturnType<typeof createReloadBroker>,
-): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
-  const modelApi = createModelApiHandler();
-  const runApi = createRunApiHandler(cwd);
-  return async (req, res) => {
-    const url = req.url ?? '/';
-    if (url === '/api/run') {
-      await runApi(req, res);
-      return;
-    }
-    if (broker.handler(req, res)) {
-      return;
-    }
-    await modelApi(req, res);
-  };
-}
-
 export function recursiveWatchSupported(platform: string, nodeVersion: string): boolean {
   // Node 24 on Windows triggers a libuv assertion in recursive fs.watch:
   // https://github.com/nodejs/node/issues/xxx (fs-event.c line 72)
@@ -251,87 +229,33 @@ function openInBrowser(url: string): void {
 }
 
 /**
- * Serve the latest dashboard bytes; changes inside <cwd>/backlog trigger
- * `regenerate()` debounced by 300ms. Pass port 0 for an ephemeral port (tests).
+ * Serve the latest dashboard bytes via the hub at `/p/<slug>/`.
+ * Pass port 0 for an ephemeral port (tests).
  */
 export async function startServeServer(
   cwd: string,
   opts: ServeOptions = {},
 ): Promise<ServeHandle> {
+  const { startHubServer } = await import('./hub.js');
   const file = opts.file ?? 'dashboard.html';
   const filePath = isAbsolute(file) ? file : join(cwd, file);
-  const regenerate = opts.regenerate;
-  const broker = createReloadBroker();
-  const reloader = createDebouncedReloader(regenerate, () => broker.broadcast('reload'), 300);
-
-  let watcher: FSWatcher | null = null;
-  const backlogDir = join(cwd, 'backlog');
-  if (recursiveWatchSupported(process.platform, process.versions.node)) {
-    try {
-      // recursive so subdirectory writes (e.g. backlog/tasks/*.md) fire on every platform
-      watcher = watch(backlogDir, { persistent: true, recursive: true }, () => reloader.trigger());
-      watcher.on('error', () => {}); // e.g. watched dir removed mid-session
-    } catch {
-      watcher = null; // no backlog dir -> no live reload; serving still works
-    }
-  } else {
-    console.warn(
-      'warning: live reload is disabled because Node 24+ on Windows cannot reliably watch directories recursively (libuv fs-event bug); use Node 22 or Linux/macOS for --serve',
-    );
+  const hub = await startHubServer({ port: opts.port ?? DASHBOARD_PORT, token: 'serve' });
+  const result = hub.register({
+    cwd,
+    file: filePath,
+    regenerate: opts.regenerate ?? ((): void => {}),
+  });
+  if (!result.ok) {
+    await hub.close();
+    const message = result.code === 400 ? result.message : `register failed (${result.code})`;
+    throw new Error(message);
   }
-
-  const apiHandler = createApiHandler(cwd, broker);
-
-  const server: Server = createServer((req, res) => {
-    if (req.url?.startsWith('/api/')) {
-      void apiHandler(req, res);
-      return;
-    }
-
-    const url = req.url ?? '/';
-    const method = req.method ?? 'GET';
-    if (method !== 'GET' || !(url === '/' || url === '/index.html')) {
-      res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-      res.end('not found');
-      return;
-    }
-    readFile(filePath)
-      .then((bytes) => {
-        res.writeHead(200, {
-          'content-type': 'text/html; charset=utf-8',
-          'cache-control': 'no-store',
-        });
-        res.end(bytes);
-      })
-      .catch(() => {
-        res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
-        res.end('dashboard not generated yet');
-      });
-  });
-
-  const requestedPort = opts.port ?? DASHBOARD_PORT;
-  const port = await new Promise<number>((resolvePort, rejectPort) => {
-    server.once('error', rejectPort);
-    server.listen(requestedPort, '127.0.0.1', () => {
-      const addr = server.address();
-      if (addr !== null && typeof addr === 'object') resolvePort(addr.port);
-      else resolvePort(requestedPort);
-    });
-  });
-
-  if (opts.openBrowser) openInBrowser(`http://127.0.0.1:${port}/`);
-
+  if (opts.openBrowser) openInBrowser(result.url);
   return {
-    server,
-    port,
+    server: hub.server,
+    port: hub.port,
     close(): Promise<void> {
-      reloader.cancel();
-      broker.close();
-      watcher?.close();
-      watcher = null;
-      return new Promise((resolveClose) => {
-        server.close(() => resolveClose());
-      });
+      return hub.close();
     },
   };
 }

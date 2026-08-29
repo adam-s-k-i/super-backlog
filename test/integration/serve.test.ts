@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { collectDashboardData } from '../../src/dashboard/data.js';
 import { renderDashboard } from '../../src/dashboard/render.js';
-import { startServeServer, recursiveWatchSupported } from '../../src/dashboard/server.js';
+import { startServeServer } from '../../src/dashboard/server.js';
 
 let dirs: string[] = [];
 const handles: Array<{ close(): Promise<void> }> = [];
@@ -27,9 +27,11 @@ async function writeProjectDashboard(dir: string): Promise<void> {
   writeFileSync(join(dir, 'dashboard.html'), html);
 }
 
-function fetchBody(port: number): Promise<string> {
+const PROJECT_PATH = '/p/serve-demo/';
+
+function fetchBody(port: number, path = PROJECT_PATH): Promise<string> {
   return new Promise((resolvePromise, rejectPromise) => {
-    const req = httpGet({ host: '127.0.0.1', port, path: '/' }, (res) => {
+    const req = httpGet({ host: '127.0.0.1', port, path }, (res) => {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', (chunk: string) => {
@@ -148,7 +150,7 @@ describe('startServeServer', () => {
     expect(body).not.toContain('<!doctype html>');
     // status code check via raw request
     const status: number = await new Promise((resolvePromise, rejectPromise) => {
-      const req = httpGet({ host: '127.0.0.1', port: handle.port, path: '/' }, (res) => {
+      const req = httpGet({ host: '127.0.0.1', port: handle.port, path: PROJECT_PATH }, (res) => {
         res.resume();
         resolvePromise(res.statusCode ?? 0);
       });
@@ -165,11 +167,11 @@ describe('startServeServer', () => {
     const handle = await startServeServer(dir, { port: 0, openBrowser: false });
     handles.push(handle);
 
-    const apiRes = await fetchApi(handle.port, '/api/models');
+    const apiRes = await fetchApi(handle.port, `${PROJECT_PATH}api/models`);
     expect(apiRes.status).toBe(200);
     expect(JSON.parse(apiRes.body).config).toHaveProperty('enabled');
 
-    const staticRes = await fetchApi(handle.port, '/');
+    const staticRes = await fetchApi(handle.port, PROJECT_PATH);
     expect(staticRes.status).toBe(200);
     expect(staticRes.body.startsWith('<!doctype html>')).toBe(true);
   });
@@ -188,7 +190,7 @@ describe('startServeServer', () => {
     handles.push(handle);
 
     const res = await new Promise<{ status: number; contentType: string }>((resolvePromise, rejectPromise) => {
-      const req = request({ host: '127.0.0.1', port: handle.port, path: '/api/events', method: 'GET' }, (r) => {
+      const req = request({ host: '127.0.0.1', port: handle.port, path: `${PROJECT_PATH}api/events`, method: 'GET' }, (r) => {
         resolvePromise({ status: r.statusCode ?? 0, contentType: String(r.headers['content-type'] ?? '') });
         req.destroy();
       });
@@ -206,7 +208,7 @@ describe('startServeServer', () => {
     handles.push(handle);
 
     const received: string[] = [];
-    const req = request({ host: '127.0.0.1', port: handle.port, path: '/api/events', method: 'GET' }, (res) => {
+    const req = request({ host: '127.0.0.1', port: handle.port, path: `${PROJECT_PATH}api/events`, method: 'GET' }, (res) => {
       res.setEncoding('utf8');
       res.on('data', (c: string) => received.push(c));
     });
@@ -233,7 +235,7 @@ describe('startServeServer', () => {
     // without a regenerate callback there is nothing to broadcast; the stream
     // must still connect and stay silent
     const received: string[] = [];
-    const req = request({ host: '127.0.0.1', port: handle.port, path: '/api/events', method: 'GET' }, (res) => {
+    const req = request({ host: '127.0.0.1', port: handle.port, path: `${PROJECT_PATH}api/events`, method: 'GET' }, (res) => {
       res.setEncoding('utf8');
       res.on('data', (c: string) => received.push(c));
     });
