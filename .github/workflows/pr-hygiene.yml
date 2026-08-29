@@ -45,6 +45,6 @@ jobs:
       contains(join(github.event.pull_request.labels.*.name, ' '), 'autorelease')
     steps:
       - env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
           GH_REPO: ${{ github.repository }}
         run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}"
