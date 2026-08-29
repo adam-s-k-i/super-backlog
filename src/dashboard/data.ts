@@ -1,8 +1,10 @@
 // src/dashboard/data.ts
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
 import { resolveBacklogBin, runCapture } from '../lib/run.js';
+import { isNewerVersion } from '../lib/version-check.js';
 import { readSimpleKeys } from '../lib/yamlmini.js';
 
 export interface DashboardAC {
@@ -58,6 +60,8 @@ export interface DashboardData {
   project: { name: string; description: string };
   generatedAt: string;
   kitVersion: string;
+  /** Newer released version from the version-check cache, or null when up to date/unknown. */
+  latestVersion: string | null;
   statuses: DashboardStatusCount[];
   milestones: DashboardMilestone[];
   tasks: DashboardTask[];
@@ -324,9 +328,20 @@ function readProjectIdentity(cwd: string): { name: string; description: string }
   return { name, description };
 }
 
+function readLatestVersion(home: string, kitVersion: string): string | null {
+  try {
+    const raw = readFileSync(join(home, '.super-backlog', 'version-check.json'), 'utf8');
+    const parsed: unknown = JSON.parse(raw);
+    if (!isRecord(parsed) || typeof parsed.latest !== 'string') return null;
+    return isNewerVersion(parsed.latest, kitVersion) ? parsed.latest : null;
+  } catch {
+    return null;
+  }
+}
+
 export function collectDashboardData(
   cwd: string,
-  opts: { kitVersion: string; today?: string },
+  opts: { kitVersion: string; today?: string; home?: string },
 ): DashboardData {
   const today =
     opts.today && /^\d{4}-\d{2}-\d{2}$/.test(opts.today.trim())
@@ -336,6 +351,7 @@ export function collectDashboardData(
     project: readProjectIdentity(cwd),
     generatedAt: new Date().toISOString(),
     kitVersion: opts.kitVersion,
+    latestVersion: readLatestVersion(opts.home ?? homedir(), opts.kitVersion),
     statuses: [],
     milestones: [],
     tasks: [],

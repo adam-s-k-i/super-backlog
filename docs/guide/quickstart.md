@@ -91,6 +91,23 @@ sbl dashboard --port 8080 --no-open
 
 There is no static `dashboard.html` written to your project.
 
+### Feature Cycle steps
+
+The Feature Cycle section shows the nine workflow phases as a compact stepper —
+step number and name only, with the human gates highlighted. Click a step to
+open its detail panel: the gate description plus, for tool-driven phases, the
+command that drives the phase (for example `/superpowers:brainstorming` for
+Brainstorming) with a one-click copy button. Purely human steps such as Idea
+and the Design gate carry no command.
+
+### Version and update badge
+
+The sidebar shows the installed super-backlog version. When the daily version
+check has cached a newer release, an update badge appears next to it; clicking
+the badge copies `npm i -g super-backlog` to your clipboard. The dashboard
+never contacts the npm registry itself — the badge is fed entirely by the
+cache under `~/.super-backlog/version-check.json`.
+
 ## Harness support
 
 - **OpenCode** — plugin entry + file-based skills under `.opencode/skill/`.

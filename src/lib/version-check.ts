@@ -25,7 +25,8 @@ function cachePath(home: string): string {
   return join(home, '.super-backlog', 'version-check.json');
 }
 
-function isNewer(latest: string, installed: string): boolean {
+/** Triple-numeric semver compare; non-numeric parts are treated as not newer. */
+export function isNewerVersion(latest: string, installed: string): boolean {
   const a = latest.split('.').slice(0, 3).map(Number);
   const b = installed.split('.').slice(0, 3).map(Number);
   if (a.length < 3 || b.length < 3) return false;
@@ -117,7 +118,7 @@ export async function applyVersionHint(installed: string, deps: VersionCheckDeps
   if (deps.env.SBL_SKIP_UPDATE_CHECK) return;
 
   const cache = readCache(deps.home);
-  if (cache && isNewer(cache.latest, installed)) {
+  if (cache && isNewerVersion(cache.latest, installed)) {
     deps.log(
       `super-backlog ${cache.latest} is available (installed ${installed}). Update: npm i -g super-backlog`,
     );

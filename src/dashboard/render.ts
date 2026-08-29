@@ -9,19 +9,21 @@ export interface PipelinePhase {
   n: number;
   name: string;
   gate: string;
+  /** Copyable command that drives this phase; human-only gates have none. */
+  command?: string;
 }
 
 /** The nine pipeline phases; must stay consistent with src/templates/workflow-block.md. */
 export const PIPELINE_PHASES: readonly PipelinePhase[] = [
   { n: 1, name: 'Idea', gate: 'User states a need; capture it before doing anything else' },
-  { n: 2, name: 'Brainstorming', gate: 'Explore intent, requirements and design before any creative work' },
+  { n: 2, name: 'Brainstorming', gate: 'Explore intent, requirements and design before any creative work', command: '/superpowers:brainstorming' },
   { n: 3, name: 'Design gate', gate: 'Human approves the design document' },
-  { n: 4, name: 'Spec-to-backlog', gate: 'Decompose the approved design into reviewed tasks with acceptance criteria' },
-  { n: 5, name: 'Review gate', gate: 'Human reviews specs and acceptance criteria before any code exists' },
-  { n: 6, name: 'Plan-before-code', gate: 'A written implementation plan is approved by the human' },
-  { n: 7, name: 'TDD implementation', gate: 'Failing test first, then code; one task per session/PR' },
-  { n: 8, name: 'Verification & final summary', gate: 'Run tests/lint/typecheck; verification evidence before success claims' },
-  { n: 9, name: 'Merge & archive', gate: 'Merge the branch, then close/archive the task via the backlog CLI' },
+  { n: 4, name: 'Spec-to-backlog', gate: 'Decompose the approved design into reviewed tasks with acceptance criteria', command: '/spec-to-backlog' },
+  { n: 5, name: 'Review gate', gate: 'Human reviews specs and acceptance criteria before any code exists', command: '/task-review-gate' },
+  { n: 6, name: 'Plan-before-code', gate: 'A written implementation plan is approved by the human', command: '/superpowers:writing-plans' },
+  { n: 7, name: 'TDD implementation', gate: 'Failing test first, then code; one task per session/PR', command: '/superpowers:subagent-driven-development' },
+  { n: 8, name: 'Verification & final summary', gate: 'Run tests/lint/typecheck; verification evidence before success claims', command: '/superpowers:verification-before-completion' },
+  { n: 9, name: 'Merge & archive', gate: 'Merge the branch, then close/archive the task via the backlog CLI', command: 'backlog task archive <id>' },
 ];
 
 function readTemplate(): string {

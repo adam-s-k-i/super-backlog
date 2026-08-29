@@ -19,6 +19,7 @@ const SAMPLE: DashboardData = {
   project: { name: 'demo-project', description: 'A demo <b>project</b>' },
   generatedAt: '2026-08-26T12:00:00.000Z',
   kitVersion: '0.1.0',
+  latestVersion: '9.9.9',
   statuses: [
     { status: 'Done', count: 1 },
     { status: 'In Progress', count: 2 },
@@ -210,6 +211,22 @@ describe('renderDashboard data islands', () => {
   });
 });
 
+describe('sidebar version and update badge', () => {
+  it('shows the installed version prominently in the sidebar', () => {
+    const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
+    expect(aside).toContain('id="side-version"');
+    expect(aside).toContain('v0.1.0');
+  });
+
+  it('wires an update badge driven by latestVersion from the data island', () => {
+    const app = appScript();
+    expect(app).toContain('data.latestVersion');
+    expect(app).toContain('update-badge');
+    const island = islandOf(html, 'sbl-data');
+    expect(island).toContain('"latestVersion":"9.9.9"');
+  });
+});
+
 describe('renderDashboard footer', () => {
   it('shows generated-at, kit version and the freshness note', () => {
     const footer = /<footer[^>]*>([\s\S]*?)<\/footer>/.exec(html)?.[1] ?? '';
@@ -273,6 +290,22 @@ describe('client diagrams: donut, bars, sparkline, stepper', () => {
     expect(app).toContain("getElementById('sbl-phases')");
     expect(app).toContain('step-num');
     expect(app).toContain('step-label');
+  });
+
+  it('renders steps compact: name only, no inline gate text', () => {
+    const app = appScript();
+    expect(app).not.toContain('document.createTextNode(p.gate)');
+    expect(app).toContain("el('button', 'step");
+  });
+
+  it('opens a phase detail with gate text and a copyable command on click', () => {
+    const app = appScript();
+    expect(app).toContain('function renderPhaseDetail(');
+    expect(app).toContain('phase-detail');
+    expect(app).toContain('p.gate');
+    expect(app).toContain('p.command');
+    expect(app).toContain('copyCommand(');
+    expect(html).toContain('id="phase-detail"');
   });
 
   it('bootstraps every diagram into its section mount', () => {
@@ -385,6 +418,26 @@ describe('PIPELINE_PHASES', () => {
       'Verification & final summary',
       'Merge & archive',
     ]);
+  });
+
+  it('carries a copyable command for the tool-driven phases and none for human gates', () => {
+    const byN = new Map(PIPELINE_PHASES.map((p) => [p.n, p]));
+    expect(byN.get(2)?.command).toBe('/superpowers:brainstorming');
+    expect(byN.get(4)?.command).toBe('/spec-to-backlog');
+    expect(byN.get(5)?.command).toBe('/task-review-gate');
+    expect(byN.get(6)?.command).toBe('/superpowers:writing-plans');
+    expect(byN.get(7)?.command).toBe('/superpowers:subagent-driven-development');
+    expect(byN.get(8)?.command).toBe('/superpowers:verification-before-completion');
+    expect(byN.get(9)?.command).toBe('backlog task archive <id>');
+    expect(byN.get(1)?.command).toBeUndefined();
+    expect(byN.get(3)?.command).toBeUndefined();
+  });
+
+  it('ships the phase commands through the sbl-phases island', () => {
+    const island = islandOf(html, 'sbl-phases');
+    const phases = JSON.parse(island) as Array<Record<string, unknown>>;
+    expect(phases.filter((p) => typeof p['command'] === 'string')).toHaveLength(7);
+    expect(island).toContain('/superpowers:brainstorming');
   });
 
   it('stays consistent with the injected workflow-block.md phase table', () => {
