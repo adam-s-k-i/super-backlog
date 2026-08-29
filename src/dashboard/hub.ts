@@ -35,6 +35,7 @@ export interface HubHandle {
   server: Server;
   port: number;
   register(project: Omit<HubProject, 'slug'> & { slug?: string }): RegisterResult;
+  triggerReload(slug: string): void;
   close(): Promise<void>;
 }
 
@@ -306,6 +307,9 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
     server,
     port,
     register,
+    triggerReload(slug: string): void {
+      projects.get(slug)?.reloader.trigger();
+    },
     close(): Promise<void> {
       for (const entry of projects.values()) disposeEntry(entry);
       projects.clear();

@@ -106,23 +106,41 @@ describe('startHubServer', () => {
     expect(regB.ok).toBe(true);
     if (!regA.ok || !regB.ok) return;
 
-    const received: string[] = [];
-    const sse = request({ host: '127.0.0.1', port: hub.port, path: `/p/${regB.slug}/api/events`, method: 'GET' }, (res) => {
-      res.setEncoding('utf8');
-      res.on('data', (c: string) => received.push(c));
-    });
-    sse.on('error', () => {});
-    sse.end();
-
-    const deadline = Date.now() + 2000;
-    while (!received.join('').includes(':') && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 20));
+    function connect(slug: string): { chunks: string[]; close(): void } {
+      const chunks: string[] = [];
+      const sse = request({ host: '127.0.0.1', port: hub.port, path: `/p/${slug}/api/events`, method: 'GET' }, (res) => {
+        res.setEncoding('utf8');
+        res.on('data', (c: string) => chunks.push(c));
+      });
+      sse.on('error', () => {});
+      sse.end();
+      return { chunks, close: () => sse.destroy() };
     }
-    expect(received.join('')).toContain(':');
 
-    writeFileSync(join(a.cwd, 'backlog', 'tasks.md'), '# touched\n');
-    await new Promise((r) => setTimeout(r, 400));
-    expect(received.join('')).not.toContain('event: reload');
-    sse.destroy();
+    const clientA = connect(regA.slug);
+    const clientB = connect(regB.slug);
+    const connected = async (client: { chunks: string[] }): Promise<boolean> => {
+      const deadline = Date.now() + 2000;
+      while (!client.chunks.join('').includes(':') && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      return client.chunks.join('').includes(':');
+    };
+    expect(await connected(clientA)).toBe(true);
+    expect(await connected(clientB)).toBe(true);
+
+    hub.triggerReload(regA.slug);
+
+    const gotA = async (): Promise<boolean> => {
+      const deadline = Date.now() + 2000;
+      while (!clientA.chunks.join('').includes('event: reload') && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      return clientA.chunks.join('').includes('event: reload');
+    };
+    expect(await gotA()).toBe(true);
+    expect(clientB.chunks.join('')).not.toContain('event: reload');
+    clientA.close();
+    clientB.close();
   });
 });
