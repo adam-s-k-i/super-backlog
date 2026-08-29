@@ -245,23 +245,75 @@
   .spark-axis { fill: var(--dim); font-size: 10px; font-family: var(--mono); }
 
   /* ---------- Pipeline stepper ---------- */
-  .stepper { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); margin: 4px 0 8px; }
-  .step { position: relative; min-width: 0; padding: 0 3px; text-align: center; }
+  .stepper { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 2px; margin: 4px 0 6px; }
+  .step {
+    position: relative; min-width: 0; padding: 10px 4px 12px; text-align: center;
+    background: none; border: 1px solid transparent; border-radius: 10px; cursor: pointer;
+    font: inherit; color: inherit; transition: background .15s ease, border-color .15s ease;
+  }
   .step::before {
-    content: ""; position: absolute; top: 15px; left: -50%; width: 100%; height: 2px;
+    content: ""; position: absolute; top: 27px; left: -50%; width: 100%; height: 2px;
     background: var(--line-strong); z-index: 0;
   }
   .step:first-child::before { display: none; }
+  .step:hover { background: var(--surface-2); border-color: var(--line); }
+  .step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .step[aria-expanded="true"] { background: var(--accent-dim); border-color: var(--accent); }
+  .step[aria-expanded="true"].gate { border-color: var(--warn); background: var(--warn-bg); }
   .step-num {
-    position: relative; z-index: 1; width: 32px; height: 32px; margin: 0 auto 8px;
+    position: relative; z-index: 1; width: 34px; height: 34px; margin: 0 auto 10px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 50%; font-family: var(--mono); font-size: .82rem; font-weight: 700;
+    border-radius: 50%; font-family: var(--mono); font-size: .9rem; font-weight: 700;
     background: var(--surface-2); border: 2px solid var(--line-strong); color: var(--muted);
   }
   .step.gate .step-num { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); box-shadow: 0 0 14px rgba(255,180,84,.25); }
-  .step-label { font-size: .63rem; color: var(--muted); line-height: 1.35; }
-  .step-label b { display: block; color: var(--text); font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .step.gate .step-label b { color: var(--warn); }
+  .step-label {
+    display: block; font-size: .8rem; font-weight: 600; color: var(--text); line-height: 1.3;
+    overflow-wrap: break-word;
+  }
+  .step.gate .step-label { color: var(--warn); }
+
+  /* ---------- Phase detail panel ---------- */
+  #phase-detail {
+    margin: 2px 0 12px; padding: 14px 18px; border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--accent); border-radius: 10px; background: var(--surface);
+  }
+  #phase-detail.open { animation: phasein .18s ease; }
+  #phase-detail.gate { border-left-color: var(--warn); }
+  @keyframes phasein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .phase-detail-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .phase-detail-num { font-family: var(--mono); font-size: .85rem; font-weight: 700; color: var(--accent); }
+  #phase-detail.gate .phase-detail-num { color: var(--warn); }
+  .phase-detail-name { font-size: 1rem; font-weight: 700; }
+  .phase-detail-gate { margin: 0 0 10px; font-size: .88rem; line-height: 1.55; color: var(--muted); }
+  .phase-cmd {
+    display: inline-flex; align-items: center; gap: 10px; padding: 7px 12px;
+    font: inherit; cursor: pointer; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text);
+    transition: border-color .15s ease;
+  }
+  .phase-cmd:hover { border-color: var(--accent); }
+  .phase-cmd:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .phase-cmd .cmd-line { font-family: var(--mono); font-size: .8rem; color: var(--accent); }
+  .phase-cmd .cmd-title { font-size: .72rem; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+  @media (prefers-reduced-motion: reduce) {
+    .step, .phase-cmd { transition: none; }
+    #phase-detail.open { animation: none; }
+  }
+
+  /* ---------- Sidebar version + update badge ---------- */
+  .side-version {
+    display: flex; align-items: center; gap: 8px; margin: 6px 0 2px;
+    font-family: var(--mono); font-size: .78rem; color: var(--dim);
+  }
+  .update-badge {
+    font: inherit; font-family: var(--mono); font-size: .68rem; cursor: pointer;
+    color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn);
+    border-radius: 999px; padding: 2px 9px; transition: box-shadow .15s ease;
+  }
+  .update-badge:hover { box-shadow: 0 0 10px rgba(255,180,84,.3); }
+  .update-badge:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+  .update-badge .cmd-title { font-size: inherit; font-weight: 600; color: inherit; }
 
   /* ---------- Dependency flow ---------- */
   .sub-head {
@@ -302,6 +354,7 @@
 <aside class="sbl-side">
   <div class="brand"><span class="brand-glyph">●</span><b>__PROJECT_NAME__</b></div>
   <div class="kicker">SUPERPOWERS × BACKLOG.MD</div>
+  <div class="side-version" id="side-version"><span>v__KIT_VERSION__</span></div>
   <nav aria-label="Dashboard sections">
     <a href="#sec-01"><span class="n">01</span>Board &amp; Quick Actions</a>
     <a href="#sec-02"><span class="n">02</span>Status</a>
@@ -373,8 +426,9 @@
 </section>
 
 <section id="sec-05">
-  <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included</span></div>
+  <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included &middot; click a step for details</span></div>
   <div id="stepper" class="mount"></div>
+  <div id="phase-detail" hidden></div>
   <h3 class="sub-head">Flow</h3>
   <div id="depgraph" class="mount"></div>
 </section>
@@ -419,6 +473,16 @@
   var badge = $('#source-badge');
   if (badge) {
     badge.textContent = data.source === 'fallback-empty' ? 'no live data' : 'live backlog data';
+  }
+
+  var sideVersion = $('#side-version');
+  if (sideVersion && data.latestVersion) {
+    var upd = el('button', 'update-badge');
+    upd.type = 'button';
+    upd.appendChild(el('span', 'cmd-title', 'v' + data.latestVersion + ' available'));
+    upd.setAttribute('data-tip', 'Update: npm i -g super-backlog (click to copy)');
+    upd.addEventListener('click', function () { copyCommand(upd, 'npm i -g super-backlog'); });
+    sideVersion.appendChild(upd);
   }
 
   var KEYS = ['id', 'title', 'status', 'milestone', 'priority', 'assignee', 'updated'];
@@ -702,23 +766,60 @@
     mount.appendChild(svg);
   }
 
+  function renderPhaseDetail(panel, p, isGate) {
+    panel.textContent = '';
+    panel.classList.toggle('gate', isGate);
+    var head = el('div', 'phase-detail-head');
+    head.appendChild(el('span', 'phase-detail-num', String(p.n).padStart(2, '0')));
+    head.appendChild(el('span', 'phase-detail-name', p.name));
+    panel.appendChild(head);
+    panel.appendChild(el('p', 'phase-detail-gate', p.gate));
+    if (p.command) {
+      var cmd = el('button', 'phase-cmd');
+      cmd.type = 'button';
+      cmd.appendChild(el('span', 'cmd-line', p.command));
+      cmd.appendChild(el('span', 'cmd-title', 'copy'));
+      cmd.addEventListener('click', function () { copyCommand(cmd, p.command); });
+      panel.appendChild(cmd);
+    }
+    panel.hidden = false;
+    panel.classList.remove('open');
+    void panel.offsetWidth; /* restart the open animation on re-render */
+    panel.classList.add('open');
+  }
+
   function renderStepper(mount, phases) {
     mount.textContent = '';
     if (!phases || phases.length === 0) {
       mount.appendChild(el('p', 'hint', 'Pipeline unavailable.'));
       return;
     }
+    var panel = document.getElementById('phase-detail');
     var wrap = el('div', 'stepper');
+    var current = null;
     phases.forEach(function (p) {
-      var step = el('div', 'step' + (/gate/i.test(String(p.name)) ? ' gate' : ''));
+      var isGate = /gate/i.test(String(p.name));
+      var step = el('button', 'step' + (isGate ? ' gate' : ''));
+      step.type = 'button';
       step.setAttribute('data-phase', p.n);
+      step.setAttribute('aria-expanded', 'false');
+      step.setAttribute('aria-controls', 'phase-detail');
       step.appendChild(el('div', 'step-num', String(p.n)));
-      var lab = el('div', 'step-label');
-      var b = document.createElement('b');
-      b.textContent = p.name;
-      lab.appendChild(b);
-      lab.appendChild(document.createTextNode(p.gate));
-      step.appendChild(lab);
+      step.appendChild(el('span', 'step-label', p.name));
+      step.addEventListener('click', function () {
+        if (!panel) return;
+        var wasOpen = current === step;
+        wrap.querySelectorAll('.step').forEach(function (s) { s.setAttribute('aria-expanded', 'false'); });
+        if (wasOpen) {
+          panel.hidden = true;
+          panel.classList.remove('open');
+          current = null;
+          return;
+        }
+        step.setAttribute('aria-expanded', 'true');
+        current = step;
+        renderPhaseDetail(panel, p, isGate);
+      });
       wrap.appendChild(step);
     });
     mount.appendChild(wrap);

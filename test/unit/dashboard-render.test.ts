@@ -211,6 +211,22 @@ describe('renderDashboard data islands', () => {
   });
 });
 
+describe('sidebar version and update badge', () => {
+  it('shows the installed version prominently in the sidebar', () => {
+    const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
+    expect(aside).toContain('id="side-version"');
+    expect(aside).toContain('v0.1.0');
+  });
+
+  it('wires an update badge driven by latestVersion from the data island', () => {
+    const app = appScript();
+    expect(app).toContain('data.latestVersion');
+    expect(app).toContain('update-badge');
+    const island = islandOf(html, 'sbl-data');
+    expect(island).toContain('"latestVersion":"9.9.9"');
+  });
+});
+
 describe('renderDashboard footer', () => {
   it('shows generated-at, kit version and the freshness note', () => {
     const footer = /<footer[^>]*>([\s\S]*?)<\/footer>/.exec(html)?.[1] ?? '';
@@ -274,6 +290,22 @@ describe('client diagrams: donut, bars, sparkline, stepper', () => {
     expect(app).toContain("getElementById('sbl-phases')");
     expect(app).toContain('step-num');
     expect(app).toContain('step-label');
+  });
+
+  it('renders steps compact: name only, no inline gate text', () => {
+    const app = appScript();
+    expect(app).not.toContain('document.createTextNode(p.gate)');
+    expect(app).toContain("el('button', 'step");
+  });
+
+  it('opens a phase detail with gate text and a copyable command on click', () => {
+    const app = appScript();
+    expect(app).toContain('function renderPhaseDetail(');
+    expect(app).toContain('phase-detail');
+    expect(app).toContain('p.gate');
+    expect(app).toContain('p.command');
+    expect(app).toContain('copyCommand(');
+    expect(html).toContain('id="phase-detail"');
   });
 
   it('bootstraps every diagram into its section mount', () => {
