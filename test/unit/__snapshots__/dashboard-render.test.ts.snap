@@ -619,11 +619,17 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   /* ---------- Quick action buttons ---------- */
   function cmdFeedback(btn, text) {
     var title = btn.querySelector('.cmd-title');
-    if (!title || btn.getAttribute('data-busy')) return;
-    btn.setAttribute('data-busy', '1');
-    var orig = title.textContent;
+    if (!title) return;
+    if (btn.__sblFbTimer) {
+      clearTimeout(btn.__sblFbTimer); /* newer feedback overrides the pending one */
+    } else {
+      btn.__sblFbOrig = title.textContent;
+    }
     title.textContent = text;
-    setTimeout(function () { title.textContent = orig; btn.removeAttribute('data-busy'); }, 1200);
+    btn.__sblFbTimer = setTimeout(function () {
+      title.textContent = btn.__sblFbOrig;
+      btn.__sblFbTimer = null;
+    }, 1200);
   }
   function copyCommand(btn, command) {
     if (navigator.clipboard) navigator.clipboard.writeText(command).catch(function () {});

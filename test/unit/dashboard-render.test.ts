@@ -528,6 +528,13 @@ describe('backlog quick action', () => {
     expect(app).toContain('copyCommand');
     expect(app).toMatch(/copied/i);
   });
+
+  it('lets failure feedback override pending starting feedback', () => {
+    const app = appScript();
+    // the old data-busy guard silently swallowed the second feedback call
+    expect(app).not.toContain("btn.getAttribute('data-busy')");
+    expect(app).toContain('__sblFbTimer');
+  });
 });
 
 describe('drafts rendering', () => {

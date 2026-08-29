@@ -92,6 +92,36 @@ describe('createBrowserManager', () => {
     expect(r).toEqual({ ok: false, code: 503, message: 'backlog cli not found' });
   });
 
+  it('fails fast when the spawn errors instead of waiting for the timeout', async () => {
+    let errorCb: ((err: Error) => void) | null = null;
+    const child: FakeChild = {
+      pid: undefined,
+      exitCode: null,
+      killed: false,
+      kill(): void {
+        this.killed = true;
+      },
+      on(event: 'error', cb: (err: Error) => void): void {
+        errorCb = cb;
+        setTimeout(() => cb(new Error('spawn ENOENT')), 5);
+      },
+    };
+    const m = createBrowserManager('/proj', {
+      resolveBin: () => 'backlog',
+      spawnFn: () => child,
+      getFreePort: async () => 7007,
+      probe: async () => false,
+      timeoutMs: 3000,
+      intervalMs: 5,
+    });
+    const started = Date.now();
+    const r = await m.ensure();
+    expect(errorCb).not.toBeNull();
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe(500);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
   it('returns 500 and kills the child when readiness times out', async () => {
     const child = fakeChild();
     const m = createBrowserManager('/proj', {

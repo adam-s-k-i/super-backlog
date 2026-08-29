@@ -93,14 +93,16 @@ export function createBrowserManager(cwd: string, deps: BrowserManagerDeps = {})
     }
     url = `http://127.0.0.1:${port}/`;
     const spawned = spawnFn(bin, ['browser', '--port', String(port), '--no-open'], cwd);
+    let spawnFailed = false;
     spawned.on('error', () => {
+      spawnFailed = true;
       if (child === spawned) child = null;
     });
     child = spawned;
 
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
-      if (spawned.exitCode !== null) break;
+      if (spawnFailed || spawned.exitCode !== null) break;
       if (await probe(url)) return { ok: true, url };
       await sleep(intervalMs);
     }
