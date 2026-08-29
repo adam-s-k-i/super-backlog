@@ -511,7 +511,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 </main>
 </div>
 
-<dialog id="task-dialog" aria-label="Task details"></dialog>
+<dialog id="task-dialog"></dialog>
 
 <dialog id="backlog-dialog" aria-label="Backlog browser">
   <div class="backlog-dialog-bar">
@@ -1118,6 +1118,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     if (inn) content.appendChild(inn);
     var cmd = el('button', 'phase-cmd detail-cmd');
     cmd.type = 'button';
+    /* backlog task ids are TASK-<n>; other prefixes fall back to the raw id */
     var cmdLine = 'backlog task edit ' + t.id.replace(/^task-/i, '');
     cmd.appendChild(el('span', 'cmd-line', cmdLine));
     cmd.appendChild(el('span', 'cmd-title', 'copy'));
