@@ -81,6 +81,15 @@ describe('collectDashboardData latestVersion', () => {
     expect(data.latestVersion).toBeNull();
   });
 
+  it('is null when the cache has a wrong shape', () => {
+    const cwd = freshDir();
+    const home = freshDir('sbl-home-shape-');
+    mkdirSync(join(home, '.super-backlog'), { recursive: true });
+    writeFileSync(join(home, '.super-backlog', 'version-check.json'), JSON.stringify({ latest: 123 }));
+    const data = collectDashboardData(cwd, { kitVersion: '1.0.0', home });
+    expect(data.latestVersion).toBeNull();
+  });
+
   it('is null when the cache file is invalid JSON', () => {
     const cwd = freshDir();
     const home = freshDir('sbl-home-bad-');
