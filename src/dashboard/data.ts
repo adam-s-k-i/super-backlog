@@ -118,17 +118,28 @@ function normalizeAcs(value: unknown): DashboardAC[] {
   return out;
 }
 
+function firstAssignee(t: RawTask): string | undefined {
+  const list = t['assignees'];
+  if (Array.isArray(list)) {
+    for (const entry of list) {
+      const name = asString(entry);
+      if (name !== undefined) return name;
+    }
+  }
+  return asString(t['assignee']);
+}
+
 export function normalizeTasks(rawTasks: RawTask[]): DashboardTask[] {
   return rawTasks.map((t) => ({
     id: asString(t['id']) ?? '',
     title: asString(t['title']) ?? '(untitled)',
     status: asString(t['status']) ?? 'Unknown',
     priority: asString(t['priority']),
-    assignee: asString(t['assignee']),
-    updated: asString(t['updated_at']) ?? asString(t['updated']),
+    assignee: firstAssignee(t),
+    updated: asString(t['updatedAt']) ?? asString(t['updated_at']) ?? asString(t['updated']),
     milestone: asString(t['milestone']),
     description: asString(t['description']),
-    acs: normalizeAcs(t['acceptance_criteria']),
+    acs: normalizeAcs(t['acceptanceCriteria'] ?? t['acceptance_criteria']),
   }));
 }
 

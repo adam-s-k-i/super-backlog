@@ -1,9 +1,10 @@
 ---
 id: TASK-48
 title: 'Dashboard: rework task detail modal (centering, content, UIUX)'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-29 16:19'
+updated_date: '2026-08-29 16:44'
 labels: []
 dependencies: []
 ordinal: 46000
@@ -17,7 +18,7 @@ The task dialog is not centered; content and presentation should become more det
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dialog is centered in the viewport at all sizes
-- [ ] #2 Detail view shows description, ACs, dependencies and metadata legibly
-- [ ] #3 Keyboard and focus behavior reviewed
+- [x] #1 Dialog is centered in the viewport at all sizes
+- [x] #2 Detail view shows description, ACs, dependencies and metadata legibly
+- [x] #3 Keyboard and focus behavior reviewed
 <!-- AC:END -->
