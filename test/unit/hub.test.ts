@@ -89,6 +89,22 @@ describe('startHubServer', () => {
     expect(second.code).toBe(409);
   });
 
+  it('registers the same cwd twice as a single, 200-ok entry', async () => {
+    const { cwd, file } = fixture('sbl-hub-dupe-', 'DupeProject');
+    dirs.push(cwd);
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const first = hub.register({ cwd, file, regenerate: () => {} });
+    const second = hub.register({ cwd, file, regenerate: () => {} });
+    expect(first.ok).toBe(true);
+    expect(second.ok).toBe(true);
+    if (!first.ok || !second.ok) return;
+    expect(second.slug).toBe(first.slug);
+    const index = await req(hub.port, '/');
+    const occurrences = index.body.split(`/p/${first.slug}/`).length - 1;
+    expect(occurrences).toBe(1);
+  });
+
   it('rejects status and register without the token', async () => {
     const hub = await startHubServer({ port: 0, token: 'secret' });
     handles.push(hub);

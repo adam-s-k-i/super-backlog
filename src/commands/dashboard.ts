@@ -96,6 +96,26 @@ function waitForClose(hub: HubHandle): Promise<void> {
   });
 }
 
+/**
+ * Builds the hub shutdown routine: close the hub handle, then clear the
+ * on-disk hub.json owned by `pid`. The returned function is idempotent --
+ * calling it more than once (e.g. once from a signal handler, once from the
+ * caller's own cleanup) only runs the underlying work once and every caller
+ * observes the same result.
+ */
+export function createShutdown(hub: HubHandle, home: string, pid: number): () => Promise<void> {
+  let done: Promise<void> | null = null;
+  return function shutdown(): Promise<void> {
+    if (done === null) {
+      done = (async () => {
+        await hub.close();
+        clearHubState(home, pid);
+      })();
+    }
+    return done;
+  };
+}
+
 async function attachToHub(opts: {
   cwd: string;
   port: number;
@@ -239,8 +259,9 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
 
   if (!noOpen) openBrowser(result.url);
 
+  const shutdown = createShutdown(hub, home, pid);
   const onSignal = (): void => {
-    void hub.close();
+    void shutdown();
   };
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);
@@ -250,6 +271,6 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
   } finally {
     process.removeListener('SIGINT', onSignal);
     process.removeListener('SIGTERM', onSignal);
-    clearHubState(home, pid);
+    await shutdown();
   }
 }
