@@ -1,90 +1,194 @@
-// test/unit/dashboard-command.test.ts
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-
-vi.mock('../../src/dashboard/server.js', () => ({
-  DASHBOARD_PORT: 6428,
-  startServeServer: vi.fn(),
-}));
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('cross-spawn', () => ({
   default: vi.fn(),
 }));
 
-vi.mock('../../src/lib/run.js', () => ({
-  resolveBacklogBin: vi.fn(),
-}));
-
 import spawn from 'cross-spawn';
-import { startServeServer } from '../../src/dashboard/server.js';
-import { resolveBacklogBin } from '../../src/lib/run.js';
 import { runDashboard } from '../../src/commands/dashboard.js';
-import { runServe } from '../../src/commands/serve.js';
+import type { HubHandle } from '../../src/dashboard/hub.js';
+import { readHubState } from '../../src/lib/hub-state.js';
+
+const dirs: string[] = [];
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  for (const d of dirs) rmSync(d, { recursive: true, force: true });
+  dirs.length = 0;
+});
+
+function tempDir(prefix: string): string {
+  const dir = mkdtempSync(join(tmpdir(), prefix));
+  dirs.push(dir);
+  return dir;
+}
+
+function project(name: string): string {
+  const cwd = tempDir('sbl-dash-proj-');
+  mkdirSync(join(cwd, 'backlog'));
+  writeFileSync(join(cwd, 'backlog', 'config.yml'), `project_name: ${name}\n`);
+  return cwd;
+}
+
+function fakeHub(
+  register = vi.fn().mockReturnValue({
+    ok: true,
+    slug: 'alpha',
+    url: 'http://127.0.0.1:6428/p/alpha/',
+  }),
+): HubHandle {
+  const closeListeners: Array<() => void> = [];
+  const fireClose = (): void => {
+    const cbs = closeListeners.splice(0);
+    for (const cb of cbs) cb();
+  };
+  return {
+    port: 6428,
+    register,
+    triggerReload: vi.fn(),
+    close: vi.fn(async () => {
+      fireClose();
+    }),
+    server: {
+      once(event: string, cb: () => void) {
+        if (event === 'close') {
+          closeListeners.push(cb);
+          queueMicrotask(fireClose);
+        }
+      },
+    },
+  } as unknown as HubHandle;
+}
 
 describe('runDashboard', () => {
-  beforeEach(() => {
-    vi.mocked(startServeServer).mockResolvedValue({
-      server: { close: vi.fn() },
-      port: 6428,
-      close: vi.fn().mockResolvedValue(undefined),
-    } as unknown as Awaited<ReturnType<typeof startServeServer>>);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('starts the dashboard server using a temp file and returns 0', async () => {
-    const code = await runDashboard('/tmp', { values: {}, positionals: [] });
+  it('does not call cross-spawn for backlog', async () => {
+    vi.mocked(spawn).mockImplementation(() => ({ on: vi.fn(), unref: vi.fn() }) as unknown as ReturnType<typeof spawn>);
+    const startHub = vi.fn(async () => fakeHub());
+    const cwd = project('Alpha');
+    const home = tempDir('sbl-dash-home-');
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      openBrowser: () => {},
+    });
     expect(code).toBe(0);
-    expect(startServeServer).toHaveBeenCalledWith(
-      '/tmp',
-      expect.objectContaining({ port: 6428, openBrowser: true, file: expect.stringMatching(/\.html$/) }),
+    expect(spawn).not.toHaveBeenCalled();
+  });
+
+  it('becomes hub on first call and registers the project', async () => {
+    const register = vi.fn().mockReturnValue({
+      ok: true,
+      slug: 'alpha',
+      url: 'http://127.0.0.1:6428/p/alpha/',
+    });
+    const startHub = vi.fn(async () => fakeHub(register));
+    const cwd = project('Alpha');
+    const home = tempDir('sbl-dash-home-');
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      openBrowser: () => {},
+    });
+    expect(code).toBe(0);
+    expect(startHub).toHaveBeenCalledTimes(1);
+    expect(register).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cwd,
+        file: expect.stringMatching(/sbl-dashboard-\d+-alpha\.html$/),
+        regenerate: expect.any(Function),
+      }),
     );
   });
 
   it('respects --no-open and a custom --port', async () => {
-    const code = await runDashboard('/tmp', { values: { port: '9000', 'no-open': true }, positionals: [] });
-    expect(code).toBe(0);
-    expect(startServeServer).toHaveBeenCalledWith(
-      '/tmp',
-      expect.objectContaining({ port: 9000, openBrowser: false }),
+    const register = vi.fn().mockReturnValue({
+      ok: true,
+      slug: 'alpha',
+      url: 'http://127.0.0.1:9000/p/alpha/',
+    });
+    const startHub = vi.fn(async () => {
+      const hub = fakeHub(register);
+      (hub as { port: number }).port = 9000;
+      return hub;
+    });
+    const opened: string[] = [];
+    const cwd = project('Alpha');
+    const home = tempDir('sbl-dash-home-');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const code = await runDashboard(
+      cwd,
+      { values: { port: '9000', 'no-open': true }, positionals: [] },
+      { homedir: () => home, startHub, openBrowser: (url) => opened.push(url) },
     );
-  });
-
-  it('warns and continues when the backlog binary is missing', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    vi.mocked(resolveBacklogBin).mockReturnValue(null);
-    vi.mocked(spawn).mockImplementation(() => ({ on: vi.fn(), unref: vi.fn() }) as unknown as ReturnType<typeof spawn>);
-    const code = await runDashboard('/tmp', { values: {}, positionals: [] });
     expect(code).toBe(0);
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('backlog CLI not found'));
-  });
-
-  it('spawns the Backlog browser when the binary is available', async () => {
-    vi.mocked(resolveBacklogBin).mockReturnValue('/usr/local/bin/backlog');
-    vi.mocked(spawn).mockImplementation(() => ({ on: vi.fn(), unref: vi.fn() }) as unknown as ReturnType<typeof spawn>);
-    const code = await runDashboard('/tmp', { values: {}, positionals: [] });
-    expect(code).toBe(0);
-    expect(spawn).toHaveBeenCalledWith(
-      '/usr/local/bin/backlog',
-      ['browser', '--no-open', '--non-interactive'],
-      expect.objectContaining({ detached: true, stdio: 'ignore' }),
-    );
+    expect(startHub).toHaveBeenCalledWith(expect.objectContaining({ port: 9000, token: expect.any(String) }));
+    expect(opened).toEqual([]);
+    expect(warn.mock.calls.map(String).join('\n')).toContain(':6428');
   });
 
   it('writes no dashboard.html in the project directory', async () => {
-    const code = await runDashboard('/tmp', { values: {}, positionals: [] });
+    const register = vi.fn().mockReturnValue({
+      ok: true,
+      slug: 'alpha',
+      url: 'http://127.0.0.1:6428/p/alpha/',
+    });
+    const cwd = project('Alpha');
+    const home = tempDir('sbl-dash-home-');
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub: async () => fakeHub(register),
+      openBrowser: () => {},
+    });
     expect(code).toBe(0);
-    const [, opts] = vi.mocked(startServeServer).mock.calls[0] as [string, { file?: string }];
-    expect(opts.file).not.toBe('/tmp/dashboard.html');
-    expect(opts.file).toMatch(/\.html$/);
+    const file = register.mock.calls[0]?.[0]?.file as string;
+    expect(file).not.toBe(join(cwd, 'dashboard.html'));
+    expect(file).toMatch(/\.html$/);
   });
-});
 
-describe('runServe', () => {
-  it('delegates to runDashboard as an alias', async () => {
-    const code = await runServe('/tmp', { values: { port: '1234' }, positionals: [] });
+  it('returns 1 when the slug is empty', async () => {
+    const cwd = project('!!!');
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const startHub = vi.fn(async () => fakeHub());
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => tempDir('sbl-dash-home-'),
+      startHub,
+      openBrowser: () => {},
+    });
+    expect(code).toBe(1);
+    expect(startHub).not.toHaveBeenCalled();
+    expect(err.mock.calls.map(String).join('\n')).toContain('project_name');
+  });
+
+  it('attaches to a live hub without starting another', async () => {
+    const cwd = project('Bravo');
+    const home = tempDir('sbl-dash-home-');
+    mkdirSync(join(home, '.super-backlog'), { recursive: true });
+    writeFileSync(
+      join(home, '.super-backlog', 'hub.json'),
+      JSON.stringify({ pid: process.pid, port: 6428, token: 'tok' }),
+    );
+    const startHub = vi.fn(async () => fakeHub());
+    const opened: string[] = [];
+    const attach = vi.fn(async (url: string, body: unknown) => {
+      if (url.includes('/api/hub/status')) {
+        return { status: 200, json: { pid: process.pid, port: 6428 } };
+      }
+      expect(body).toEqual({ cwd, token: 'tok' });
+      return { status: 200, json: { ok: true, slug: 'bravo', url: 'http://127.0.0.1:6428/p/bravo/' } };
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: (url) => opened.push(url),
+    });
     expect(code).toBe(0);
-    expect(startServeServer).toHaveBeenCalledWith('/tmp', expect.objectContaining({ port: 1234 }));
+    expect(startHub).not.toHaveBeenCalled();
+    expect(attach).toHaveBeenCalled();
+    expect(opened).toEqual([]);
+    expect(readHubState(home)?.port).toBe(6428);
   });
 });

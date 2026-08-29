@@ -16,7 +16,7 @@ function runDoctor(env: Record<string, string> = {}): DoctorResult {
   try {
     const out = execFileSync(process.execPath, [CLI, 'doctor'], {
       cwd: ROOT,
-      env: { ...process.env, ...env },
+      env: { ...process.env, SBL_SKIP_UPDATE_CHECK: '1', ...env },
       encoding: 'utf8',
     });
     return { out, err: '', status: 0 };

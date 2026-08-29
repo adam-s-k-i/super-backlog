@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 // src/cli.ts
+import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
 import { runDashboard } from './commands/dashboard.js';
-import { runBacklogSubcommand } from './commands/backlog-alias.js';
 import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runModels } from './commands/models.js';
-import { runServe } from './commands/serve.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
 import { assertNode20, KIT_VERSION } from './lib/version.js';
+import { applyVersionHint, defaultFetchLatest } from './lib/version-check.js';
 
-const HELP = `super-backlog (sbl) - equip any project with Backlog.md + Superpowers
+export const HELP = `super-backlog (sbl) - equip any project with Backlog.md + Superpowers
 
 Usage: sbl <command> [options]
 
@@ -21,10 +23,7 @@ Commands:
   init        Install the kit into the current project
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
-  dashboard   Start the project dashboard server (live-reload + Backlog browser)
-  serve       Deprecated alias for 'sbl dashboard'
-  browser     Open the Backlog.md browser (delegates to backlog browser)
-  board       Show the Backlog.md board (delegates to backlog board)
+  dashboard   Start the project dashboard server (live-reload)
   models      Manage the model router (show, enable, disable, discover)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
 
@@ -44,11 +43,7 @@ uninstall options:
 update options:
   (none)                          Refreshes injected files, skills, hook; prints upstream versions
 
- dashboard options:
-   --port <n>                      Port for the dashboard server (default: 6428)
-   --no-open                       Do not open the dashboard browser automatically
-
-serve options:
+dashboard options:
   --port <n>                      Port for the dashboard server (default: 6428)
   --no-open                       Do not open the dashboard browser automatically
 
@@ -62,7 +57,7 @@ Exit codes:
   0 ok | 1 usage/detection failure | 2 ownership or merge refusal
   3 upstream command failure | 4 success with warnings`;
 
-async function main(argv: string[]): Promise<number> {
+export async function runCli(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
 
   if (command === '--version' || command === '-v') {
@@ -74,6 +69,14 @@ async function main(argv: string[]): Promise<number> {
     console.log(HELP);
     return 0;
   }
+
+  void applyVersionHint(KIT_VERSION, {
+    home: homedir(),
+    now: () => new Date(),
+    fetchLatest: defaultFetchLatest,
+    log: (line) => console.error(line),
+    env: { ...process.env, SBL_SKIP_UPDATE_CHECK: process.env.SBL_SKIP_UPDATE_CHECK },
+  });
 
   switch (command) {
     case 'init': {
@@ -127,24 +130,11 @@ async function main(argv: string[]): Promise<number> {
         positionals: parsed.positionals,
       });
     }
-    case 'serve': {
-      const parsed = parseArgs({
-        args: rest,
-        allowPositionals: true,
-        options: {
-          port: { type: 'string' },
-          'no-open': { type: 'boolean' },
-        },
-      });
-      return await runServe(process.cwd(), {
-        values: parsed.values as Record<string, string | boolean | undefined>,
-        positionals: parsed.positionals,
-      });
-    }
+    case 'serve':
     case 'browser':
-      return await runBacklogSubcommand(process.cwd(), 'browser', rest);
     case 'board':
-      return await runBacklogSubcommand(process.cwd(), 'board', rest);
+      console.error(`error: "sbl ${command}" was removed; the live dashboard is \`sbl dashboard\``);
+      return 1;
     case 'models': {
       const parsed = parseArgs({ args: rest, allowPositionals: true, options: {} });
       return await runModels(process.cwd(), {
@@ -163,11 +153,14 @@ async function main(argv: string[]): Promise<number> {
 
 assertNode20();
 
-main(process.argv.slice(2))
-  .then((code) => {
-    process.exitCode = code;
-  })
-  .catch((err: unknown) => {
-    console.error(err instanceof Error ? err.message : String(err));
-    process.exitCode = 1;
-  });
+const entry = process.argv[1];
+if (entry && fileURLToPath(import.meta.url) === resolve(entry)) {
+  runCli(process.argv.slice(2))
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((err: unknown) => {
+      console.error(err instanceof Error ? err.message : String(err));
+      process.exitCode = 1;
+    });
+}

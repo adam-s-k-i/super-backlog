@@ -531,7 +531,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
       var copy = b.getAttribute('data-copy');
       if (copy) { copyCommand(b, copy); return; }
       var cmd = b.getAttribute('data-cmd');
-      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
+      fetch('api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
         .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \\u2713'); })
         .catch(function () {});
     });
@@ -980,7 +980,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 <script>
 (function () {
   if (!window.EventSource || (location.protocol !== 'http:' && location.protocol !== 'https:')) return;
-  var es = new EventSource('/api/events');
+  var es = new EventSource('api/events');
   es.addEventListener('reload', function () { location.reload(); });
   es.addEventListener('error', function () {});
 })();

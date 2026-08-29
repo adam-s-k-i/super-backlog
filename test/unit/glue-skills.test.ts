@@ -20,7 +20,8 @@ describe('skill-backlog-status-report.md', () => {
     expect(t).toMatch(/never change task status/i);
   });
   it('points to the visual surfaces', () => {
-    expect(t).toContain('sbl dashboard --serve');
+    expect(t).toContain('sbl dashboard');
+    expect(t).not.toContain('--serve');
     expect(t).toContain('backlog browser');
   });
 });
@@ -39,6 +40,20 @@ describe('skill-task-review-gate.md', () => {
   });
   it('never self-approves', () => {
     expect(t).toMatch(/never approve the gate yourself/i);
+  });
+});
+
+describe('installed backlog-status-report skills', () => {
+  it('do not advertise sbl dashboard --serve', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+    for (const rel of [
+      join('.opencode', 'skill', 'backlog-status-report', 'SKILL.md'),
+      join('.claude', 'skills', 'backlog-status-report', 'SKILL.md'),
+    ]) {
+      const t = readFileSync(join(root, rel), 'utf8');
+      expect(t).toContain('sbl dashboard');
+      expect(t).not.toContain('--serve');
+    }
   });
 });
 

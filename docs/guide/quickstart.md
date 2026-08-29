@@ -50,7 +50,6 @@ Add `--models` to also enable the optional [model router](#model-router-opt-in).
 | `npm run browser` | Open the Backlog browser UI. |
 | `npm run dashboard` | Start the live Project Dashboard server on `http://localhost:6428`. |
 | `sbl dashboard --port 8080` | Start the dashboard server on a custom port. |
-| `sbl serve` | Deprecated alias for `sbl dashboard`. |
 | `sbl update` | Refresh all injected files and print harness/plugin versions. |
 | `sbl doctor` | Check Node, PowerShell policy, and the `backlog` CLI. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
@@ -90,7 +89,7 @@ Use `--port` to choose a different port and `--no-open` to prevent the browser f
 sbl dashboard --port 8080 --no-open
 ```
 
-There is no static `dashboard.html` written to your project; `sbl serve` is a deprecated alias for the same command.
+There is no static `dashboard.html` written to your project.
 
 ## Harness support
 

@@ -17,7 +17,7 @@ function runUpdate(dir: string): UpdateResult {
   try {
     const out = execFileSync(process.execPath, [CLI_PATH, 'update'], {
       cwd: dir,
-      env: { ...process.env, SBL_SKIP_INSTALL: '1', SBL_FORCE_OFFLINE: '1' },
+      env: { ...process.env, SBL_SKIP_INSTALL: '1', SBL_FORCE_OFFLINE: '1', SBL_SKIP_UPDATE_CHECK: '1' },
       encoding: 'utf8',
     });
     return { out, err: '', status: 0 };
