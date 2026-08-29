@@ -36,6 +36,7 @@ One viewing command, one stable per-project URL on a single local hub, a non-blo
 - Custom protocol handlers or login autostart
 - Smarter in-page reload (preserve scroll/modal)
 - Changing `sbl models`, uninstall, or doctor behaviour except where CLI help/tests require it
+- Local slug override for two clones of the same repo (e.g. an `SBL_PROJECT_SLUG` env var) — today the answer is changing `project_name`, which edits a committed file; revisit if it hurts in practice
 
 ## 4. Command surface
 
@@ -43,7 +44,7 @@ Kept: `init`, `uninstall`, `update`, `dashboard`, `models`, `doctor`, `help`, `-
 
 Dashboard flags: `--port <n>`, `--no-open`. No other dashboard flags.
 
-Removed from help and from successful dispatch: `serve`, `browser`, `board`.
+Removed from help and from successful dispatch: `serve`, `browser`, `board`. Their modules `src/commands/serve.ts` and `src/commands/backlog-alias.ts` are deleted with them — no orphaned dead code.
 
 Unknown command and removed commands share exit code 1. Removed commands print a dedicated two-line message, not the generic "Unknown command" block:
 
@@ -87,7 +88,7 @@ On `sbl dashboard`:
 2. Read `hub.json` if present.
 3. If `pid` is alive **and** `GET http://127.0.0.1:<port>/api/hub/status?token=<token>` returns 200 → **attach** (client).
 4. Otherwise treat state as stale: if 6428 (or `--port`) is bound by a foreign process, exit 1 with that fact. If the port is free, **become hub**: listen, write `hub.json`, register `cwd`, serve, optional browser open, block until Ctrl+C.
-5. On hub exit: close watchers, delete `hub.json` only if it still contains this pid.
+5. On hub exit: close watchers, delete `hub.json` only if it still contains this pid. The hub installs `SIGINT`/`SIGTERM` handlers that close the server and watchers and clear `hub.json` — a `finally` block alone is not enough because Node exits without unwinding on signals.
 
 Alive pid is `process.kill(pid, 0)` succeeding.
 
@@ -125,15 +126,27 @@ Unknown slug → 404. Trailing slash on `/p/<slug>` redirects to `/p/<slug>/`.
 
 The dashboard HTML must call APIs with **relative** URLs (`api/events`, `api/run`) so they stay under `/p/<slug>/`. Absolute `/api/...` is a bug.
 
+Request hardening (all hub routes):
+
+- POST API routes (`/api/hub/register`, `/p/<slug>/api/run`, POST model routes) require `content-type: application/json`; anything else is 415. A cross-origin `text/plain` POST is a CORS "simple request" that skips the preflight, so without this check any web page could hit the run API blind.
+- The `Host` header must be `127.0.0.1[:port]` or `localhost[:port]`; anything else is 403 (DNS-rebinding guard).
+- `GET /` HTML-escapes project display names. Slugs are `[a-z0-9-]` by construction and need no escaping.
+
+The model API currently resolves `process.cwd()` internally (`createModelApiHandler()` with no argument). The hub requires `createModelApiHandler(cwd)` so `/p/<slug>/api/models...` operates on the registered project's cwd, never the hub process cwd.
+
 ### 5.5 Watchers and reload
 
 One `fs.watch` on `<cwd>/backlog` per registered project (same recursive-watch guard as today on Windows Node 24+). Regeneration and SSE broadcast go only to clients of that slug. A change in repo A must not reload repo B's tab.
+
+The Windows Node 24 recursive-watch warning is printed once per hub process, not once per registered project, and its text no longer mentions `--serve`.
 
 ### 5.6 `--port` and `--no-open`
 
 `--no-open`: hub or client skips the browser opener.
 
 `--port`: hub listens there and writes that port into `hub.json`. Stderr warning that default bookmarks (`:6428`) will miss this hub. Clients always honour `hub.json.port`, never assume 6428 when attaching.
+
+One `hub.json` means one hub. If `hub.json` points to a live hub and `--port` names a **different** port, exit 1 (`a hub is already running on <port>`); starting a second hub would clobber the first hub's state file and break its cleanup and future attaches.
 
 If 6428 is taken by a foreign process and the user did not pass `--port`, exit 1. Do not silently pick 6429 (that would break URL stability).
 
@@ -181,7 +194,7 @@ File: `join(homedir(), '.super-backlog', 'version-check.json')`.
 { "checkedAt": "2026-08-29T12:00:00.000Z", "latest": "1.0.4" }
 ```
 
-TTL: 24 hours from `checkedAt`.
+TTL: 24 hours from `checkedAt`. A `checkedAt` in the future or unparseable counts as stale (clock skew).
 
 ### 7.3 Behaviour
 
@@ -189,7 +202,11 @@ TTL: 24 hours from `checkedAt`.
 
    `super-backlog <latest> is available (installed <KIT_VERSION>). Update: npm i -g super-backlog`
 
+   To guarantee the ordering, `runCli` **awaits** the hint call — the cache path is one synchronous file read; only the background fetch below stays un-awaited.
+
 2. If the cache is missing or older than 24h, **do not block the command**. Start a background fetch (`npm view super-backlog version`, via the same `.cmd` shim rules as the rest of the CLI on Windows), 2s timeout, write cache on success. Do not print a hint from that background fetch. The next `sbl` invocation shows it from cache.
+
+   The fetch must also **never delay process exit**: the spawned child and the timeout timer are `unref()`ed. Consequence: a short command (`doctor`, `models`) may exit before the fetch completes and skip the cache write — acceptable, because the long-running `sbl dashboard` hub populates the cache reliably.
 
 3. Network errors, timeouts, and parse failures: keep the old cache if any, print nothing, exit code unchanged.
 
@@ -204,6 +221,9 @@ TTL: 24 hours from `checkedAt`.
 | Slug collision | 1 | Both realpaths |
 | Port taken by foreign process | 1 | Port in use; hint `--port` as emergency only |
 | Hub token mismatch | 1 | Stop the other hub or delete stale `hub.json` |
+| `--port` differs from live hub's port | 1 | `a hub is already running on <port>` |
+| POST API without `application/json` | HTTP 415 | (hub response, not CLI exit) |
+| Foreign `Host` header | HTTP 403 | (hub response, not CLI exit) |
 | Dashboard generate/listen failure | 1 | Existing `dashboard serve failed` pattern |
 | Version hint failed | 0 (relative to the hint) | Silent |
 
@@ -232,6 +252,11 @@ New or extended automated tests, no live npm registry, no requirement for a real
 - Foreign occupant of the port → exit 1 (injectable listen error).
 - Dashboard HTML uses relative `api/` URLs, not `/api/`.
 - `--no-open` does not call the opener.
+- POST to `/p/<slug>/api/run` with `content-type: text/plain` → 415; request with `Host: evil.example` → 403.
+- `GET /` escapes a `project_name` containing HTML.
+- `/p/<slug>/api/models` operates on the registered project's cwd, not the hub's `process.cwd()`.
+- SIGINT on the hub clears `hub.json` (unit-testable via the extracted shutdown function).
+- `--port 7000` while a hub is live on 6428 exits 1.
 
 **Version hint**
 
@@ -264,6 +289,7 @@ Do not add `sbl backlog`. Do not spawn the Backlog browser from dashboard. Do no
 
 - Hub and today's `startServeServer` should split: one HTTP server, many project registrations, each with cwd, slug, temp HTML path, regenerate, watcher, SSE broker.
 - `runDashboard` grows a become-hub vs attach branch; register/status live next to existing `/api/run`.
+- `createModelApiHandler` gains a required `cwd` parameter; the hub creates one handler per registered project.
 - Version hint is a small module called from `cli.ts` `main()`, injectable for tests.
 - Removed commands are explicit `switch` cases, not the `default` unknown path.
 
