@@ -27,9 +27,15 @@ coverage. This document is the operator manual.
 ## The release chain
 
 1. Merge Conventional-Commit PRs (`feat:`, `fix:` ...) into `master`.
+   Feature PRs labeled `automerge` merge themselves once checks are green —
+   no manual merge click needed.
 2. `Release` (release-please) maintains **one** rolling Release PR with the
    version bump and CHANGELOG entry.
-3. Green checks → the Release PR merges itself (label `autorelease`).
+3. Green checks → the Release PR merges itself (label `autorelease`) —
+   unless the repo variable `RELEASE_AUTOMERGE` is set to `off`, which
+   parks the Release PR so several stories can batch into one release.
+   Re-enable with `gh variable set RELEASE_AUTOMERGE --body on`, then
+   re-arm via a label touch or `gh pr merge <n> --auto --squash`.
 4. The merge creates tag `v<x.y.z>`; because `GITHUB_TOKEN` events cannot
    trigger other workflows, `Release` immediately calls the reusable
    `Publish` workflow instead of waiting for a tag event.

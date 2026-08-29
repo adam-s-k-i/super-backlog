@@ -40,9 +40,15 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    # Arms GitHub auto-merge for: dependabot PRs; PRs labeled `automerge`
+    # (feature PRs opted in by a maintainer); and release-please PRs — the
+    # latter only while the repo variable RELEASE_AUTOMERGE is not 'off',
+    # so releases can be batched until all planned work has landed.
     if: >-
       github.actor == 'dependabot[bot]' ||
-      contains(join(github.event.pull_request.labels.*.name, ' '), 'autorelease')
+      contains(join(github.event.pull_request.labels.*.name, ' '), 'automerge') ||
+      (contains(join(github.event.pull_request.labels.*.name, ' '), 'autorelease') &&
+       vars.RELEASE_AUTOMERGE != 'off')
     steps:
       - env:
           GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
