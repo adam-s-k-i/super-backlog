@@ -5,12 +5,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 
+import { createBrowserManager, type BrowserManagerDeps } from './backlog-browser.js';
 import { collectDashboardData } from './data.js';
 import { renderDashboard } from './render.js';
 import {
   createDebouncedReloader,
   createReloadBroker,
-  createRunApiHandler,
   DASHBOARD_PORT,
   recursiveWatchSupported,
 } from './server.js';
@@ -46,7 +46,7 @@ type ProjectEntry = {
   broker: ReturnType<typeof createReloadBroker>;
   reloader: ReturnType<typeof createDebouncedReloader>;
   watcher: FSWatcher | null;
-  runApi: ReturnType<typeof createRunApiHandler>;
+  browser: ReturnType<typeof createBrowserManager>;
   modelApi: ReturnType<typeof createModelApiHandler>;
 };
 
@@ -108,7 +108,12 @@ function generateDashboard(cwd: string, file: string): void {
   atomicWrite(file, renderDashboard(data));
 }
 
-export async function startHubServer(opts: { port?: number; token: string }): Promise<HubHandle> {
+export async function startHubServer(opts: {
+  port?: number;
+  token: string;
+  /** Injectable backlog-browser process deps (tests); production uses the defaults. */
+  browserDeps?: BrowserManagerDeps;
+}): Promise<HubHandle> {
   const projects = new Map<string, ProjectEntry>();
   const token = opts.token;
   let port = 0;
@@ -139,6 +144,7 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
     entry.reloader.cancel();
     entry.broker.close();
     entry.watcher?.close();
+    entry.browser.close();
   }
 
   function register(project: Omit<HubProject, 'slug'>): RegisterResult {
@@ -189,7 +195,7 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
       broker,
       reloader,
       watcher: watchBacklog(project.cwd, reloader),
-      runApi: createRunApiHandler(project.cwd),
+      browser: createBrowserManager(project.cwd, opts.browserDeps),
       modelApi: createModelApiHandler(project.cwd),
     };
     projects.set(slug, entry);
@@ -300,8 +306,9 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
 
     if (rest.startsWith('/api/')) {
       req.url = rest;
-      if (rest === '/api/run') {
-        await entry.runApi(req, res);
+      if (rest === '/api/backlog-browser' && method === 'POST') {
+        const result = await entry.browser.ensure();
+        sendJson(res, result.ok ? 200 : result.code, result);
         return;
       }
       if (entry.broker.handler(req, res)) {

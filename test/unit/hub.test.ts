@@ -219,7 +219,7 @@ describe('startHubServer', () => {
     expect(index.body).toContain('/p/override-me/');
   });
 
-  it('rejects a POST /p/<slug>/api/run without a JSON content-type', async () => {
+  it('rejects a POST /p/<slug>/api/backlog-browser without a JSON content-type', async () => {
     const { cwd, file } = fixture('sbl-hub-ct-', 'ct-project');
     dirs.push(cwd);
     const hub = await startHubServer({ port: 0, token: 't' });
@@ -229,9 +229,9 @@ describe('startHubServer', () => {
     if (!reg.ok) return;
     const res = await req(
       hub.port,
-      `/p/${reg.slug}/api/run`,
+      `/p/${reg.slug}/api/backlog-browser`,
       'POST',
-      JSON.stringify({ command: 'browser' }),
+      '{}',
       { 'content-type': 'text/plain' },
     );
     expect(res.status).toBe(415);
