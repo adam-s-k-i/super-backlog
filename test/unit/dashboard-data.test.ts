@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   BUILT_IN_GLOSSARY,
   collectDashboardData,
+  enrichTasksFromFiles,
   normalizeTasks,
   parseGlossaryMarkdown,
   parseTasksJson,
@@ -77,6 +78,67 @@ describe('normalizeTasks schemaVersion 1 shape', () => {
     expect(task?.assignee).toBe('kim');
     expect(task?.updated).toBe('2026-08-01');
     expect(task?.acs).toEqual([{ text: 'plain', checked: false }]);
+  });
+});
+
+function writeTaskFile(cwd: string, filename: string, contents: string): void {
+  mkdirSync(join(cwd, 'backlog', 'tasks'), { recursive: true });
+  writeFileSync(join(cwd, 'backlog', 'tasks', filename), contents);
+}
+
+const TASK_FILE = `---
+id: TASK-7
+title: 'Something'
+status: To Do
+---
+
+## Description
+
+<!-- SECTION:DESCRIPTION:BEGIN -->
+First paragraph.
+
+Second paragraph.
+<!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 one done
+- [ ] #2 two open
+<!-- AC:END -->
+`;
+
+describe('enrichTasksFromFiles', () => {
+  it('fills description and acs from the task file markers', () => {
+    const cwd = freshDir('sbl-enrich-');
+    writeTaskFile(cwd, 'task-7 - Something.md', TASK_FILE);
+    const [task] = enrichTasksFromFiles(cwd, normalizeTasks([{ id: 'TASK-7', title: 'Something', status: 'To Do' }]));
+    expect(task?.description).toBe('First paragraph.\n\nSecond paragraph.');
+    expect(task?.acs).toEqual([
+      { text: 'one done', checked: true },
+      { text: 'two open', checked: false },
+    ]);
+  });
+
+  it('keeps fields the CLI already provided', () => {
+    const cwd = freshDir('sbl-enrich-keep-');
+    writeTaskFile(cwd, 'task-7 - Something.md', TASK_FILE);
+    const [task] = enrichTasksFromFiles(
+      cwd,
+      normalizeTasks([
+        { id: 'TASK-7', title: 'Something', status: 'To Do', description: 'from cli', acceptance_criteria: ['cli ac'] },
+      ]),
+    );
+    expect(task?.description).toBe('from cli');
+    expect(task?.acs).toEqual([{ text: 'cli ac', checked: false }]);
+  });
+
+  it('returns tasks unchanged when the tasks dir is missing or files are malformed', () => {
+    const empty = freshDir('sbl-enrich-none-');
+    const tasks = normalizeTasks([{ id: 'TASK-9', title: 'X', status: 'Done' }]);
+    expect(enrichTasksFromFiles(empty, tasks)).toEqual(tasks);
+    const bad = freshDir('sbl-enrich-bad-');
+    writeTaskFile(bad, 'task-9 - X.md', 'no frontmatter, no markers');
+    expect(enrichTasksFromFiles(bad, tasks)).toEqual(tasks);
   });
 });
 

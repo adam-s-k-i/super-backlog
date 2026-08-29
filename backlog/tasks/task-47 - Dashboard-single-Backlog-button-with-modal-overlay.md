@@ -1,10 +1,10 @@
 ---
 id: TASK-47
 title: 'Dashboard: single Backlog button with modal overlay'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-29 16:19'
-updated_date: '2026-08-29 16:30'
+updated_date: '2026-08-29 17:12'
 labels: []
 dependencies: []
 ordinal: 45000

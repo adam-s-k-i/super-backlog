@@ -1,10 +1,10 @@
 ---
 id: TASK-48
 title: 'Dashboard: rework task detail modal (centering, content, UIUX)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-29 16:19'
-updated_date: '2026-08-29 16:44'
+updated_date: '2026-08-29 17:12'
 labels: []
 dependencies: []
 ordinal: 46000
