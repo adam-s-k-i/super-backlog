@@ -612,6 +612,16 @@ describe('models modal', () => {
     const app = appScript();
     expect(app).toContain("'sbl init --models'");
   });
+
+  it('disables the discover button while a discovery request is in flight', () => {
+    const app = appScript();
+    expect(app).toContain('discover.disabled = true');
+    expect(app).toContain('discover.disabled = false');
+  });
+
+  it('honours prefers-reduced-motion for the models dialog', () => {
+    expect(html).toMatch(/#models-dialog\[open\]\s*\{\s*animation:\s*none/);
+  });
 });
 
 describe('drafts rendering', () => {

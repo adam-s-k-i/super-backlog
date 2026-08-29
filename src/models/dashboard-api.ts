@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { loadConfig } from './config.js';
 import { discoverModels } from './discovery.js';
-import { writeRouterConfig } from './install.js';
+import { writeResolvedTiers, writeRouterConfig } from './install.js';
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json' });
@@ -15,7 +15,15 @@ function routerInstalled(cwd: string): boolean {
   return existsSync(join(cwd, '.super-backlog', 'models.json'));
 }
 
-export function createModelApiHandler(cwd: string): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export interface ModelApiDeps {
+  discover?: typeof discoverModels;
+}
+
+export function createModelApiHandler(
+  cwd: string,
+  deps: ModelApiDeps = {},
+): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+  const discover = deps.discover ?? discoverModels;
   return async (req, res) => {
     const url = req.url ?? '/';
     const method = req.method ?? 'GET';
@@ -37,7 +45,14 @@ export function createModelApiHandler(cwd: string): (req: IncomingMessage, res: 
     }
 
     if (method === 'POST' && url === '/api/models/discover') {
-      const result = await discoverModels(cwd);
+      const result = await discover(cwd);
+      if (result) {
+        try {
+          writeResolvedTiers(cwd, result);
+        } catch {
+          // discovery result still returned; the modal just won't remember it
+        }
+      }
       sendJson(res, 200, result ?? { error: 'discovery failed' });
       return;
     }

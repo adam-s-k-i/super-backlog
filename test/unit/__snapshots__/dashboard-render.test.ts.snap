@@ -390,6 +390,10 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   }
   #models-dialog::backdrop { background: rgba(4,7,12,.65); backdrop-filter: blur(2px); }
   #models-dialog[open] { animation: sbl-dialog-in .18s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    #models-dialog[open] { animation: none; }
+  }
+  .phase-cmd:disabled { opacity: .6; cursor: default; }
   .models-head-title { font-weight: 700; }
   .models-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; flex-wrap: wrap; }
 
@@ -753,7 +757,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     var enabled = !!(info.config && info.config.enabled);
     var row = el('div', 'models-row');
     var chip = el('span', 'status-chip', info.installed ? (enabled ? 'enabled' : 'disabled') : 'not installed');
-    chip.setAttribute('data-tone', info.installed ? (enabled ? 'ok' : 'warn') : 'dim');
+    if (info.installed) chip.setAttribute('data-tone', enabled ? 'ok' : 'warn');
     row.appendChild(chip);
     var toggle = actionButton(
       enabled ? 'sbl models disable' : 'sbl models enable',
@@ -767,11 +771,13 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     );
     row.appendChild(toggle);
     var discover = actionButton('sbl models discover', 'run', function () {
+      discover.disabled = true;
       cmdFeedback(discover, 'running…');
       fetch('api/models/discover', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
         .then(function (res) { return res.json(); })
         .then(function (r) { renderTiers(document.getElementById('models-tiers'), r); })
-        .catch(function () { cmdFeedback(discover, 'failed ✗'); });
+        .catch(function () { cmdFeedback(discover, 'failed ✗'); })
+        .then(function () { discover.disabled = false; });
     });
     row.appendChild(discover);
     modelsBody.appendChild(row);

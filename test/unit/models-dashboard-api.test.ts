@@ -99,6 +99,41 @@ describe('model dashboard api', () => {
     expect(JSON.parse(readFileSync(configPath(cwd), 'utf8')).enabled).toBe(false);
   });
 
+  it('persists discovered tiers so the modal shows them on the next open', async () => {
+    const cwd = freshDir('sbl-mapi-disc-');
+    const handler = createModelApiHandler(cwd, {
+      discover: async () => ({ workhorse: 'model-w', budget: 'model-b' }),
+    });
+    const server = createServer((req, res) => {
+      void handler(req, res);
+    });
+    servers.push({ close: () => new Promise<void>((r) => server.close(() => r())) });
+    const port = await new Promise<number>((resolve) => {
+      server.listen(0, '127.0.0.1', () => {
+        const addr = server.address();
+        resolve(addr !== null && typeof addr === 'object' ? addr.port : 0);
+      });
+    });
+    const res = await call(port, '/api/models/discover', 'POST');
+    expect(res.status).toBe(200);
+    expect(res.json['workhorse']).toBe('model-w');
+    const persisted = JSON.parse(readFileSync(configPath(cwd), 'utf8'));
+    expect(persisted.resolved.workhorse).toBe('model-w');
+    expect(persisted.resolved.budget).toBe('model-b');
+    const info = await call(port, '/api/models');
+    expect((info.json['config'] as Record<string, Record<string, unknown>>)['resolved']?.['workhorse']).toBe('model-w');
+  });
+
+  it('returns 500 with a message when the config cannot be written', async () => {
+    const cwd = freshDir('sbl-mapi-err-');
+    writeFileSync(join(cwd, '.super-backlog'), 'a file blocking the config dir');
+    const { port } = await listen(cwd);
+    const res = await call(port, '/api/models/enable', 'POST');
+    expect(res.status).toBe(500);
+    expect(res.json['ok']).toBe(false);
+    expect(typeof res.json['message']).toBe('string');
+  });
+
   it('still 404s unknown model routes', async () => {
     const cwd = freshDir();
     const { port } = await listen(cwd);
