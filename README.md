@@ -97,11 +97,11 @@ The router is fully owned by super-backlog and removed by `sbl uninstall`. See t
 
 ## Project Dashboard
 
-`sbl dashboard` starts a local server that serves a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Activity (30-day sparkline), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline when served locally. The server watches `backlog/`, regenerates on change, and serves on port `6428`; connected browser tabs reload automatically via Server-Sent Events. `sbl dashboard` also launches the Backlog browser alongside the server so you can edit tasks while the dashboard updates.
+`sbl dashboard` starts a local hub that serves a dark, HTS-style cockpit rendered from your Backlog data in seven sections — Board & Quick Actions, Status (donut), Milestones, Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Activity (30-day sparkline), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). No CDNs, no external fonts — works offline when served locally. Bookmark `http://127.0.0.1:6428/p/<project_name>/`. The hub watches `backlog/`, regenerates on change, and serves on port `6428`; connected browser tabs reload automatically via Server-Sent Events. A second repo's `sbl dashboard` attaches to the same hub. `Ctrl+C` in the hub terminal stops all projects.
 
 ### Keeping it fresh
 
-Run `sbl dashboard` whenever you want a live view of the board. The server regenerates the dashboard while it runs; stop it with `Ctrl+C`. There is no static `dashboard.html` installed in your project.
+Run `sbl dashboard` whenever you want a live view of the board. The hub regenerates the dashboard while it runs; stop it with `Ctrl+C` in the hub terminal. There is no static `dashboard.html` installed in your project.
 
 ![Project Dashboard](docs/assets/dashboard.png)
 
