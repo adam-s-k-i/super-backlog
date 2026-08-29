@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.1.0...v1.1.1) (2026-08-29)
+
+
+### Bug Fixes
+
+* hub hardening and symlink-safe CLI entry (post-1.1.0 review fixes) ([#43](https://github.com/adam-s-k-i/super-backlog/issues/43)) ([7823d58](https://github.com/adam-s-k-i/super-backlog/commit/7823d583a7e361b5d4de7a9570bba4f56f3e08ab))
+
 ## [1.1.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.3...v1.1.0) (2026-08-29)
 
 
