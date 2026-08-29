@@ -71,7 +71,12 @@ When enabled:
 
 - **OpenCode** uses a `chat.params` plugin to rewrite the model for `sbl-worker` (workhorse) and `sbl-worker-cheap` / `explore` (budget) agents.
 - **Claude Code** uses a `SessionStart` hook to update agent `model:` placeholders based on your current main model.
-- The dashboard server exposes `/api/models` and `/api/models/discover` for inspection.
+- The dashboard server exposes `/api/models` (with an `installed` flag) plus
+  `/api/models/enable`, `/api/models/disable`, and `/api/models/discover`.
+- The dashboard sidebar has a **model router** entry that opens a modal:
+  it shows the installed/enabled state, toggles the router, runs discovery
+  with the resolved workhorse/budget tiers, and offers a copyable
+  `sbl init --models` when the router is not installed yet.
 
 The router is removed cleanly by `sbl uninstall`.
 

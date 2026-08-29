@@ -370,6 +370,25 @@
   .update-badge:hover { box-shadow: 0 0 10px rgba(255,180,84,.3); }
   .update-badge:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
   .update-badge .cmd-title { font-size: inherit; font-weight: 600; color: inherit; }
+  .side-models {
+    display: block; margin: 4px 0 0; padding: 2px 0; cursor: pointer; text-align: left;
+    font: inherit; font-family: var(--mono); font-size: .78rem; color: var(--muted);
+    background: none; border: none;
+  }
+  .side-models:hover { color: var(--accent); }
+  .side-models:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ---------- Models modal ---------- */
+  #models-dialog {
+    width: min(560px, 92vw); max-height: 80vh; overflow-y: auto; overflow-x: hidden; padding: 0;
+    border: 1px solid var(--line-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    box-shadow: 0 24px 80px rgba(0,0,0,.55);
+  }
+  #models-dialog::backdrop { background: rgba(4,7,12,.65); backdrop-filter: blur(2px); }
+  #models-dialog[open] { animation: sbl-dialog-in .18s ease-out; }
+  .models-head-title { font-weight: 700; }
+  .models-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; flex-wrap: wrap; }
 
   /* ---------- Dependency flow ---------- */
   .sub-head {
@@ -411,6 +430,7 @@
   <div class="brand"><span class="brand-glyph">●</span><b>__PROJECT_NAME__</b></div>
   <div class="kicker">SUPERPOWERS × BACKLOG.MD</div>
   <div class="side-version" id="side-version"><span>v__KIT_VERSION__</span></div>
+  <button type="button" id="models-btn" class="side-models">model router</button>
   <nav aria-label="Dashboard sections">
     <a href="#sec-01"><span class="n">01</span>Board &amp; Quick Actions</a>
     <a href="#sec-02"><span class="n">02</span>Status</a>
@@ -515,6 +535,17 @@
     <button type="button" id="backlog-close" aria-label="Close">&#215;</button>
   </div>
   <iframe id="backlog-frame" title="Backlog.md browser"></iframe>
+</dialog>
+
+<dialog id="models-dialog" aria-label="Model router">
+  <div class="dialog-content">
+    <div class="detail-head">
+      <span class="detail-id">MODELS</span>
+      <span class="models-head-title">Model router</span>
+      <button type="button" class="detail-close" id="models-close" aria-label="Close">&#215;</button>
+    </div>
+    <div id="models-body"></div>
+  </div>
 </dialog>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
@@ -681,6 +712,87 @@
     backlogClose.addEventListener('click', function () { backlogDialog.close(); });
     backlogDialog.addEventListener('click', function (e) {
       if (e.target === backlogDialog) backlogDialog.close();
+    });
+  }
+
+  /* ---------- Models modal ---------- */
+  var modelsBtn = document.getElementById('models-btn');
+  var modelsDialog = document.getElementById('models-dialog');
+  var modelsBody = document.getElementById('models-body');
+  function tierCell(label, value) {
+    var c = el('div', 'meta-cell');
+    c.appendChild(el('span', 'meta-label', label));
+    c.appendChild(el('span', 'meta-value' + (value ? '' : ' empty'), value || '—'));
+    return c;
+  }
+  function actionButton(cmdLine, label, onClick) {
+    var b = el('button', 'phase-cmd');
+    b.type = 'button';
+    b.appendChild(el('span', 'cmd-line', cmdLine));
+    b.appendChild(el('span', 'cmd-title', label));
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function renderTiers(mount, tiers) {
+    mount.textContent = '';
+    if (!tiers || tiers.error || (!tiers.workhorse && !tiers.budget)) {
+      mount.appendChild(el('p', 'hint', 'Discovery failed — is the OpenCode CLI available?'));
+      return;
+    }
+    mount.appendChild(tierCell('Workhorse', tiers.workhorse));
+    mount.appendChild(tierCell('Budget', tiers.budget));
+  }
+  function renderModelsDialog(info) {
+    if (!modelsBody) return;
+    modelsBody.textContent = '';
+    var enabled = !!(info.config && info.config.enabled);
+    var row = el('div', 'models-row');
+    var chip = el('span', 'status-chip', info.installed ? (enabled ? 'enabled' : 'disabled') : 'not installed');
+    chip.setAttribute('data-tone', info.installed ? (enabled ? 'ok' : 'warn') : 'dim');
+    row.appendChild(chip);
+    var toggle = actionButton(
+      enabled ? 'sbl models disable' : 'sbl models enable',
+      enabled ? 'disable' : 'enable',
+      function () {
+        fetch('api/models/' + (enabled ? 'disable' : 'enable'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+          .then(function (res) { if (!res.ok) throw new Error('toggle failed'); return res.json(); })
+          .then(function (next) { renderModelsDialog(next); })
+          .catch(function () { cmdFeedback(toggle, 'failed ✗'); });
+      },
+    );
+    row.appendChild(toggle);
+    var discover = actionButton('sbl models discover', 'run', function () {
+      cmdFeedback(discover, 'running…');
+      fetch('api/models/discover', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+        .then(function (res) { return res.json(); })
+        .then(function (r) { renderTiers(document.getElementById('models-tiers'), r); })
+        .catch(function () { cmdFeedback(discover, 'failed ✗'); });
+    });
+    row.appendChild(discover);
+    modelsBody.appendChild(row);
+    var tiers = el('div', 'detail-meta');
+    tiers.id = 'models-tiers';
+    var resolved = (info.config && info.config.resolved) || {};
+    tiers.appendChild(tierCell('Workhorse', resolved.workhorse));
+    tiers.appendChild(tierCell('Budget', resolved.budget));
+    modelsBody.appendChild(tiers);
+    if (!info.installed) {
+      modelsBody.appendChild(el('p', 'hint', 'Install the router first, then enable it:'));
+      var hint = actionButton('sbl init --models', 'copy', function () { copyCommand(hint, 'sbl init --models'); });
+      modelsBody.appendChild(hint);
+    }
+  }
+  if (modelsBtn && modelsDialog) {
+    modelsBtn.addEventListener('click', function () {
+      fetch('api/models')
+        .then(function (res) { if (!res.ok) throw new Error('load failed'); return res.json(); })
+        .then(function (info) { renderModelsDialog(info); modelsDialog.showModal(); })
+        .catch(function () {});
+    });
+    var modelsClose = document.getElementById('models-close');
+    if (modelsClose) modelsClose.addEventListener('click', function () { modelsDialog.close(); });
+    modelsDialog.addEventListener('click', function (e) {
+      if (e.target === modelsDialog) modelsDialog.close();
     });
   }
 

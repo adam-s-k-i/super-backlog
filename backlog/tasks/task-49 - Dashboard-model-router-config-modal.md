@@ -1,10 +1,10 @@
 ---
 id: TASK-49
 title: 'Dashboard: model router config modal'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-29 16:19'
-updated_date: '2026-08-29 17:23'
+updated_date: '2026-08-29 17:29'
 labels: []
 dependencies: []
 ordinal: 47000
@@ -18,5 +18,5 @@ Story C: UX mask for sbl models (show, enable, disable, discover, init --models)
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Spec written and approved before implementation
+- [x] #1 Spec written and approved before implementation
 <!-- AC:END -->
