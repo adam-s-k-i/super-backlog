@@ -33,7 +33,11 @@ jobs:
       - name: Publish to npm (OIDC provenance)
         run: |
           npm install -g npm@latest
-          npm publish --provenance --access public
+          if npm view super-backlog@"${TAG#v}" version > /dev/null 2>&1; then
+            echo "Version ${TAG#v} already published to npm; skipping publish"
+          else
+            npm publish --provenance --access public
+          fi
       - name: Create GitHub Release from CHANGELOG
         env:
           GH_TOKEN: ${{ github.token }}
