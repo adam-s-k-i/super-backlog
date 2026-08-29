@@ -23,7 +23,7 @@ export function runCliResult(dir: string, args: string[]): CliResult {
   try {
     const out = execFileSync(process.execPath, [CLI_PATH, ...args], {
       cwd: dir,
-      env: { ...process.env, SBL_SKIP_INSTALL: '1' },
+      env: { ...process.env, SBL_SKIP_INSTALL: '1', SBL_SKIP_UPDATE_CHECK: '1' },
       encoding: 'utf8',
     });
     return { out, status: 0 };

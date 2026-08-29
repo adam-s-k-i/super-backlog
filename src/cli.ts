@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // src/cli.ts
+import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,7 @@ import { runModels } from './commands/models.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
 import { assertNode20, KIT_VERSION } from './lib/version.js';
+import { applyVersionHint, defaultFetchLatest } from './lib/version-check.js';
 
 export const HELP = `super-backlog (sbl) - equip any project with Backlog.md + Superpowers
 
@@ -67,6 +69,14 @@ export async function runCli(argv: string[]): Promise<number> {
     console.log(HELP);
     return 0;
   }
+
+  void applyVersionHint(KIT_VERSION, {
+    home: homedir(),
+    now: () => new Date(),
+    fetchLatest: defaultFetchLatest,
+    log: (line) => console.error(line),
+    env: { ...process.env, SBL_SKIP_UPDATE_CHECK: process.env.SBL_SKIP_UPDATE_CHECK },
+  });
 
   switch (command) {
     case 'init': {
