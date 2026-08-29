@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 
-export const CLI_PATH = join(__dirname, '..', '..', 'dist', 'cli.js');
+export const CLI_PATH = join(__dirname, '..', '..', 'dist', 'bin.js');
 
 export interface CliResult {
   out: string;

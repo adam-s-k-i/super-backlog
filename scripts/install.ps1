@@ -61,7 +61,7 @@ if ($Local) {
     if ($LASTEXITCODE -ne 0) { Write-Err "npm install failed (exit $LASTEXITCODE)."; exit 1 }
     Write-Ok "Local installation complete."
 
-    $cli = Join-Path (Get-Location) "node_modules\$PackageName\dist\cli.js"
+    $cli = Join-Path (Get-Location) "node_modules\$PackageName\dist\bin.js"
     if (-not (Test-Path $cli)) {
         Write-Err "Expected CLI entry not found: $cli"
         exit 1

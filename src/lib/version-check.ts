@@ -2,7 +2,8 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
-import { runCapture } from './run.js';
+import type { Readable } from 'node:stream';
+import spawn from 'cross-spawn';
 
 export interface VersionCheckCache {
   checkedAt: string;
@@ -56,22 +57,51 @@ function writeCache(home: string, cache: VersionCheckCache): void {
 function isStale(checkedAt: string, now: Date): boolean {
   const t = Date.parse(checkedAt);
   if (Number.isNaN(t)) return true;
-  return now.getTime() - t > DAY_MS;
+  const nowMs = now.getTime();
+  if (t > nowMs) return true; // clock skew: a future checkedAt can never be trusted
+  return nowMs - t > DAY_MS;
+}
+
+// child.stdout is typed as Readable, but the underlying pipe stream (a
+// net.Socket on POSIX, a Pipe wrap on Windows) always exposes unref() at
+// runtime; the DOM/Node stream typings just don't declare it.
+function unrefStream(stream: Readable | null | undefined): void {
+  (stream as unknown as { unref?: () => void } | null | undefined)?.unref?.();
 }
 
 export async function defaultFetchLatest(): Promise<string | null> {
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-  const work = Promise.resolve().then(() => {
-    const r = runCapture(npm, ['view', 'super-backlog', 'version'], process.cwd());
-    if (r.status !== 0) return null;
-    const line = r.stdout.split(/\r?\n/).find((l) => l.trim() !== '');
-    if (!line) return null;
-    const v = line.trim();
-    return v === '' ? null : v;
+  const work = new Promise<string | null>((resolvePromise) => {
+    let child;
+    try {
+      child = spawn('npm', ['view', 'super-backlog', 'version'], {
+        cwd: process.cwd(),
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+    } catch {
+      resolvePromise(null);
+      return;
+    }
+    let out = '';
+    unrefStream(child.stdout);
+    child.stdout?.on('data', (chunk: Buffer) => {
+      out += chunk.toString('utf8');
+    });
+    child.on('error', () => resolvePromise(null));
+    child.on('close', (code) => {
+      if (code !== 0) {
+        resolvePromise(null);
+        return;
+      }
+      const line = out.split(/\r?\n/).find((l) => l.trim() !== '');
+      const v = line?.trim();
+      resolvePromise(v === undefined || v === '' ? null : v);
+    });
+    child.unref();
   });
+
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<null>((resolve) => {
-    timer = setTimeout(() => resolve(null), FETCH_TIMEOUT_MS);
+  const timeout = new Promise<null>((resolveTimeout) => {
+    timer = setTimeout(() => resolveTimeout(null), FETCH_TIMEOUT_MS);
     timer.unref();
   });
   try {

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-const CLI = join(__dirname, '..', '..', 'dist', 'cli.js'); // built by pretest step below
+const CLI = join(__dirname, '..', '..', 'dist', 'bin.js'); // built by pretest step below
 
 interface InitResult {
   out: string;

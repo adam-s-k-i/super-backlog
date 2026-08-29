@@ -31,10 +31,11 @@
 | `src/lib/hub-state.ts` | `hub.json` read/write/probe |
 | `src/dashboard/hub.ts` | `startHubServer`, register, routes `/`, `/api/hub/*`, `/p/<slug>/...` |
 | `src/dashboard/server.ts` | Keep brokers, `createRunApiHandler`, watch helpers; `startServeServer` becomes a thin wrapper or is replaced by hub tests |
-| `src/commands/dashboard.ts` | Become hub vs attach; no browser spawn |
-| `src/lib/version-check.ts` | Cache + hint |
+| `src/commands/dashboard.ts` | Become hub vs attach; no browser spawn; SIGINT/SIGTERM cleanup |
+| `src/lib/version-check.ts` | Cache + hint; background fetch unref'ed |
+| `src/models/dashboard-api.ts` | `createModelApiHandler(cwd)` — per-project cwd instead of `process.cwd()` |
 | `src/templates/dashboard.html` | Relative `api/run` and `api/events` |
-| Delete | `src/commands/serve.ts` after CLI no longer imports it |
+| Delete | `src/commands/serve.ts` and `src/commands/backlog-alias.ts` after CLI no longer imports them |
 
 ---
 
@@ -42,7 +43,7 @@
 
 **Files:**
 - Modify: `src/cli.ts`
-- Delete: `src/commands/serve.ts` (after `cli.ts` stops importing it)
+- Delete: `src/commands/serve.ts` and `src/commands/backlog-alias.ts` (after `cli.ts` stops importing them; verify no other importer with grep first)
 - Test: `test/unit/cli-contract.test.ts`
 - Modify: `test/unit/dashboard-command.test.ts` (drop `runServe` describe)
 - Modify: `test/unit/glue-skills.test.ts`
@@ -122,7 +123,7 @@ In `src/cli.ts`:
 - Drop `browser`, `board`, and `serve` from `HELP` (keep dashboard `--port` / `--no-open`).
 - Bottom of file still: `runCli(process.argv.slice(2)).then(...)`.
 
-Delete `src/commands/serve.ts`.
+Delete `src/commands/serve.ts` and `src/commands/backlog-alias.ts` (grep for other importers first; `cli.ts` is the only known one).
 
 In `test/unit/dashboard-command.test.ts` delete the `runServe` import and `describe('runServe')` block.
 
@@ -141,7 +142,7 @@ Expected: PASS. If `docs.test.ts` asserts `sbl serve`, update that assertion to 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/cli.ts src/commands/serve.ts src/templates/skill-backlog-status-report.md test/unit/cli-contract.test.ts test/unit/dashboard-command.test.ts test/unit/glue-skills.test.ts README.md docs/guide/quickstart.md docs/guide/troubleshooting.md
+git add src/cli.ts src/commands/serve.ts src/commands/backlog-alias.ts src/templates/skill-backlog-status-report.md test/unit/cli-contract.test.ts test/unit/dashboard-command.test.ts test/unit/glue-skills.test.ts README.md docs/guide/quickstart.md docs/guide/troubleshooting.md
 git commit -m "feat(cli): drop serve/browser/board; export runCli contract"
 ```
 
@@ -349,13 +350,15 @@ git commit -m "feat(hub): persist hub.json state"
 
 **Files:**
 - Create: `src/dashboard/hub.ts`
+- Modify: `src/models/dashboard-api.ts` (`createModelApiHandler(cwd: string)` — drop the internal `process.cwd()`; per-project instance)
+- Modify: `src/dashboard/server.ts` (win32 Node 24 warning: drop the `--serve` wording; hub prints it once per process, not per registration)
 - Modify: `src/templates/dashboard.html` (absolute `/api/` → relative `api/`)
 - Modify: `test/unit/dashboard-render.test.ts` (EventSource/fetch assertions)
 - Modify: `test/integration/serve.test.ts` (paths `/` → `/p/<slug>/`; keep watcher skips)
 - Test: `test/unit/hub.test.ts`
 
 **Interfaces:**
-- Consumes: `createReloadBroker`, `createDebouncedReloader`, `createRunApiHandler`, `recursiveWatchSupported`, `DASHBOARD_PORT` from `src/dashboard/server.ts`; `createModelApiHandler` from `src/models/dashboard-api.ts`; `projectSlug`, `realpathKey` from `src/lib/slug.ts`.
+- Consumes: `createReloadBroker`, `createDebouncedReloader`, `createRunApiHandler`, `recursiveWatchSupported`, `DASHBOARD_PORT` from `src/dashboard/server.ts`; `createModelApiHandler(cwd)` from `src/models/dashboard-api.ts`; `projectSlug`, `realpathKey` from `src/lib/slug.ts`.
 - Produces:
   - `export interface HubProject { cwd: string; slug: string; file: string; regenerate: () => void | Promise<void> }`
   - `export interface HubHandle { server: Server; port: number; register(project: Omit<HubProject, 'slug'> & { slug?: string }): RegisterResult; close(): Promise<void> }`
@@ -371,6 +374,11 @@ Routing:
 - Any `/p/<slug>/api/...` — strip `/p/<slug>` and dispatch to that project's run/SSE/model handlers (so `createRunApiHandler` still sees `/api/run`)
 - Unknown slug → 404
 - Listen `127.0.0.1` only. Port `0` allowed in tests.
+
+Request hardening (spec §5.4):
+- Every POST API route requires `content-type: application/json`, else 415 (blocks cross-origin "simple request" CSRF).
+- Every request's `Host` header must be `127.0.0.1[:port]` or `localhost[:port]`, else 403 (DNS-rebinding guard).
+- `GET /` escapes project display names (reuse the `esc` pattern from `render.ts`); slugs are `[a-z0-9-]`-safe.
 
 Collision: same slug, different `realpathKey` → 409. Same slug, same key → 200 refresh.
 
@@ -461,6 +469,12 @@ describe('startHubServer', () => {
 
 Also add a test that `POST /api/hub/register` with the correct token and a second distinct `project_name` returns 200 and that `GET /p/slug-b/` is 200.
 
+Hardening tests (same file):
+- POST `/p/<slug>/api/run` with `content-type: text/plain` → 415.
+- Any request with header `Host: evil.example` → 403.
+- Register a project whose `project_name` is `<b>x</b>`; `GET /` body contains `&lt;b&gt;` and not `<b>x</b>`.
+- Model-API scoping: register a project from a temp cwd, `GET /p/<slug>/api/models` → the returned config reflects that temp cwd (e.g. write a marker `backlog/models.yml` there), not the test process cwd.
+
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run test/unit/hub.test.ts`
@@ -469,7 +483,9 @@ Expected: FAIL `startHubServer` not defined.
 
 - [ ] **Step 3: Implement hub + relative template URLs**
 
-`src/dashboard/hub.ts`: one `Map<slug, { cwd, realpath, file, broker, reloader, watcher, runApi }>`. `register` computes slug via `projectSlug(cwd)`; 400 on empty slug. Watch `join(cwd, 'backlog')` with the same `recursiveWatchSupported` guard and warning as `startServeServer`. On `close()`, cancel reloaders, close brokers/watchers, `server.close()`.
+`src/dashboard/hub.ts`: one `Map<slug, { cwd, realpath, file, broker, reloader, watcher, runApi, modelApi }>`. `register` computes slug via `projectSlug(cwd)`; 400 on empty slug. Watch `join(cwd, 'backlog')` with the same `recursiveWatchSupported` guard as `startServeServer`, but print the win32 Node 24 warning **once per hub process** (module-level or handle-level flag) and fix its text (no `--serve`). On `close()`, cancel reloaders, close brokers/watchers, `server.close()`.
+
+`src/models/dashboard-api.ts`: `createModelApiHandler(cwd: string)`; delete the `currentCwd()` helper; the hub passes each registered project's cwd. Update `createApiHandler` in `server.ts` (or its hub replacement) to pass `cwd` through.
 
 Strip prefix: if `url` matches `^/p/([^/]+)(/.*)?$`, look up slug, rewrite `req.url` to `rest || '/'` for API, serve file when rest is `/` or `/index.html`.
 
@@ -493,7 +509,7 @@ Expected: PASS (`run-api` still uses raw `/api/run` on `createRunApiHandler` dir
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/dashboard/hub.ts src/dashboard/server.ts src/templates/dashboard.html test/unit/hub.test.ts test/unit/dashboard-render.test.ts test/integration/serve.test.ts
+git add src/dashboard/hub.ts src/dashboard/server.ts src/models/dashboard-api.ts src/templates/dashboard.html test/unit/hub.test.ts test/unit/dashboard-render.test.ts test/integration/serve.test.ts
 git commit -m "feat(hub): multi-project server at /p/<slug>/"
 ```
 
@@ -512,9 +528,11 @@ git commit -m "feat(hub): multi-project server at /p/<slug>/"
 - Produces: `runDashboard(cwd, args)` still `Promise<number>`.
   - Empty slug → stderr `error: set project_name in backlog/config.yml` (or equivalent), return `1`.
   - Attach: `GET /api/hub/status?token=` 200 and pid alive → `POST /api/hub/register` → open `url` unless `--no-open` → return `0` without listening.
+  - Attach with a `--port` that differs from the live hub's `hub.json.port` → stderr `error: a hub is already running on <port>` and return `1` (one `hub.json` = one hub; never start a second hub).
   - Stale state (dead pid): become hub.
   - Foreign process on port: return `1`, do not scan for another port. `--port` writes that port into `hub.json` and warns on stderr that default bookmarks (`:6428`) will miss this hub.
   - Become hub: `writeHubState(homedir(), { pid: process.pid, port, token })`, `register({ cwd, file: tempHtml, regenerate })`, open `/p/<slug>/` unless `--no-open`, block on the server, `clearHubState` in `finally` if pid matches.
+  - Shutdown: extract a `shutdown()` (close hub handle, `clearHubState`) and call it from **both** the `finally` path and explicit `process.on('SIGINT')` / `process.on('SIGTERM')` handlers registered while the hub runs — Node does not unwind `finally` on signals, and spec D6 requires Ctrl+C to clear `hub.json`. Guard against double invocation; remove the listeners on normal exit.
   - Do **not** call `resolveBacklogBin` or `spawn` for `backlog browser`.
 
 Home directory: `os.homedir()`. Tests inject via optional 3rd argument:
@@ -544,6 +562,8 @@ If adding `deps` is too invasive, integration tests can set `os.homedir` by writ
 2. `runDashboard(secondCwd, { values: { 'no-open': true }, positionals: [] }, { homedir: () => tempHome })` returns `0` and does not bind another port.
 3. `GET /p/<slug-b>/` on the first hub is 200.
 4. Collision: two dirs with `project_name: Same` → second `runDashboard` returns `1` and stderr contains both paths.
+5. `runDashboard` with `--port 7999` while the live hub sits on another port returns `1` and stderr says a hub is already running.
+6. Unit: `shutdown()` clears `hub.json` (write state for `process.pid`, call the extracted shutdown, expect `readHubState` null) and is idempotent.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -584,7 +604,7 @@ git commit -m "feat(dashboard): attach to hub or become hub"
 - Modify: `src/cli.ts` (`runCli` calls hint except help/version)
 
 **Interfaces:**
-- Consumes: `KIT_VERSION` from `src/lib/version.ts`; `runCapture` only inside the default `fetchLatest`, not in tests.
+- Consumes: `KIT_VERSION` from `src/lib/version.ts`. The default `fetchLatest` spawns npm itself with an unref'ed child + timer (not `runCapture`, which waits on the child); tests always inject a stub.
 - Produces:
   - `export interface VersionCheckCache { checkedAt: string; latest: string }`
   - `export interface VersionCheckDeps { home: string; now: () => Date; fetchLatest: () => Promise<string | null>; log: (line: string) => void; env: NodeJS.ProcessEnv }`
@@ -595,8 +615,9 @@ git commit -m "feat(dashboard): attach to hub or become hub"
 Behaviour (spec §7):
 1. If `deps.env.SBL_SKIP_UPDATE_CHECK` is non-empty, return immediately.
 2. If cache exists and `latest` is a greater triple-numeric semver than `installed`, `log` the hint **before** returning.
-3. If cache missing or `checkedAt` older than 24h, do not await a long fetch: fire `fetchLatest` without blocking `runCli` (void promise). On success write cache. Do **not** log from that background write.
+3. If cache missing, `checkedAt` older than 24h, in the future, or unparseable (all count as stale), do not await a long fetch: fire `fetchLatest` without blocking (void promise). On success write cache. Do **not** log from that background write.
 4. Fetch/parse errors: keep old cache, log nothing.
+5. The default `fetchLatest` must not keep the event loop alive: `unref()` the spawned npm child **and** the 2s timeout timer, so short commands exit immediately (their cache write may be skipped — the long-running `sbl dashboard` hub populates it). `runCapture` waits on the child, so the default `fetchLatest` needs its own unref-able spawn instead of `runCapture`.
 
 `runCli`: first line after resolving the command, unless argv is help/version/no-command. Pass `env: { ...process.env, SBL_SKIP_UPDATE_CHECK: process.env.SBL_SKIP_UPDATE_CHECK }` and default `fetchLatest` that runs `npm.cmd`/`npm` `view super-backlog version` with 2s — implement timeout by racing `fetchLatest` internally. Tests never call real npm.
 
@@ -683,9 +704,9 @@ Expected: FAIL module not found.
 
 - [ ] **Step 3: Implement module and wire `runCli`**
 
-`applyVersionHint` is `async` but the stale-cache refresh is `void fetchLatest().then(writeCache)` with no `await` on that promise (and no `log` in the `then`). The function may still `await` nothing and return immediately after scheduling.
+`applyVersionHint` is `async` but the stale-cache refresh is `void fetchLatest().then(writeCache)` with no `await` on that promise (and no `log` in the `then`). The function itself returns right after the synchronous cache read + optional `log` + scheduling the background fetch.
 
-`runCli`: if first arg is `help` | `--help` | `-h` | `--version` | `-v` | `undefined`, skip hint. Else `void applyVersionHint(KIT_VERSION, defaultDeps)` — **do not await** so commands stay fast. Tests of `applyVersionHint` await it directly.
+`runCli`: if first arg is `help` | `--help` | `-h` | `--version` | `-v` | `undefined`, skip hint. Else `await applyVersionHint(KIT_VERSION, defaultDeps)` — the await is cheap (one sync file read) and guarantees the spec's hint-before-command ordering; the background fetch inside stays un-awaited and unref'ed, so commands remain fast.
 
 Default `log` = `(line) => console.error(line)`.
 
@@ -801,10 +822,13 @@ git commit -m "test(cli): smoke remaining commands; finish --serve doc sweep"
 | D3 first process is hub, later attach | 5 |
 | D4 URL `/p/<slug>/`, `GET /` index | 4 |
 | D5 slug from `project_name`, collision 409 | 2, 4, 5 |
-| D6 Ctrl+C clears hub.json | 5 (`clearHubState` in finally) |
-| D7 port 6428, no auto-increment, `--port` warning | 5 |
+| D6 Ctrl+C clears hub.json | 5 (`shutdown()` from SIGINT/SIGTERM handlers **and** finally) |
+| D7 port 6428, no auto-increment, `--port` warning; differing `--port` vs live hub → exit 1 | 5 |
 | D8 no browser spawn | 5 |
-| D9 version hint cache 24h, no install | 6 |
+| D9 version hint cache 24h, no install, no exit-delay (unref) | 6 |
+| §5.4 hardening: JSON content-type (415), Host check (403), escaped index | 4 |
+| §5.4 `createModelApiHandler(cwd)` per project | 4 |
+| Dead code: `serve.ts` + `backlog-alias.ts` deleted | 1 |
 | D10 init/update unchanged | 7 (smoke only) |
 | Relative `api/` URLs | 4 |
 | CLI contract tests | 1 |

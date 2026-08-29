@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { atomicWrite } from './atomic.js';
@@ -35,7 +35,13 @@ export function readHubState(home: string): HubState | null {
 
 export function writeHubState(home: string, state: HubState): void {
   mkdirSync(join(home, '.super-backlog'), { recursive: true });
-  atomicWrite(hubStatePath(home), JSON.stringify(state));
+  const path = hubStatePath(home);
+  atomicWrite(path, JSON.stringify(state));
+  // hub.json carries the hub's auth token; keep it off other local accounts.
+  // win32 has no POSIX mode bits (ACLs govern access there instead).
+  if (process.platform !== 'win32') {
+    chmodSync(path, 0o600);
+  }
 }
 
 export function clearHubState(home: string, pid: number): void {

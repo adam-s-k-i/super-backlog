@@ -42,7 +42,7 @@ if [ "$LOCAL_INSTALL" = "true" ]; then
     npm install "$PACKAGE_NAME"
     ok "Local installation complete."
 
-    cli="./node_modules/$PACKAGE_NAME/dist/cli.js"
+    cli="./node_modules/$PACKAGE_NAME/dist/bin.js"
     if [ ! -f "$cli" ]; then
         err "Expected CLI entry not found: $cli"
         exit 1

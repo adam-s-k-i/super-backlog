@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const CLI = join(__dirname, '..', '..', 'dist', 'cli.js'); // built by pretest step below
+const CLI = join(__dirname, '..', '..', 'dist', 'bin.js'); // built by pretest step below
 const ROOT = join(__dirname, '..', '..');
 
 interface DoctorResult {

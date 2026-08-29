@@ -1,6 +1,8 @@
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import process from 'node:process';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('cross-spawn', () => ({
@@ -8,9 +10,9 @@ vi.mock('cross-spawn', () => ({
 }));
 
 import spawn from 'cross-spawn';
-import { runDashboard } from '../../src/commands/dashboard.js';
+import { createShutdown, runDashboard } from '../../src/commands/dashboard.js';
 import type { HubHandle } from '../../src/dashboard/hub.js';
-import { readHubState } from '../../src/lib/hub-state.js';
+import { readHubState, writeHubState } from '../../src/lib/hub-state.js';
 
 const dirs: string[] = [];
 
@@ -190,5 +192,72 @@ describe('runDashboard', () => {
     expect(attach).toHaveBeenCalled();
     expect(opened).toEqual([]);
     expect(readHubState(home)?.port).toBe(6428);
+  });
+
+  it('treats a stale hub.json (dead pid) as no hub running and becomes the hub', async () => {
+    const cwd = project('Charlie');
+    const home = tempDir('sbl-dash-home-');
+    // A pid guaranteed dead: spawnSync only returns once the child has
+    // already exited and been reaped.
+    const dead = spawnSync(process.execPath, ['-e', '0']).pid ?? 0;
+    writeHubState(home, { pid: dead, port: 6428, token: 'stale' });
+    const register = vi.fn().mockReturnValue({
+      ok: true,
+      slug: 'charlie',
+      url: 'http://127.0.0.1:6428/p/charlie/',
+    });
+    const startHub = vi.fn(async () => fakeHub(register));
+    const attach = vi.fn();
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: () => {},
+    });
+    expect(code).toBe(0);
+    expect(attach).not.toHaveBeenCalled();
+    expect(startHub).toHaveBeenCalledTimes(1);
+    expect(register).toHaveBeenCalled();
+  });
+
+  it('exits 1 when the hub port is occupied by a foreign process', async () => {
+    const cwd = project('Delta');
+    const home = tempDir('sbl-dash-home-');
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const startHub = vi.fn(async () => {
+      const e = new Error('listen EADDRINUSE: address already in use 127.0.0.1:6428') as NodeJS.ErrnoException;
+      e.code = 'EADDRINUSE';
+      throw e;
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      openBrowser: () => {},
+    });
+    expect(code).toBe(1);
+    expect(startHub).toHaveBeenCalledTimes(1);
+    const stderr = err.mock.calls.map(String).join('\n');
+    expect(stderr).toContain('port 6428 is in use');
+  });
+});
+
+describe('createShutdown', () => {
+  afterEach(() => {
+    for (const d of dirs) rmSync(d, { recursive: true, force: true });
+    dirs.length = 0;
+  });
+
+  it('closes the hub handle and clears hub state, idempotently', async () => {
+    const home = tempDir('sbl-dash-home-');
+    writeHubState(home, { pid: process.pid, port: 6428, token: 'x' });
+    const hub = fakeHub();
+    const shutdown = createShutdown(hub, home, process.pid);
+
+    await shutdown();
+    expect(readHubState(home)).toBeNull();
+    expect(hub.close).toHaveBeenCalledTimes(1);
+
+    await expect(shutdown()).resolves.toBeUndefined();
+    expect(hub.close).toHaveBeenCalledTimes(1);
   });
 });
