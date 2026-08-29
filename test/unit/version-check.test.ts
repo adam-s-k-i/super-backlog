@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { applyVersionHint } from '../../src/lib/version-check.js';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
 const dirs: string[] = [];
 afterEach(() => {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
@@ -60,5 +61,38 @@ describe('applyVersionHint', () => {
       env: {},
     });
     expect(logs).toEqual([]);
+  });
+
+  it('treats a checkedAt in the future (clock skew) as stale and re-fetches', async () => {
+    const future = new Date(Date.now() + DAY_MS).toISOString();
+    const fetchLatest = vi.fn(async () => null);
+    await applyVersionHint('1.0.3', {
+      home: homeWithCache('1.0.3', future),
+      now: () => new Date(),
+      fetchLatest,
+      log: () => {},
+      env: {},
+    });
+    expect(fetchLatest).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves promptly even when fetchLatest never resolves', async () => {
+    const fetchLatest = vi.fn(() => new Promise<string | null>(() => {}));
+    const home = mkdtempSync(join(tmpdir(), 'sbl-vc-'));
+    dirs.push(home);
+
+    const winner = await Promise.race([
+      applyVersionHint('1.0.3', {
+        home,
+        now: () => new Date(),
+        fetchLatest,
+        log: () => {},
+        env: {},
+      }).then(() => 'hint' as const),
+      new Promise<'timer'>((r) => setTimeout(() => r('timer'), 100)),
+    ]);
+
+    expect(winner).toBe('hint');
+    expect(fetchLatest).toHaveBeenCalledTimes(1);
   });
 });
