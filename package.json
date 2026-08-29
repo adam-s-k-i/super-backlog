@@ -12,8 +12,8 @@
     "node": ">=20"
   },
   "bin": {
-    "sbl": "dist/cli.js",
-    "super-backlog": "dist/cli.js"
+    "sbl": "dist/bin.js",
+    "super-backlog": "dist/bin.js"
   },
   "files": [
     "dist",

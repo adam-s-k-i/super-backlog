@@ -45,7 +45,7 @@ sbl init --models
 
 # Local install
 npm install super-backlog
-node ./node_modules/super-backlog/dist/cli.js init
+node ./node_modules/super-backlog/dist/bin.js init
 ```
 
 After installation:

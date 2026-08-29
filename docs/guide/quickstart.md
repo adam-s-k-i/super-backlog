@@ -32,7 +32,7 @@ sbl init --models
 
 # Local install
 npm install super-backlog
-node ./node_modules/super-backlog/dist/cli.js init
+node ./node_modules/super-backlog/dist/bin.js init
 ```
 
 `init` is idempotent — run it again any time to upgrade injected files to the latest kit version.

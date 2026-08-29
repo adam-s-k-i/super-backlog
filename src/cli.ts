@@ -1,9 +1,8 @@
-#!/usr/bin/env node
 // src/cli.ts
+// Pure library module: exports HELP/runCli for the always-run entry
+// (src/bin.ts) and for tests. Never self-executes -- see src/bin.ts for why.
 import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 
 import { runDashboard } from './commands/dashboard.js';
@@ -12,7 +11,7 @@ import { runInit } from './commands/init.js';
 import { runModels } from './commands/models.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
-import { assertNode20, KIT_VERSION } from './lib/version.js';
+import { KIT_VERSION } from './lib/version.js';
 import { applyVersionHint, defaultFetchLatest } from './lib/version-check.js';
 
 export const HELP = `super-backlog (sbl) - equip any project with Backlog.md + Superpowers
@@ -149,18 +148,4 @@ export async function runCli(argv: string[]): Promise<number> {
       console.error(HELP);
       return 1;
   }
-}
-
-assertNode20();
-
-const entry = process.argv[1];
-if (entry && fileURLToPath(import.meta.url) === resolve(entry)) {
-  runCli(process.argv.slice(2))
-    .then((code) => {
-      process.exitCode = code;
-    })
-    .catch((err: unknown) => {
-      console.error(err instanceof Error ? err.message : String(err));
-      process.exitCode = 1;
-    });
 }

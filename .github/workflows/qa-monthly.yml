@@ -24,11 +24,11 @@ jobs:
           npm pack --json > pack.json
           TGZ=$(node -p "JSON.parse(require('fs').readFileSync('pack.json','utf8'))[0].filename")
           mkdir "$RUNNER_TEMP/pkg" && tar -xzf "$TGZ" -C "$RUNNER_TEMP/pkg"
-          node "$RUNNER_TEMP/pkg/package/dist/cli.js" --version
-          node "$RUNNER_TEMP/pkg/package/dist/cli.js" --help
+          node "$RUNNER_TEMP/pkg/package/dist/bin.js" --version
+          node "$RUNNER_TEMP/pkg/package/dist/bin.js" --help
       - name: Regenerate dashboard and sanity-check output
         run: |
-          node dist/cli.js dashboard --no-open --out "$RUNNER_TEMP/dashboard.html"
+          node dist/bin.js dashboard --no-open --out "$RUNNER_TEMP/dashboard.html"
           SIZE=$(wc -c < "$RUNNER_TEMP/dashboard.html")
           echo "dashboard bytes: $SIZE"
           test "$SIZE" -gt 1000

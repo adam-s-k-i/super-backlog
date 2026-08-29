@@ -50,7 +50,7 @@ Runs the full test matrix across `windows-latest` and `ubuntu-latest` on Node 20
 
 ## Monthly deep check
 
-- **Package smoke-test**: packs the tarball, extracts it, runs `dist/cli.js --version` and `--help`, regenerates `dashboard.html`, and asserts the output size.
+- **Package smoke-test**: packs the tarball, extracts it, runs `dist/bin.js --version` and `--help`, regenerates `dashboard.html`, and asserts the output size.
 - **Pages healthcheck**: fetches the live docs site, requires HTTP 200 and the presence of `super-backlog` in the page body, and opens an issue on failure.
 
 ## One-time setup checklist
