@@ -101,6 +101,14 @@ in a near-fullscreen overlay. Use the overlay's "open in new tab" link for a
 standalone browser tab. If the `backlog` CLI is not installed, the button
 reports the failure and nothing is spawned.
 
+### Task details
+
+Clicking a task row opens a centered detail dialog: title and status up top
+(the header stays visible while scrolling), metadata as a labelled grid with
+priority colouring, the description in readable paragraphs, acceptance
+criteria with a progress bar, dependency chips with done-markers, and a
+copyable `backlog task edit <id>` command to jump into editing.
+
 ### Feature Cycle steps
 
 The Feature Cycle section shows the nine workflow phases as a compact stepper —

@@ -110,8 +110,9 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   }
 
   /* ---------- Detail panel ---------- */
+  dialog { margin: auto; } /* the global reset removes the UA margin that centers dialogs */
   #task-dialog {
-    width: min(640px, 92vw); max-height: 85vh; overflow-y: auto; padding: 0;
+    width: min(720px, 92vw); max-height: 85vh; overflow-y: auto; overflow-x: hidden; padding: 0;
     border: 1px solid var(--line-strong); border-radius: 14px;
     background: var(--surface); color: var(--text);
     box-shadow: 0 24px 80px rgba(0,0,0,.55);
@@ -157,8 +158,13 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   #backlog-close:hover { color: var(--text); border-color: var(--line); }
   #backlog-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #backlog-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
-  .dialog-content { padding: 22px 24px 28px; }
-  .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .dialog-content { padding: 0 24px 26px; }
+  .detail-head {
+    position: sticky; top: 0; z-index: 1;
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 -24px 12px; padding: 16px 24px 12px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+  }
   .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
   .status-chip { font-family: var(--mono); font-size: .68rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--muted); white-space: nowrap; }
   .status-chip[data-tone="ok"] { color: var(--ok); border-color: #2b5642; background: var(--ok-bg); }
@@ -167,13 +173,31 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   .status-chip[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
   .detail-close { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 1.3rem; cursor: pointer; line-height: 1; }
   .detail-close:hover { color: var(--danger); }
-  .detail-title { font-size: 1.18rem; font-weight: 600; margin-bottom: 8px; overflow-wrap: anywhere; }
-  #task-dialog .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
-  #task-dialog h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
-  .meta-row { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; color: var(--muted); }
-  .meta-row span { display: flex; align-items: center; gap: 4px; }
-  .meta-label { color: var(--dim); }
+  .detail-title { font-size: 1.3rem; font-weight: 700; line-height: 1.3; margin-bottom: 10px; overflow-wrap: anywhere; }
+  #task-dialog .detail-desc { color: var(--muted); line-height: 1.6; margin-bottom: 10px; white-space: normal; }
+  #task-dialog h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 18px 0 8px; }
+  .detail-meta {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px 18px; margin: 16px 0 4px; padding: 14px 16px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2);
+  }
+  .meta-cell .meta-label {
+    display: block; color: var(--dim); font-size: .66rem;
+    letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .meta-value { font-size: .88rem; color: var(--text); overflow-wrap: anywhere; }
+  .meta-value.empty { color: var(--dim); }
+  .meta-value[data-tone="danger"] { color: var(--danger); }
+  .meta-value[data-tone="warn"] { color: var(--warn); }
+  .meta-value[data-tone="dim"] { color: var(--muted); }
+  .ac-progress { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; }
+  .ac-count { font-family: var(--mono); font-size: .78rem; color: var(--muted); white-space: nowrap; }
+  .ac-bar { flex: 1; height: 4px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .ac-bar-fill { height: 100%; border-radius: 999px; background: var(--ok); }
   .dep-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dep-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 7px; background: var(--dim); }
+  .dep-dot.done { background: var(--ok); }
+  .detail-cmd { margin-top: 18px; }
   .dep-link {
     font-family: var(--mono); font-size: .74rem; padding: 2px 10px; border-radius: 999px;
     border: 1px solid #274a63; background: #10202e; color: var(--accent); cursor: pointer;
@@ -1000,32 +1024,67 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     return list;
   }
   function depSection(titleText, ids) {
+    var valid = ids.filter(function (id) { return findTask(id); });
+    if (valid.length === 0) return null;
     var block = el('div');
     block.appendChild(el('h4', '', titleText));
     var row = el('div', 'dep-row');
-    ids.filter(function (id) { return findTask(id); }).forEach(function (id) {
-      var btn = el('button', 'dep-link', id);
+    valid.forEach(function (id) {
+      var dep = findTask(id);
+      var btn = el('button', 'dep-link');
       btn.type = 'button';
+      var dot = el('span', 'dep-dot' + (dep && isDoneStatus(dep.status) ? ' done' : ''));
+      dot.setAttribute('aria-hidden', 'true');
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(id));
       btn.addEventListener('click', function () { openDetail(id); });
       row.appendChild(btn);
     });
-    if (row.children.length === 0) row.appendChild(el('p', 'detail-empty', 'None'));
     block.appendChild(row);
     return block;
   }
-  function metaRow(task) {
-    var row = el('div', 'meta-row');
-    function item(label, value) {
-      var s = el('span');
-      s.appendChild(el('span', 'meta-label', label + ': '));
-      s.appendChild(document.createTextNode(value || '—'));
-      return s;
+  var PRIORITY_TONE = { high: 'danger', medium: 'warn', low: 'dim' };
+  function priorityTone(priority) {
+    return PRIORITY_TONE[String(priority || '').toLowerCase()] || '';
+  }
+  function metaGrid(task) {
+    var grid = el('div', 'detail-meta');
+    function cell(label, value, tone) {
+      var c = el('div', 'meta-cell');
+      c.appendChild(el('span', 'meta-label', label));
+      var v = el('span', 'meta-value' + (value ? '' : ' empty'), value || '—');
+      if (value && tone) v.setAttribute('data-tone', tone);
+      c.appendChild(v);
+      return c;
     }
-    row.appendChild(item('Milestone', task.milestone));
-    row.appendChild(item('Priority', task.priority));
-    row.appendChild(item('Assignee', task.assignee));
-    row.appendChild(item('Updated', task.updated));
-    return row;
+    grid.appendChild(cell('Milestone', task.milestone));
+    grid.appendChild(cell('Priority', task.priority, priorityTone(task.priority)));
+    grid.appendChild(cell('Assignee', task.assignee));
+    grid.appendChild(cell('Updated', task.updated));
+    return grid;
+  }
+  function descParagraphs(text) {
+    var frag = document.createDocumentFragment();
+    String(text).split(/\\n\\s*\\n/).forEach(function (para) {
+      var trimmed = para.trim();
+      if (trimmed !== '') frag.appendChild(el('p', 'detail-desc', trimmed));
+    });
+    return frag;
+  }
+  function acSection(task) {
+    var frag = document.createDocumentFragment();
+    var done = task.acs.filter(function (ac) { return ac.checked; }).length;
+    frag.appendChild(el('h4', '', 'Acceptance criteria'));
+    var progress = el('div', 'ac-progress');
+    progress.appendChild(el('span', 'ac-count', done + ' / ' + task.acs.length + ' done'));
+    var bar = el('div', 'ac-bar');
+    var fill = el('div', 'ac-bar-fill');
+    fill.style.width = task.acs.length > 0 ? Math.round((done / task.acs.length) * 100) + '%' : '0%';
+    bar.appendChild(fill);
+    progress.appendChild(bar);
+    frag.appendChild(progress);
+    frag.appendChild(acList(task));
+    return frag;
   }
   function openDetail(id) {
     var t = findTask(id);
@@ -1042,15 +1101,28 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     closeBtn.addEventListener('click', closeDetail);
     head.appendChild(closeBtn);
     content.appendChild(head);
-    content.appendChild(el('h3', 'detail-title', t.title));
-    content.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
-    content.appendChild(metaRow(t));
-    if (t.acs.length > 0) {
-      content.appendChild(el('h4', '', 'Acceptance criteria'));
-      content.appendChild(acList(t));
+    var title = el('h3', 'detail-title', t.title);
+    title.id = 'detail-title-h';
+    dialog.setAttribute('aria-labelledby', 'detail-title-h');
+    content.appendChild(title);
+    if (t.description) {
+      content.appendChild(descParagraphs(t.description));
+    } else {
+      content.appendChild(el('p', 'detail-desc', 'No description.'));
     }
-    content.appendChild(depSection('Depends on', depsOut[id] || []));
-    content.appendChild(depSection('Needed by', depsIn[id] || []));
+    content.appendChild(metaGrid(t));
+    if (t.acs.length > 0) content.appendChild(acSection(t));
+    var out = depSection('Depends on', depsOut[id] || []);
+    if (out) content.appendChild(out);
+    var inn = depSection('Needed by', depsIn[id] || []);
+    if (inn) content.appendChild(inn);
+    var cmd = el('button', 'phase-cmd detail-cmd');
+    cmd.type = 'button';
+    var cmdLine = 'backlog task edit ' + t.id.replace(/^task-/i, '');
+    cmd.appendChild(el('span', 'cmd-line', cmdLine));
+    cmd.appendChild(el('span', 'cmd-title', 'copy'));
+    cmd.addEventListener('click', function () { copyCommand(cmd, cmdLine); });
+    content.appendChild(cmd);
     dialog.textContent = '';
     dialog.appendChild(content);
     dialog.showModal();
