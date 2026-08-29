@@ -34,7 +34,7 @@ export type RegisterResult =
 export interface HubHandle {
   server: Server;
   port: number;
-  register(project: Omit<HubProject, 'slug'> & { slug?: string }): RegisterResult;
+  register(project: Omit<HubProject, 'slug'>): RegisterResult;
   triggerReload(slug: string): void;
   close(): Promise<void>;
 }
@@ -141,7 +141,7 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
     entry.watcher?.close();
   }
 
-  function register(project: Omit<HubProject, 'slug'> & { slug?: string }): RegisterResult {
+  function register(project: Omit<HubProject, 'slug'>): RegisterResult {
     let computed;
     try {
       computed = projectSlug(project.cwd);
@@ -151,7 +151,7 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
     if (!computed.ok) {
       return { ok: false, code: 400, message: 'empty slug' };
     }
-    const slug = project.slug ?? computed.slug;
+    const slug = computed.slug;
     if (slug === '') {
       return { ok: false, code: 400, message: 'empty slug' };
     }

@@ -183,6 +183,26 @@ describe('startHubServer', () => {
     expect(JSON.parse(modelsB.body).config).toMatchObject({ enabled: true, mode: 'individual' });
   });
 
+  it('ignores an unsanitized slug override passed into register()', async () => {
+    const { cwd, file } = fixture('sbl-hub-override-', 'Override Me');
+    dirs.push(cwd);
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const malicious = '<script>evil</script>';
+    // `slug` is not part of the public register() input type; cast to
+    // simulate a caller (or a future one) trying to pass it anyway.
+    const reg = hub.register({ cwd, file, regenerate: () => {}, slug: malicious } as unknown as Parameters<
+      typeof hub.register
+    >[0]);
+    expect(reg.ok).toBe(true);
+    if (!reg.ok) return;
+    expect(reg.slug).not.toBe(malicious);
+    expect(reg.slug).toBe('override-me');
+    const index = await req(hub.port, '/');
+    expect(index.body).not.toContain(malicious);
+    expect(index.body).toContain('/p/override-me/');
+  });
+
   it('rejects a POST /p/<slug>/api/run without a JSON content-type', async () => {
     const { cwd, file } = fixture('sbl-hub-ct-', 'ct-project');
     dirs.push(cwd);
