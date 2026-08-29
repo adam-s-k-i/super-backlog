@@ -17,6 +17,7 @@ describe('HELP', () => {
     expect(HELP).not.toMatch(/^\s+browser\s/m);
     expect(HELP).not.toMatch(/^\s+board\s/m);
     expect(HELP).not.toContain('--serve');
+    expect(HELP).not.toContain('Backlog browser');
   });
 });
 

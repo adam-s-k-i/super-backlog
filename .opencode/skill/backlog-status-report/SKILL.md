@@ -22,7 +22,7 @@ Read-only summary of the Backlog.md data in this project.
    - Every In Progress task: ID, title, open acceptance criteria
    - Milestones with done/total
    - Blocked or stale items worth flagging
-4. Point to the visual surfaces: `sbl dashboard --serve` (live dashboard) or
+4. Point to the visual surfaces: `sbl dashboard` (live dashboard) or
    `backlog browser` (interactive Kanban).
 
 ## Boundaries

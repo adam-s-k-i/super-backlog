@@ -1,7 +1,8 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startHubServer } from '../../src/dashboard/hub.js';
 
@@ -142,5 +143,12 @@ describe('startHubServer', () => {
     expect(clientB.chunks.join('')).not.toContain('event: reload');
     clientA.close();
     clientB.close();
+  });
+});
+
+describe('Node 24 watch warning', () => {
+  it('does not mention --serve', () => {
+    const src = readFileSync(fileURLToPath(new URL('../../src/dashboard/hub.ts', import.meta.url)), 'utf8');
+    expect(src).not.toContain('--serve');
   });
 });

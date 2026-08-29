@@ -23,7 +23,7 @@ Commands:
   init        Install the kit into the current project
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
-  dashboard   Start the project dashboard server (live-reload + Backlog browser)
+  dashboard   Start the project dashboard server (live-reload)
   models      Manage the model router (show, enable, disable, discover)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
 

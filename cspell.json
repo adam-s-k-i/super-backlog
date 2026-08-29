@@ -69,6 +69,7 @@
   "ignorePaths": [
     ".superpowers/**",
     ".worktrees/**",
+    "docs/superpowers/specs/**",
     "docs/superpowers/specs/2026-08-25-dashboard-v2-design.md",
     "node_modules/**",
     "dist/**",

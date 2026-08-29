@@ -51,7 +51,7 @@ type ProjectEntry = {
 };
 
 const WATCH_WARN =
-  'warning: live reload is disabled because Node 24+ on Windows cannot reliably watch directories recursively (libuv fs-event bug); use Node 22 or Linux/macOS for --serve';
+  'warning: live reload is disabled because Node 24+ on Windows cannot reliably watch directories recursively (libuv fs-event bug); use Node 22 or Linux/macOS for live reload';
 
 function watchBacklog(
   cwd: string,
