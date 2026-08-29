@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.3...v1.1.0) (2026-08-29)
+
+
+### Features
+
+* **cli:** dashboard hub, drop aliases, version hint ([#40](https://github.com/adam-s-k-i/super-backlog/issues/40)) ([4d2b289](https://github.com/adam-s-k-i/super-backlog/commit/4d2b2895963e4a6a95ce6a5e19444f3d39ac6c63))
+
 ## [1.0.3](https://github.com/adam-s-k-i/super-backlog/compare/v1.0.2...v1.0.3) (2026-08-28)
 
 
