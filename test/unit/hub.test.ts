@@ -3,12 +3,25 @@ import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../src/dashboard/server.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/dashboard/server.js')>();
+  return { ...actual, recursiveWatchSupported: () => false };
+});
+
 import { startHubServer } from '../../src/dashboard/hub.js';
 
-function req(port: number, path: string, method = 'GET', body?: string): Promise<{ status: number; location?: string; body: string }> {
+function req(
+  port: number,
+  path: string,
+  method = 'GET',
+  body?: string,
+  extraHeaders: Record<string, string> = {},
+): Promise<{ status: number; location?: string; body: string }> {
   return new Promise((resolve, reject) => {
-    const r = request({ host: '127.0.0.1', port, path, method, headers: { 'content-type': 'application/json' } }, (res) => {
+    const headers: Record<string, string> = { 'content-type': 'application/json', ...extraHeaders };
+    const r = request({ host: '127.0.0.1', port, path, method, headers }, (res) => {
       let b = '';
       res.setEncoding('utf8');
       res.on('data', (c) => { b += c; });
@@ -168,6 +181,46 @@ describe('startHubServer', () => {
     expect(modelsB.status).toBe(200);
     expect(JSON.parse(modelsA.body).config).toMatchObject({ enabled: true, mode: 'family' });
     expect(JSON.parse(modelsB.body).config).toMatchObject({ enabled: true, mode: 'individual' });
+  });
+
+  it('rejects a POST /p/<slug>/api/run without a JSON content-type', async () => {
+    const { cwd, file } = fixture('sbl-hub-ct-', 'ct-project');
+    dirs.push(cwd);
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const reg = hub.register({ cwd, file, regenerate: () => {} });
+    expect(reg.ok).toBe(true);
+    if (!reg.ok) return;
+    const res = await req(
+      hub.port,
+      `/p/${reg.slug}/api/run`,
+      'POST',
+      JSON.stringify({ command: 'browser' }),
+      { 'content-type': 'text/plain' },
+    );
+    expect(res.status).toBe(415);
+  });
+
+  it('rejects any request whose Host header is not 127.0.0.1 or localhost', async () => {
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const res = await req(hub.port, '/', 'GET', undefined, { host: 'evil.example' });
+    expect(res.status).toBe(403);
+  });
+
+  it('prints the watch warning at most once per hub process', async () => {
+    const a = fixture('sbl-hub-warn-a-', 'WarnA');
+    const b = fixture('sbl-hub-warn-b-', 'WarnB');
+    dirs.push(a.cwd, b.cwd);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const regA = hub.register({ cwd: a.cwd, file: a.file, regenerate: () => {} });
+    const regB = hub.register({ cwd: b.cwd, file: b.file, regenerate: () => {} });
+    expect(regA.ok).toBe(true);
+    expect(regB.ok).toBe(true);
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
   });
 });
 

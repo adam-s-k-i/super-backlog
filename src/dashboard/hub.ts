@@ -53,22 +53,18 @@ type ProjectEntry = {
 const WATCH_WARN =
   'warning: live reload is disabled because Node 24+ on Windows cannot reliably watch directories recursively (libuv fs-event bug); use Node 22 or Linux/macOS for live reload';
 
-function watchBacklog(
-  cwd: string,
-  reloader: ReturnType<typeof createDebouncedReloader>,
-): FSWatcher | null {
-  const backlogDir = join(cwd, 'backlog');
-  if (recursiveWatchSupported(process.platform, process.versions.node)) {
-    try {
-      const watcher = watch(backlogDir, { persistent: true, recursive: true }, () => reloader.trigger());
-      watcher.on('error', () => {});
-      return watcher;
-    } catch {
-      return null;
-    }
-  }
-  console.warn(WATCH_WARN);
-  return null;
+const ALLOWED_HOST = /^(127\.0\.0\.1|localhost)(:\d+)?$/;
+
+function isAllowedHost(headerValue: string | string[] | undefined): boolean {
+  const value = Array.isArray(headerValue) ? headerValue[0] : headerValue;
+  if (typeof value !== 'string') return false;
+  return ALLOWED_HOST.test(value.trim().toLowerCase());
+}
+
+function hasJsonContentType(req: IncomingMessage): boolean {
+  const value = req.headers['content-type'];
+  const ct = Array.isArray(value) ? value[0] : value;
+  return typeof ct === 'string' && ct.toLowerCase().startsWith('application/json');
 }
 
 function projectUrl(port: number, slug: string): string {
@@ -116,6 +112,28 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
   const projects = new Map<string, ProjectEntry>();
   const token = opts.token;
   let port = 0;
+  let watchWarned = false;
+
+  function watchBacklog(
+    cwd: string,
+    reloader: ReturnType<typeof createDebouncedReloader>,
+  ): FSWatcher | null {
+    const backlogDir = join(cwd, 'backlog');
+    if (recursiveWatchSupported(process.platform, process.versions.node)) {
+      try {
+        const watcher = watch(backlogDir, { persistent: true, recursive: true }, () => reloader.trigger());
+        watcher.on('error', () => {});
+        return watcher;
+      } catch {
+        return null;
+      }
+    }
+    if (!watchWarned) {
+      watchWarned = true;
+      console.warn(WATCH_WARN);
+    }
+    return null;
+  }
 
   function disposeEntry(entry: ProjectEntry): void {
     entry.reloader.cancel();
@@ -179,7 +197,18 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
   }
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    if (!isAllowedHost(req.headers.host)) {
+      sendText(res, 403, 'forbidden');
+      return;
+    }
+
     const method = req.method ?? 'GET';
+
+    if (method === 'POST' && !hasJsonContentType(req)) {
+      sendText(res, 415, 'unsupported media type: expected application/json');
+      return;
+    }
+
     const parsed = new URL(req.url ?? '/', 'http://127.0.0.1');
     const pathname = parsed.pathname;
 
