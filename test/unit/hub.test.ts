@@ -144,6 +144,31 @@ describe('startHubServer', () => {
     clientA.close();
     clientB.close();
   });
+
+  it('scopes /api/models to each registered project cwd', async () => {
+    const a = fixture('sbl-hub-models-a-', 'Alpha');
+    const b = fixture('sbl-hub-models-b-', 'Bravo');
+    dirs.push(a.cwd, b.cwd);
+    mkdirSync(join(a.cwd, '.super-backlog'));
+    mkdirSync(join(b.cwd, '.super-backlog'));
+    writeFileSync(join(a.cwd, '.super-backlog', 'models.json'), JSON.stringify({ enabled: true, mode: 'family' }));
+    writeFileSync(join(b.cwd, '.super-backlog', 'models.json'), JSON.stringify({ enabled: true, mode: 'individual' }));
+
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const regA = hub.register({ cwd: a.cwd, file: a.file, regenerate: () => {} });
+    const regB = hub.register({ cwd: b.cwd, file: b.file, regenerate: () => {} });
+    expect(regA.ok).toBe(true);
+    expect(regB.ok).toBe(true);
+    if (!regA.ok || !regB.ok) return;
+
+    const modelsA = await req(hub.port, `/p/${regA.slug}/api/models`);
+    const modelsB = await req(hub.port, `/p/${regB.slug}/api/models`);
+    expect(modelsA.status).toBe(200);
+    expect(modelsB.status).toBe(200);
+    expect(JSON.parse(modelsA.body).config).toMatchObject({ enabled: true, mode: 'family' });
+    expect(JSON.parse(modelsB.body).config).toMatchObject({ enabled: true, mode: 'individual' });
+  });
 });
 
 describe('Node 24 watch warning', () => {

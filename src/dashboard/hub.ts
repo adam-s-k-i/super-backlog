@@ -158,6 +158,7 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
       existing.watcher?.close();
       existing.reloader = createDebouncedReloader(project.regenerate, () => existing.broker.broadcast('reload'), 300);
       existing.watcher = watchBacklog(project.cwd, existing.reloader);
+      existing.modelApi = createModelApiHandler(project.cwd);
       return { ok: true, slug, url };
     }
 
@@ -171,7 +172,7 @@ export async function startHubServer(opts: { port?: number; token: string }): Pr
       reloader,
       watcher: watchBacklog(project.cwd, reloader),
       runApi: createRunApiHandler(project.cwd),
-      modelApi: createModelApiHandler(),
+      modelApi: createModelApiHandler(project.cwd),
     };
     projects.set(slug, entry);
     return { ok: true, slug, url };

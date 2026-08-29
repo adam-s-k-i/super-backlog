@@ -22,7 +22,7 @@ function makeRequest(server: Server, path: string, method = 'GET'): Promise<{ st
 
 describe('/api/models', () => {
   it('returns the current config', async () => {
-    const handler = createModelApiHandler();
+    const handler = createModelApiHandler(process.cwd());
     const server = createServer((req, res) => {
       void handler(req, res);
     });
