@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   BUILT_IN_GLOSSARY,
   collectDashboardData,
+  normalizeTasks,
   parseGlossaryMarkdown,
   parseTasksJson,
   readDrafts,
@@ -50,6 +51,33 @@ function writeBacklogConfig(dir: string, contents: string): void {
 afterEach(() => {
   for (const d of dirs) rmSync(d, { recursive: true, force: true });
   dirs = [];
+});
+
+describe('normalizeTasks schemaVersion 1 shape', () => {
+  it('maps updatedAt, assignees[] and acceptanceCriteria from the current CLI output', () => {
+    const [task] = normalizeTasks([
+      {
+        id: 'TASK-9',
+        title: 'Modern shape',
+        status: 'Done',
+        assignees: ['adam', 'kim'],
+        updatedAt: '2026-08-29T16:30:00Z',
+        acceptanceCriteria: [{ text: 'works', checked: true }],
+      },
+    ]);
+    expect(task?.assignee).toBe('adam');
+    expect(task?.updated).toBe('2026-08-29T16:30:00Z');
+    expect(task?.acs).toEqual([{ text: 'works', checked: true }]);
+  });
+
+  it('still accepts the legacy updated_at/assignee/acceptance_criteria fields', () => {
+    const [task] = normalizeTasks([
+      { id: 'B-1', title: 'Legacy', status: 'Done', assignee: 'kim', updated_at: '2026-08-01', acceptance_criteria: ['plain'] },
+    ]);
+    expect(task?.assignee).toBe('kim');
+    expect(task?.updated).toBe('2026-08-01');
+    expect(task?.acs).toEqual([{ text: 'plain', checked: false }]);
+  });
 });
 
 function homeWithVersionCache(latest: string): string {
