@@ -1,9 +1,10 @@
 ---
 id: TASK-49
 title: 'Dashboard: model router config modal'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-29 16:19'
+updated_date: '2026-08-29 17:23'
 labels: []
 dependencies: []
 ordinal: 47000
