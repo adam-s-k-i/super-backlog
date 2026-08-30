@@ -41,7 +41,8 @@ describe('README doc-rot guard', () => {
   });
 
   it('drives the dashboard through the sbl dashboard command', () => {
-    expect(readme).toContain('```bash\nsbl dashboard\n```');
+    // CRLF-tolerant: Windows checkouts normalize the README to \r\n
+    expect(readme).toMatch(/```bash\r?\nsbl dashboard\r?\n```/);
   });
 
   it('keeps the uninstall guarantee essence', () => {
