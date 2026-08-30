@@ -30,20 +30,22 @@ jobs:
       - name: Open PR when the README screenshot changed
         if: github.event_name == 'push'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A PAT (not GITHUB_TOKEN): workflow runs on branches pushed with
+          # GITHUB_TOKEN land in "action required" and never auto-merge.
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
         run: |
           if git diff --quiet docs/assets/dashboard.png; then
             echo "screenshot unchanged"
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "adam-s-k-i"
+          git config user.email "adam.henne@gmail.com"
           git checkout -B docs/dashboard-screenshot
           git add docs/assets/dashboard.png
           # No [skip ci]: the PR's required checks must actually run so that
           # auto-merge can fire without any human review.
           git commit -m "docs: refresh dashboard screenshot"
-          git push -f origin docs/dashboard-screenshot
+          git push -f "https://x-access-token:${{ secrets.AUTO_MERGE_TOKEN }}@github.com/adam-s-k-i/super-backlog.git" docs/dashboard-screenshot
           gh pr create --title "docs: refresh dashboard screenshot" \
             --body "Regenerated docs/assets/dashboard.png from the curated demo dataset (scripts/capture-dashboard.mjs)." \
             --base master --head docs/dashboard-screenshot || echo "PR already exists"
