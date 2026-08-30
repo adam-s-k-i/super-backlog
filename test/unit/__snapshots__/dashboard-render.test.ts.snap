@@ -268,12 +268,11 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
 
   /* ---------- Quick actions ---------- */
   .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .cmd-row { display: flex; flex-wrap: wrap; gap: 10px; }
   .cmd-btn {
     display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
     padding: 10px 18px; border-radius: 10px; min-width: 180px; text-align: left;
     background: var(--surface); border: 1px solid var(--line-strong); color: var(--text);
-    cursor: pointer;
+    cursor: pointer; text-decoration: none;
   }
   .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); }
   .cmd-btn:active { transform: translateY(1px); }
@@ -550,6 +549,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     <div class="cmd-row" id="cmd-buttons">
       <button type="button" class="cmd-btn" id="backlog-btn"><span class="cmd-title">Backlog</span><span class="cmd-line">board &middot; tasks &middot; docs &middot; decisions</span></button>
       <button type="button" class="cmd-btn" id="models-btn"><span class="cmd-title">Model Router</span><span class="cmd-line">workhorse &middot; budget &middot; tiers</span></button>
+      <a class="cmd-btn" id="docs-btn" href="https://adam-s-k-i.github.io/super-backlog/" target="_blank" rel="noreferrer"><span class="cmd-title">Documentation</span><span class="cmd-line">quickstart &middot; phases &middot; guides</span></a>
     </div>
     <p class="hint">Opens the Backlog.md browser in an overlay &mdash; served locally per project, started on demand.</p>
   </div>

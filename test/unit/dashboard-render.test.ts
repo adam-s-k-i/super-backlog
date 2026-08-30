@@ -197,12 +197,18 @@ describe('renderDashboard v2 structure', () => {
     expect(html).toMatch(/@media \(max-width:\s*900px\)/);
   });
 
-  it('references no external URLs outside Google Fonts', () => {
+  it('references no external resources outside Google Fonts', () => {
     const withoutFonts = html
       .replace(/href="https:\/\/fonts\.googleapis\.com[^"]*"/g, '')
       .replace(/href="https:\/\/fonts\.gstatic\.com[^"]*"/g, '');
-    expect(withoutFonts).not.toContain('src="http');
-    expect(withoutFonts).not.toContain('href="http');
+    // navigation anchors to the project's own docs site are fine - they load
+    // nothing into the dashboard, so offline rendering stays intact
+    const withoutDocsNav = withoutFonts.replace(
+      /href="https:\/\/adam-s-k-i\.github\.io\/super-backlog\/"/g,
+      '',
+    );
+    expect(withoutDocsNav).not.toContain('src="http');
+    expect(withoutDocsNav).not.toContain('href="http');
   });
 
   it('ships an inline SVG favicon', () => {
@@ -219,6 +225,14 @@ describe('v2 structure', () => {
     expect(row).toContain('id="models-btn"');
     expect(row).toContain('Model Router');
     expect(html).not.toContain('class="side-models"');
+  });
+
+  it('links Documentation to the docs site in a new tab', () => {
+    const row = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html)?.[1] ?? '';
+    expect(row).toContain('id="docs-btn"');
+    expect(row).toContain('href="https://adam-s-k-i.github.io/super-backlog/"');
+    expect(row).toContain('target="_blank"');
+    expect(row).toContain('rel="noreferrer"');
   });
 
   it('hosts drafts in their own section 05', () => {
