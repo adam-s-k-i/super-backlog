@@ -20,20 +20,24 @@ function buckets(nonZero: Record<number, number>): DashboardActivityBucket[] {
 const SAMPLE_TASKS: DashboardTask[] = [
   {
     id: 'T-1', title: 'Ship auth flow', status: 'Done', priority: 'high', assignee: 'adam',
+    labels: ['phase/verify'], phase: 'verify',
     updated: '2026-08-20', milestone: 'M1', description: 'Handles <script>alert(1)</script> safely',
     acs: [{ text: 'login works', checked: true }],
   },
   {
     id: 'T-2', title: 'Add OAuth refresh', status: 'In Progress', priority: 'medium', assignee: 'kim',
+    labels: ['feature', 'phase/spec'], phase: 'spec',
     updated: '2026-08-21', milestone: 'M1',
     acs: [{ text: 'token rotation', checked: true }, { text: 'docs updated', checked: false }],
   },
   {
     id: 'T-3', title: 'Write README', status: 'To Do', priority: 'low', milestone: 'M2',
+    labels: [], phase: null,
     acs: [],
   },
   {
     id: 'T-4', title: 'Polish UI', status: 'In Progress', milestone: 'M2', updated: '2026-08-22',
+    labels: ['phase/plan'], phase: 'plan',
     acs: [{ text: 'dark mode', checked: false }],
   },
 ];

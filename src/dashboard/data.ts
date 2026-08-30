@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { basename, join } from 'node:path';
 
 import { resolveBacklogBin, runCapture } from '../lib/run.js';
+import { derivePhase, type Phase } from '../lib/phase.js';
 import { isNewerVersion } from '../lib/version-check.js';
 import { readSimpleKeys } from '../lib/yamlmini.js';
 import { computeKpis } from './metrics.js';
@@ -19,6 +20,8 @@ export interface DashboardTask {
   title: string;
   status: string;
   priority?: string;
+  labels: string[];
+  phase: Phase | null;
   assignee?: string;
   created?: string;
   updated?: string;
@@ -95,6 +98,10 @@ function asString(v: unknown): string | undefined {
   return undefined;
 }
 
+function asStrings(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+
 /**
  * Parse the stdout of `backlog task list --json` defensively.
  * Accepts `{tasks:[...]}` and bare-array shapes; anything else throws
@@ -146,6 +153,8 @@ export function normalizeTasks(rawTasks: RawTask[]): DashboardTask[] {
     title: asString(t['title']) ?? '(untitled)',
     status: asString(t['status']) ?? 'Unknown',
     priority: asString(t['priority']),
+    labels: asStrings(t['labels']),
+    phase: derivePhase(asStrings(t['labels'])),
     assignee: firstAssignee(t),
     created: asString(t['createdAt']) ?? asString(t['created_at']) ?? asString(t['created']),
     updated: asString(t['updatedAt']) ?? asString(t['updated_at']) ?? asString(t['updated']),
