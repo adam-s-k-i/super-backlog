@@ -310,7 +310,8 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   .task-row:hover td { background: var(--surface-2); }
   .cell-id { color: var(--accent); font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .cell-title { font-weight: 400; white-space: normal; min-width: 220px; }
-  .cell-updated { font-family: var(--mono); color: var(--muted); }
+  .cell-updated { font-family: var(--mono); color: var(--muted); text-align: center; }
+  th[data-key="updated"] { text-align: center; }
 
   /* ---------- Footer ---------- */
   .footer {
@@ -663,12 +664,42 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     });
   }
   var tbody = $('#task-rows');
+  function compareTasks(a, b, key) {
+    if (key === 'updated') {
+      var ta = Date.parse(field(a, key)) || 0;
+      var tb = Date.parse(field(b, key)) || 0;
+      if (ta !== tb) return ta - tb;
+    }
+    return field(a, key).localeCompare(field(b, key), undefined, { numeric: true, sensitivity: 'base' });
+  }
+  var relFmt = window.Intl && Intl.RelativeTimeFormat ? new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }) : null;
+  var exactFmt = window.Intl && Intl.DateTimeFormat ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  var REL_UNITS = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
+  function parseWhen(value) {
+    if (!value) return null;
+    /* date-only strings get a local noon so the day never shifts across timezones */
+    var t = Date.parse(/^\\d{4}-\\d{2}-\\d{2}$/.test(value) ? value + 'T12:00:00' : value);
+    return isNaN(t) ? null : t;
+  }
+  function formatRelative(value) {
+    var t = parseWhen(value);
+    if (t === null || !relFmt) return value;
+    var diff = (t - Date.now()) / 1000;
+    for (var i = 0; i < REL_UNITS.length; i++) {
+      if (Math.abs(diff) >= REL_UNITS[i][1] || i === REL_UNITS.length - 1) {
+        return relFmt.format(Math.round(diff / REL_UNITS[i][1]), REL_UNITS[i][0]);
+      }
+    }
+    return value;
+  }
+  function formatExact(value) {
+    var t = parseWhen(value);
+    return t === null || !exactFmt ? '' : exactFmt.format(new Date(t));
+  }
   function renderTasks() {
     var rows = data.tasks
       .filter(matches)
-      .sort(function (a, b) {
-        return field(a, state.key).localeCompare(field(b, state.key)) * state.dir;
-      });
+      .sort(function (a, b) { return compareTasks(a, b, state.key) * state.dir; });
     tbody.textContent = '';
     if (rows.length === 0) {
       var emptyTr = el('tr');
@@ -682,7 +713,20 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
       var tr = el('tr', 'task-row');
       tr.setAttribute('data-task', task.id);
       KEYS.forEach(function (k) {
-        tr.appendChild(el('td', 'cell-' + k, field(task, k)));
+        var cellClass = k === 'status' ? 'cell-status' : 'cell-' + k;
+        var td = el('td', cellClass);
+        if (k === 'status') {
+          var chip = el('span', 'status-chip', field(task, k));
+          chip.setAttribute('data-tone', toneOf(task.status));
+          td.appendChild(chip);
+        } else if (k === 'updated') {
+          td.textContent = formatRelative(field(task, k));
+          var exact = formatExact(field(task, k));
+          if (exact) td.setAttribute('data-tip', exact);
+        } else {
+          td.textContent = field(task, k);
+        }
+        tr.appendChild(td);
       });
       tr.addEventListener('click', function () { openDetail(task.id); });
       tbody.appendChild(tr);

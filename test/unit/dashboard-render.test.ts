@@ -254,15 +254,16 @@ describe('renderDashboard footer', () => {
 });
 
 describe('inline app budget', () => {
-  it('keeps the inline app script within 850 lines of vanilla JS', () => {
+  it('keeps the inline app script within 900 lines of vanilla JS', () => {
     // Budget raised from the original 650 as approved features landed:
     // stepper detail + update badge, backlog overlay, task-dialog rework,
-    // models modal (~770 lines as of the last raise). The cap still guards
+    // models modal (~770 lines as of the last raise), task table v2 with
+    // natural sort and locale-aware formatting (~893 lines). The cap still guards
     // against unbounded growth — raise it only for approved feature work.
     const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
     expect(m).toBeTruthy();
     const lines = (m?.[1] ?? '').split('\n').length;
-    expect(lines).toBeLessThanOrEqual(850);
+    expect(lines).toBeLessThanOrEqual(900);
   });
 });
 
@@ -489,6 +490,23 @@ describe('carried Batch B review fixes', () => {
   it('task titles are no longer bold in the table', () => {
     const app = appScript();
     expect(app).not.toMatch(/\.cell-title\s*\{[^}]*font-weight:\s*(bold|5\d\d|6\d\d|700)/);
+  });
+});
+
+describe('tasks table v2', () => {
+  it('sorts with numeric-aware comparison and chronological updated', () => {
+    expect(html).toContain("localeCompare(field(b, key), undefined, { numeric: true, sensitivity: 'base' })");
+    expect(html).toContain('function compareTasks');
+  });
+
+  it('renders status cells as chips and formats updated via Intl', () => {
+    expect(html).toMatch(/cell-status[\s\S]{0,400}status-chip/);
+    expect(html).toContain('Intl.RelativeTimeFormat');
+    expect(html).toContain('Intl.DateTimeFormat');
+  });
+
+  it('centers the updated column', () => {
+    expect(html).toMatch(/\.cell-updated\s*\{[^}]*text-align:\s*center/);
   });
 });
 
