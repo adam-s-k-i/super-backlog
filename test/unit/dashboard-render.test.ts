@@ -139,9 +139,20 @@ describe('renderDashboard v2 structure', () => {
   });
 
   it('keeps an empty mount element per diagram/content slot', () => {
-    for (const mount of ['#quickactions', '#donut', '#bars', '#tasks', '#stepper', '#spark', '#docs']) {
+    for (const mount of ['#quickactions', '#donut', '#bars', '#tasks', '#stepper', '#activity-kpis', '#heatmap', '#docs']) {
       expect(html).toContain(`id="${mount.slice(1)}"`);
     }
+  });
+
+  describe('activity heatmap', () => {
+    it('replaces the sparkline with heatmap, kpis and day panel', () => {
+      const sec = /<section id="sec-07">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+      expect(sec).toContain('id="activity-kpis"');
+      expect(sec).toContain('id="heatmap"');
+      expect(sec).toContain('id="day-panel"');
+      expect(sec).toContain('last 26 weeks');
+      expect(html).not.toContain('renderSparkline');
+    });
   });
 
   it('retains the v1 sortable/filterable task table shell inside #tasks', () => {
@@ -289,19 +300,21 @@ describe('status kpis', () => {
 });
 
 describe('inline app budget', () => {
-  it('keeps the inline app script within 1060 lines of vanilla JS', () => {
+  it('keeps the inline app script within 1115 lines of vanilla JS', () => {
     // Budget raised from the original 650 as approved features landed:
     // stepper detail + update badge, backlog overlay, task-dialog rework,
     // models modal, task table v2 with natural sort and locale-aware
     // formatting (900 as of the last raise), status KPI tiles + aging strip
     // with wip/blocked special filters, and the follow-up fix that split the
     // wip/blocked tile into two sibling <button>s instead of a nested button
-    // (~1049 lines). The cap still guards against unbounded growth — raise
+    // (~1049 lines). Raised again for the activity calendar heatmap +
+    // KPI strip + day drill-down panel that replaced the sparkline
+    // (~1101 lines). The cap still guards against unbounded growth — raise
     // it only for approved feature work.
     const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
     expect(m).toBeTruthy();
     const lines = (m?.[1] ?? '').split('\n').length;
-    expect(lines).toBeLessThanOrEqual(1060);
+    expect(lines).toBeLessThanOrEqual(1115);
   });
 });
 
@@ -310,10 +323,10 @@ function appScript(): string {
   return m?.[1] ?? '';
 }
 
-describe('client diagrams: donut, bars, sparkline, stepper', () => {
+describe('client diagrams: donut, bars, heatmap, stepper', () => {
   it('defines the four global SVG builder functions', () => {
     const app = appScript();
-    for (const fn of ['renderDonut(', 'renderBars(', 'renderSparkline(', 'renderStepper(']) {
+    for (const fn of ['renderDonut(', 'renderBars(', 'renderHeatmap(', 'renderStepper(']) {
       expect(app).toContain(`function ${fn}`);
     }
   });
@@ -332,11 +345,12 @@ describe('client diagrams: donut, bars, sparkline, stepper', () => {
     expect(app).toContain('hoverStatus');
   });
 
-  it('sparkline emits polyline + area with a <title> tooltip per point', () => {
+  it('heatmap emits a hm-cell rect per day with a <title> tooltip and a click handler', () => {
     const app = appScript();
-    expect(app).toContain('polyline');
+    expect(app).toContain("'class': 'hm-cell hm-' + level");
     expect(app).toContain("svgEl('title'");
     expect(app).toMatch(/b\.date\s*\+\s*': '\s*\+\s*b\.count/);
+    expect(app).toContain('renderDayPanel(panel, b)');
   });
 
   it('stepper renders all nine phases from the sbl-phases island', () => {
@@ -369,7 +383,7 @@ describe('client diagrams: donut, bars, sparkline, stepper', () => {
 
   it('bootstraps every diagram into its section mount', () => {
     const app = appScript();
-    for (const mount of ['donut', 'bars', 'stepper', 'spark']) {
+    for (const mount of ['donut', 'bars', 'stepper', 'heatmap']) {
       expect(app).toContain(`'${mount}'`);
     }
   });
