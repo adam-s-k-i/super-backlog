@@ -169,10 +169,6 @@ describe('renderDashboard v2 structure', () => {
     expect(html).toContain('"Segoe UI"');
   });
 
-  it('is dark-only: no prefers-color-scheme block anywhere', () => {
-    expect(html).not.toMatch(/prefers-color-scheme/);
-  });
-
   it('collapses the sidebar under 900px', () => {
     expect(html).toMatch(/@media \(max-width:\s*900px\)/);
   });
@@ -633,5 +629,27 @@ describe('drafts rendering', () => {
   it('calls renderDrafts with the collected drafts', () => {
     const app = appScript();
     expect(app).toContain('renderDrafts(data.drafts)');
+  });
+});
+
+describe('theming', () => {
+  it('defines colors only through tokens (no raw colors outside token blocks)', () => {
+    const style = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? '';
+    const outsideTokens = style
+      .replace(/:root\s*\{[\s\S]*?\}/, '')
+      .replace(/:root\[data-theme="light"\]\s*\{[\s\S]*?\}/, '');
+    expect(outsideTokens).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(outsideTokens).not.toMatch(/\brgba?\(/);
+  });
+
+  it('ships a light theme block and a pre-paint theme resolver', () => {
+    expect(html).toContain(':root[data-theme="light"]');
+    expect(html).toContain("localStorage.getItem('sbl-theme')");
+    expect(html).toContain('prefers-color-scheme: light');
+  });
+
+  it('renders the theme toggle button in the sidebar', () => {
+    const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
+    expect(aside).toContain('id="theme-toggle"');
   });
 });
