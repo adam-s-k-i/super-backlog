@@ -8,7 +8,9 @@
 [![npm](https://img.shields.io/npm/v/super-backlog)](https://www.npmjs.com/package/super-backlog)
 [![Docs](https://img.shields.io/badge/docs-adam--s--k--i.github.io%2Fsuper--backlog-blue)](https://adam-s-k-i.github.io/super-backlog/)
 
-**One command to equip any project with [Backlog.md](https://github.com/MrLesk/Backlog.md) + [Superpowers](https://github.com/obra/superpowers), plus a live Project Dashboard.**
+**Supercharge your backlog. Watch it live.**
+
+One command to equip any project with [Backlog.md](https://github.com/MrLesk/Backlog.md) + [Superpowers](https://github.com/obra/superpowers), plus a live Project Dashboard.
 
 </div>
 

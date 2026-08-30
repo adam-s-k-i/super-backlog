@@ -118,7 +118,7 @@ onMounted(() => {
 <div class="sbl-top">
   <img class="hero-logo" src="./assets/super-backlog-logo.jpg" alt="super-backlog logo">
   <div class="kicker">Agent workflow, wired</div>
-  <h1>Backlog.md + Superpowers, <em>one command</em> away.</h1>
+  <h1>Supercharge your backlog. <em>Watch it live.</em></h1>
   <p class="tagline">super-backlog installs, maintains, and visualizes a structured agent workflow in any project — with pipeline phases, human gates, and a live dashboard.</p>
   <div class="hero-actions">
     <a class="btn primary" href="#start">Start in 3 steps</a>
