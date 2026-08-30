@@ -1,9 +1,10 @@
 ---
 id: TASK-63
 title: 'sbl update: self-update the CLI before refreshing'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-30 10:47'
+updated_date: '2026-08-30 11:14'
 labels:
   - cli
 dependencies: []
@@ -25,3 +26,9 @@ New src/lib/self-update.ts: detectInstallKind (global npm prefix vs project node
 - [ ] #4 Local (devDependency) installs are never modified; a hint is printed instead
 - [ ] #5 Unit tests cover install-kind detection and the decision logic with injected deps (no real npm)
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+1) TDD: unit tests for detectInstallKind (global prefix vs cwd/node_modules vs unknown) and runSelfUpdate decision matrix with injected deps. 2) Implement src/lib/self-update.ts. 3) Wire into runUpdate: self-update first, re-exec new binary with SBL_SELF_UPDATED=1, forward exit code; --no-self flag in cli.ts. 4) Degradation paths (offline, npm failure, local install hint). 5) Full suite + tsc.
+<!-- SECTION:PLAN:END -->
