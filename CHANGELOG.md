@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.6](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.5...v1.3.6) (2026-08-30)
+
+
+### Bug Fixes
+
+* **ci:** screenshot bot uses PAT - workflow runs no longer need manual approval ([f6f29cb](https://github.com/adam-s-k-i/super-backlog/commit/f6f29cbd62a1227a5a8afda09218200b152f8efc))
+
 ## [1.3.5](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.4...v1.3.5) (2026-08-30)
 
 
