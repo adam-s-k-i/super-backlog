@@ -62,3 +62,21 @@
   border: 1px solid var(--vp-c-border);
   border-radius: 12px;
 }
+
+/* Navbar brand: "super" in the accent color used by "Watch it live.".
+   The original title text is hidden (screen readers still get it from the
+   a11y title); the visible replacement comes from the theme slot. */
+.VPNavBarTitle .title {
+  font-size: 0;
+}
+.brand-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+.brand-title b {
+  color: var(--vp-c-brand-1);
+  font-weight: 800;
+}

@@ -11,6 +11,36 @@ onMounted(() => {
   if (window.__sblLandingWired) return
   window.__sblLandingWired = true
 
+  /* smooth in-page scrolling for the hero anchor buttons
+     (bypasses the VP router, which swallows plain hash links) */
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  document.querySelectorAll('a[href^="#"]').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      const el = document.getElementById(a.getAttribute('href').slice(1))
+      if (!el) return
+      e.preventDefault()
+      el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
+      history.replaceState(null, '', a.getAttribute('href'))
+    })
+  })
+
+  /* whole command card opens the details modal; copy stays its own action */
+  document.querySelectorAll('.sbl-cmd').forEach((card) => {
+    card.setAttribute('role', 'button')
+    card.setAttribute('tabindex', '0')
+    const open = () => card.querySelector('[data-details]')?.click()
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('[data-copy],[data-details],a')) return
+      open()
+    })
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        open()
+      }
+    })
+  })
+
   const DETAILS = {
     init: {
       text: 'Plans and applies a change set: installs backlog.md as a devDependency, injects the workflow block into AGENTS.md, copies the glue skills, wires npm scripts, and (with --guard) installs the pre-commit hook. Pick the package manager with --pm, target harnesses with --harness, and preview everything first with --dry-run.',
@@ -342,12 +372,14 @@ section { margin-top: 64px; }
 
 .cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; }
 .cmd-card {
-  position: relative;
+  position: relative; cursor: pointer;
   background: var(--vp-c-bg-elv); border: 1px solid var(--vp-c-divider); border-radius: 12px;
   padding: 14px 16px 12px;
   transition: transform 160ms cubic-bezier(0.23,1,0.32,1), border-color 160ms cubic-bezier(0.23,1,0.32,1);
 }
 .cmd-card:hover { transform: translateY(-1px); border-color: var(--vp-c-brand-1); }
+.cmd-card:active { transform: scale(0.99); }
+.cmd-card:focus-visible { outline: 2px solid var(--vp-c-brand-1); outline-offset: 2px; }
 .cmd-line-row { display: flex; align-items: center; gap: 8px; }
 .cmd-name { font: 700 .86rem var(--vp-font-family-mono, monospace); color: var(--vp-c-brand-1); }
 .copy {
