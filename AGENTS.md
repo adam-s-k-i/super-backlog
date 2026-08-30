@@ -58,3 +58,13 @@ Project-specific human gates are intentionally out of scope for this block.
 Add project-specific human gates below the block.
 
 <!-- SUPER-BACKLOG END -->
+
+## Git and delivery rules (project-specific, binding)
+
+1. Never `git push` without the user's explicit instruction (e.g. "ship", "release") or an explicit
+   question answered with yes. Local commits and local merges are always fine.
+2. Never merge pull requests on the remote (GitHub) without the same explicit instruction or approval.
+   When in doubt: merge locally and ask before touching the remote.
+3. Exception by design: PRs from the screenshot bot branch (`docs/dashboard-screenshot`) auto-merge via
+   the deploy workflow — that zero-touch flow is intended and needs no approval.
+4. If a push is rejected because the remote moved, integrate locally and still ask before pushing.
