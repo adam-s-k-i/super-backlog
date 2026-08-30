@@ -3,6 +3,24 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.3](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.2...v1.3.3) (2026-08-30)
+
+
+### Features
+
+* **phase:** dashboard data layer maps labels and derives phase ([9c78693](https://github.com/adam-s-k-i/super-backlog/commit/9c786936f1c7c7484e154725f101ba18caa04fd2))
+* **phase:** dashboard stepper badges, task phase chips, modal advance chip ([d60f392](https://github.com/adam-s-k-i/super-backlog/commit/d60f392b43ada19eea9afba2f23ec5b5626fcd0f))
+* **phase:** doctor hygiene checks for phase labels with fail status ([230e91d](https://github.com/adam-s-k-i/super-backlog/commit/230e91d25f10707bc47b9597705a794c22d61d13))
+* **phase:** e2e coverage, pipeline-phases guide, dogfood refresh ([8689f71](https://github.com/adam-s-k-i/super-backlog/commit/8689f71ec63fb302d58e3d797c3c9ac922801b2f))
+* **phase:** pure phase-label model and transition validation ([c3c02cd](https://github.com/adam-s-k-i/super-backlog/commit/c3c02cd37bb69d45f027525d0758ff6ac342b548))
+* **phase:** sbl phase command with validated label transitions ([8944f14](https://github.com/adam-s-k-i/super-backlog/commit/8944f1480f366418fff157ccefc2161d724e9cea))
+* **phase:** teach phase labels in workflow block and glue skills ([59d920d](https://github.com/adam-s-k-i/super-backlog/commit/59d920d576d35c0aea8d53e81447aa9cc2ea7dcf))
+
+
+### Miscellaneous Chores
+
+* pin next release ([aa54611](https://github.com/adam-s-k-i/super-backlog/commit/aa54611bf4b1b7616971ba351f35fe38707d4c00))
+
 ## [1.3.2](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.1...v1.3.2) (2026-08-30)
 
 
