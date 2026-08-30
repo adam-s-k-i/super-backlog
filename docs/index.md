@@ -145,7 +145,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="sbl-cmd cmd-card">
+  <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl dashboard</span><button class="copy" data-copy="sbl dashboard">copy</button></div>
       <div class="cmd-short">Live Project Dashboard on port 6428 — reloads connected tabs automatically. Alias: sbl db.</div>
       <div class="cmd-foot">
@@ -153,7 +153,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="sbl-cmd cmd-card">
+  <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl phase</span><button class="copy" data-copy="sbl phase TASK-1">copy</button></div>
       <div class="cmd-short">Show or advance a task's pipeline phase: spec → plan → impl → verify, done clears it.</div>
       <div class="cmd-foot">
@@ -161,7 +161,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="sbl-cmd cmd-card">
+  <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl doctor</span><button class="copy" data-copy="sbl doctor">copy</button></div>
       <div class="cmd-short">Check Node, PowerShell policy, the backlog CLI, and phase-label hygiene.</div>
       <div class="cmd-foot">
@@ -169,7 +169,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="sbl-cmd cmd-card">
+  <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl update</span><button class="copy" data-copy="sbl update">copy</button></div>
       <div class="cmd-short">Self-update the CLI to the latest npm version, then refresh every injected file.</div>
       <div class="cmd-foot">
@@ -177,7 +177,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="sbl-cmd cmd-card">
+  <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl models</span><button class="copy" data-copy="sbl models show">copy</button></div>
       <div class="cmd-short">Optional model router: cheap tiers for simple agents, your main model for hard work.</div>
       <div class="cmd-foot">
@@ -185,7 +185,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="sbl-cmd cmd-card">
+  <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl uninstall</span><button class="copy" data-copy="sbl uninstall">copy</button></div>
       <div class="cmd-short">Remove everything super-backlog owns — your backlog/ task data stays.</div>
       <div class="cmd-foot">
