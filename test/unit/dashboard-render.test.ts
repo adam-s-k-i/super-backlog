@@ -9,9 +9,10 @@ import type { DashboardActivityBucket, DashboardData } from '../../src/dashboard
 
 function buckets(nonZero: Record<number, number>): DashboardActivityBucket[] {
   const start = Date.UTC(2026, 6, 28); // 2026-07-28
-  return Array.from({ length: 30 }, (_, i) => ({
+  return Array.from({ length: 182 }, (_, i) => ({
     date: new Date(start + i * 86_400_000).toISOString().slice(0, 10),
     count: nonZero[i] ?? 0,
+    ids: [],
   }));
 }
 

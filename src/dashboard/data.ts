@@ -56,6 +56,7 @@ export interface DashboardDraft {
 export interface DashboardActivityBucket {
   date: string;
   count: number;
+  ids: string[];
 }
 
 export interface DashboardGlossaryEntry {
@@ -211,21 +212,26 @@ function shiftDay(day: string, deltaDays: number): string {
   return new Date(Date.UTC(y, mo - 1, d) + deltaDays * 86400000).toISOString().slice(0, 10);
 }
 
-/** Bucket tasks into exactly 30 UTC daily buckets ending at `today`, oldest first. */
+export const ACTIVITY_DAYS = 182;
+
+/** Bucket tasks into exactly ACTIVITY_DAYS UTC daily buckets ending at `today`, oldest first. */
 export function computeActivity(rawTasks: RawTask[], today: string): DashboardActivityBucket[] {
-  const counts = new Map<string, number>();
+  const byDay = new Map<string, string[]>();
   for (const t of rawTasks) {
     const day =
-      isoDay(asString(t['updated_at']) ?? asString(t['updated'])) ??
-      isoDay(asString(t['created_at'])) ??
+      isoDay(asString(t['updatedAt']) ?? asString(t['updated_at']) ?? asString(t['updated'])) ??
+      isoDay(asString(t['createdAt']) ?? asString(t['created_at'])) ??
       today;
-    counts.set(day, (counts.get(day) ?? 0) + 1);
+    const ids = byDay.get(day) ?? [];
+    ids.push(asString(t['id']) ?? '');
+    byDay.set(day, ids);
   }
-  const start = shiftDay(today, -29);
+  const start = shiftDay(today, -(ACTIVITY_DAYS - 1));
   const out: DashboardActivityBucket[] = [];
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < ACTIVITY_DAYS; i++) {
     const date = shiftDay(start, i);
-    out.push({ date, count: counts.get(date) ?? 0 });
+    const ids = byDay.get(date) ?? [];
+    out.push({ date, count: ids.length, ids });
   }
   return out;
 }

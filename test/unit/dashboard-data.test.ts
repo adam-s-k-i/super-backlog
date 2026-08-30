@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   BUILT_IN_GLOSSARY,
   collectDashboardData,
+  computeActivity,
   enrichTasksFromFiles,
   normalizeTasks,
   parseGlossaryMarkdown,
@@ -402,24 +403,26 @@ describe('collector v2: deps', () => {
 });
 
 describe('collector v2: activity', () => {
-  it('builds exactly 30 UTC daily buckets oldest→newest ending at the injected today', () => {
+  it('builds exactly 182 UTC daily buckets oldest→newest ending at the injected today', () => {
     const dir = freshDir();
     writeBacklogConfig(dir, 'project_name: activity-demo\n');
     fabricateBacklogBin(dir, ACTIVITY_JSON);
 
     const data = collectDashboardData(dir, { kitVersion: 'v', today: '2026-08-26' });
 
-    expect(data.activity).toHaveLength(30);
-    expect(data.activity[0]).toEqual({ date: '2026-07-28', count: 1 });
-    expect(data.activity[4]).toEqual({ date: '2026-08-01', count: 1 });
-    expect(data.activity[5]).toEqual({ date: '2026-08-02', count: 1 }); // legacy `updated` alias
-    expect(data.activity[29]).toEqual({ date: '2026-08-26', count: 3 });
-    for (let i = 1; i < 30; i++) {
+    expect(data.activity).toHaveLength(182);
+    const lastBucket = data.activity[data.activity.length - 1]!;
+    expect(lastBucket.date).toBe('2026-08-26');
+    expect(lastBucket.count).toBe(3);
+    expect(lastBucket.ids).toEqual(['T1', 'T4', 'T5']);
+    for (let i = 1; i < data.activity.length; i++) {
       expect(data.activity[i]?.date).not.toBe(data.activity[i - 1]?.date);
     }
     // every non-event day sums to zero; total counts match task count
     const total = data.activity.reduce((sum, b) => sum + b.count, 0);
     expect(total).toBe(6);
+    // ids must be present on all buckets
+    expect(data.activity.every((b) => b.ids.length === b.count)).toBe(true);
   });
 
   it('defaults today to the real current date when not injected', () => {
@@ -429,22 +432,43 @@ describe('collector v2: activity', () => {
 
     const data = collectDashboardData(dir, { kitVersion: 'v' });
 
-    expect(data.activity).toHaveLength(30);
+    expect(data.activity).toHaveLength(182);
     const today = new Date().toISOString().slice(0, 10);
-    expect(data.activity[29]?.date).toBe(today);
-    expect(typeof data.activity[29]?.count).toBe('number');
+    expect(data.activity[data.activity.length - 1]?.date).toBe(today);
+    expect(typeof data.activity[data.activity.length - 1]?.count).toBe('number');
+    expect(Array.isArray(data.activity[data.activity.length - 1]?.ids)).toBe(true);
   });
 
-  it('still emits 30 zero buckets in fallback-empty mode', () => {
+  it('still emits 182 zero buckets in fallback-empty mode', () => {
     const dir = freshDir();
 
     const data = collectDashboardData(dir, { kitVersion: 'v', today: '2026-08-26' });
 
     expect(data.source).toBe('fallback-empty');
-    expect(data.activity).toHaveLength(30);
+    expect(data.activity).toHaveLength(182);
     expect(data.activity.every((b) => b.count === 0)).toBe(true);
-    expect(data.activity[29]).toEqual({ date: '2026-08-26', count: 0 });
+    expect(data.activity[data.activity.length - 1]).toMatchObject({ date: '2026-08-26', count: 0, ids: [] });
     expect(data.deps).toEqual([]);
+  });
+});
+
+describe('computeActivity v2', () => {
+  it('produces 182 daily buckets carrying the touched task ids', () => {
+    const out = computeActivity(
+      [
+        { id: 't-1', updated_at: '2026-08-29' },
+        { id: 't-2', updated_at: '2026-08-29' },
+        { id: 't-3', created_at: '2026-08-01' },
+        { id: 'old', updated_at: '2020-01-01' },
+      ],
+      '2026-08-30',
+    );
+    expect(out).toHaveLength(182);
+    expect(out[out.length - 1]!.date).toBe('2026-08-30');
+    const aug29 = out.find((b) => b.date === '2026-08-29')!;
+    expect(aug29.count).toBe(2);
+    expect(aug29.ids).toEqual(['t-1', 't-2']);
+    expect(out.every((b) => b.ids.length === b.count)).toBe(true);
   });
 });
 
