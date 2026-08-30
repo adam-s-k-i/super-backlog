@@ -11,6 +11,7 @@ vi.mock('../../src/dashboard/server.js', async (importOriginal) => {
 });
 
 import { startHubServer } from '../../src/dashboard/hub.js';
+import { KIT_VERSION } from '../../src/lib/version.js';
 
 function req(
   port: number,
@@ -103,6 +104,14 @@ describe('startHubServer', () => {
     const index = await req(hub.port, '/');
     const occurrences = index.body.split(`/p/${first.slug}/`).length - 1;
     expect(occurrences).toBe(1);
+  });
+
+  it('reports the hub version on /api/hub/status', async () => {
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const res = await req(hub.port, '/api/hub/status?token=t');
+    expect(res.status).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({ pid: process.pid, port: hub.port, version: KIT_VERSION });
   });
 
   it('rejects status and register without the token', async () => {

@@ -9,7 +9,12 @@ vi.mock('../../src/lib/version-check.js', () => ({
   defaultFetchLatest: vi.fn(async () => null),
 }));
 
+vi.mock('../../src/commands/dashboard.js', () => ({
+  runDashboard: vi.fn(async () => 0),
+}));
+
 import { HELP, runCli } from '../../src/cli.js';
+import { runDashboard } from '../../src/commands/dashboard.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -71,6 +76,23 @@ describe('runCli', () => {
     delete process.env.SBL_SKIP_UPDATE_CHECK;
     err.mockRestore();
     log.mockRestore();
+  });
+
+  it('routes "sbl db" to the dashboard command, same as "sbl dashboard"', async () => {
+    process.env.SBL_SKIP_UPDATE_CHECK = '1';
+    vi.mocked(runDashboard).mockClear();
+    const code = await runCli(['db', '--no-open']);
+    expect(code).toBe(0);
+    expect(runDashboard).toHaveBeenCalledTimes(1);
+    expect(runDashboard).toHaveBeenCalledWith(
+      process.cwd(),
+      expect.objectContaining({ values: expect.objectContaining({ 'no-open': true }) }),
+    );
+    delete process.env.SBL_SKIP_UPDATE_CHECK;
+  });
+
+  it('mentions the "db" alias in the help text', () => {
+    expect(HELP).toMatch(/dashboard.*alias: db/);
   });
 
   it.each(['serve', 'browser', 'board'])('rejects removed command %s', async (cmd) => {

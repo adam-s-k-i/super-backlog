@@ -13,6 +13,7 @@ import spawn from 'cross-spawn';
 import { createShutdown, runDashboard } from '../../src/commands/dashboard.js';
 import type { HubHandle } from '../../src/dashboard/hub.js';
 import { readHubState, writeHubState } from '../../src/lib/hub-state.js';
+import { KIT_VERSION } from '../../src/lib/version.js';
 
 const dirs: string[] = [];
 
@@ -170,13 +171,14 @@ describe('runDashboard', () => {
     mkdirSync(join(home, '.super-backlog'), { recursive: true });
     writeFileSync(
       join(home, '.super-backlog', 'hub.json'),
-      JSON.stringify({ pid: process.pid, port: 6428, token: 'tok' }),
+      JSON.stringify({ pid: process.pid, port: 6428, token: 'tok', version: KIT_VERSION }),
     );
     const startHub = vi.fn(async () => fakeHub());
     const opened: string[] = [];
+    const killPid = vi.fn();
     const attach = vi.fn(async (url: string, body: unknown) => {
       if (url.includes('/api/hub/status')) {
-        return { status: 200, json: { pid: process.pid, port: 6428 } };
+        return { status: 200, json: { pid: process.pid, port: 6428, version: KIT_VERSION } };
       }
       expect(body).toEqual({ cwd, token: 'tok' });
       return { status: 200, json: { ok: true, slug: 'bravo', url: 'http://127.0.0.1:6428/p/bravo/' } };
@@ -186,12 +188,127 @@ describe('runDashboard', () => {
       startHub,
       attach,
       openBrowser: (url) => opened.push(url),
+      killPid,
     });
     expect(code).toBe(0);
     expect(startHub).not.toHaveBeenCalled();
     expect(attach).toHaveBeenCalled();
+    expect(killPid).not.toHaveBeenCalled();
     expect(opened).toEqual([]);
     expect(readHubState(home)?.port).toBe(6428);
+  });
+
+  it('restarts an outdated hub on version mismatch and starts a fresh one', async () => {
+    const cwd = project('Echo');
+    const home = tempDir('sbl-dash-home-');
+    writeHubState(home, { pid: 12345, port: 6428, token: 'tok', version: '0.0.1' });
+    let versionAtRegister: string | undefined;
+    const register = vi.fn(() => {
+      versionAtRegister = readHubState(home)?.version;
+      return { ok: true, slug: 'echo', url: 'http://127.0.0.1:6428/p/echo/' };
+    });
+    const startHub = vi.fn(async () => fakeHub(register));
+    const killPid = vi.fn();
+    let alive = true;
+    const isAlive = vi.fn(() => alive);
+    const sleep = vi.fn(async () => {
+      alive = false;
+    });
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const attach = vi.fn(async (url: string) => {
+      if (url.includes('/api/hub/status')) {
+        return { status: 200, json: { pid: 12345, port: 6428, version: '0.0.1' } };
+      }
+      throw new Error('should not talk to the old hub again');
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: () => {},
+      killPid,
+      isAlive,
+      sleep,
+    });
+    expect(code).toBe(0);
+    expect(killPid).toHaveBeenCalledWith(12345);
+    expect(sleep).toHaveBeenCalled();
+    expect(startHub).toHaveBeenCalledTimes(1);
+    expect(register).toHaveBeenCalled();
+    expect(versionAtRegister).toBe(KIT_VERSION);
+    expect(log.mock.calls.map(String).join('\n')).toContain('restarting it');
+  });
+
+  it('treats a live hub reporting no version as a mismatch and restarts it', async () => {
+    const cwd = project('Golf');
+    const home = tempDir('sbl-dash-home-');
+    writeHubState(home, { pid: 555, port: 6428, token: 'tok' });
+    const register = vi.fn().mockReturnValue({
+      ok: true,
+      slug: 'golf',
+      url: 'http://127.0.0.1:6428/p/golf/',
+    });
+    const startHub = vi.fn(async () => fakeHub(register));
+    let alive = true;
+    const killPid = vi.fn(() => {
+      alive = false;
+    });
+    const isAlive = vi.fn(() => alive);
+    const sleep = vi.fn(async () => {});
+    const attach = vi.fn(async (url: string) => {
+      if (url.includes('/api/hub/status')) {
+        return { status: 200, json: { pid: 555, port: 6428 } };
+      }
+      throw new Error('should not talk to the old hub again');
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: () => {},
+      killPid,
+      isAlive,
+      sleep,
+    });
+    expect(code).toBe(0);
+    expect(killPid).toHaveBeenCalledWith(555);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(startHub).toHaveBeenCalledTimes(1);
+    expect(register).toHaveBeenCalled();
+  });
+
+  it('errors out when the outdated hub refuses to stop', async () => {
+    const cwd = project('Foxtrot');
+    const home = tempDir('sbl-dash-home-');
+    writeHubState(home, { pid: 999, port: 6428, token: 'tok', version: '0.0.1' });
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const startHub = vi.fn(async () => fakeHub());
+    const killPid = vi.fn();
+    const isAlive = vi.fn(() => true);
+    const sleep = vi.fn(async () => {});
+    const attach = vi.fn(async (url: string) => {
+      if (url.includes('/api/hub/status')) {
+        return { status: 200, json: { pid: 999, port: 6428, version: '0.0.1' } };
+      }
+      throw new Error('should not register with the old hub');
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: () => {},
+      killPid,
+      isAlive,
+      sleep,
+    });
+    expect(code).toBe(1);
+    expect(killPid).toHaveBeenCalledWith(999);
+    expect(sleep).toHaveBeenCalledTimes(50);
+    expect(startHub).not.toHaveBeenCalled();
+    expect(readHubState(home)?.pid).toBe(999);
+    expect(err.mock.calls.map(String).join('\n')).toContain(
+      'could not stop the outdated hub (pid 999) — stop it manually and re-run',
+    );
   });
 
   it('treats a stale hub.json (dead pid) as no hub running and becomes the hub', async () => {

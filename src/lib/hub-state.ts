@@ -8,6 +8,8 @@ export interface HubState {
   pid: number;
   port: number;
   token: string;
+  /** Hub's KIT_VERSION at start time. Missing on hub.json written by older CLIs. */
+  version?: string;
 }
 
 export function hubStatePath(home: string): string {
@@ -26,8 +28,8 @@ export function readHubState(home: string): HubState | null {
     ) {
       return null;
     }
-    const { pid, port, token } = parsed as HubState;
-    return { pid, port, token };
+    const { pid, port, token, version } = parsed as HubState;
+    return typeof version === 'string' ? { pid, port, token, version } : { pid, port, token };
   } catch {
     return null;
   }

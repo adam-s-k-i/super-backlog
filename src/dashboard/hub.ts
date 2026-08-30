@@ -232,7 +232,7 @@ export async function startHubServer(opts: {
         sendText(res, 401, 'unauthorized');
         return;
       }
-      sendJson(res, 200, { pid: process.pid, port });
+      sendJson(res, 200, { pid: process.pid, port, version: KIT_VERSION });
       return;
     }
 

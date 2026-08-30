@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -38,6 +38,23 @@ describe('hub-state', () => {
     writeHubState(home, { pid: 42, port: 6428, token: 'abc' });
     expect(readHubState(home)).toEqual({ pid: 42, port: 6428, token: 'abc' });
     expect(hubStatePath(home)).toContain('.super-backlog');
+  });
+
+  it('round-trips a hub.json that carries a version', () => {
+    const home = mkdtempSync(join(tmpdir(), 'sbl-hub-home-'));
+    dirs.push(home);
+    writeHubState(home, { pid: 42, port: 6428, token: 'abc', version: '1.2.3' });
+    expect(readHubState(home)).toEqual({ pid: 42, port: 6428, token: 'abc', version: '1.2.3' });
+  });
+
+  it('reads a legacy hub.json without a version as version: undefined', () => {
+    const home = mkdtempSync(join(tmpdir(), 'sbl-hub-home-'));
+    dirs.push(home);
+    mkdirSync(join(home, '.super-backlog'), { recursive: true });
+    writeFileSync(hubStatePath(home), JSON.stringify({ pid: 1, port: 6428, token: 'x' }));
+    const state = readHubState(home);
+    expect(state).toEqual({ pid: 1, port: 6428, token: 'x' });
+    expect(state?.version).toBeUndefined();
   });
 
   it('clearHubState ignores a file owned by another pid', () => {

@@ -20,7 +20,14 @@ export interface DashboardDeps {
   attach?: (url: string, body: unknown) => Promise<{ status: number; json: unknown }>;
   openBrowser?: (url: string) => void;
   nowPid?: () => number;
+  killPid?: (pid: number) => void;
+  sleep?: (ms: number) => Promise<void>;
+  isAlive?: typeof isPidAlive;
 }
+
+/** Max time to wait for an outdated hub to exit after killPid, in 100ms polls. */
+const STOP_POLL_MAX_ATTEMPTS = 50;
+const STOP_POLL_INTERVAL_MS = 100;
 
 async function regenerateInto(outPath: string, cwd: string): Promise<void> {
   const data = collectDashboardData(cwd, { kitVersion: KIT_VERSION });
@@ -178,6 +185,9 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
   const attach = deps.attach ?? defaultAttach;
   const openBrowser = deps.openBrowser ?? defaultOpenBrowser;
   const pid = (deps.nowPid ?? ((): number => process.pid))();
+  const isAlive = deps.isAlive ?? isPidAlive;
+  const killPid = deps.killPid ?? ((p: number): void => { process.kill(p); });
+  const sleep = deps.sleep ?? ((ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms)));
 
   let slugResult;
   try {
@@ -193,25 +203,51 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
   const slug = slugResult.slug;
 
   const state = readHubState(home);
-  if (state !== null && isPidAlive(state.pid)) {
+  if (state !== null && isAlive(state.pid)) {
     try {
       const status = await attach(
         `http://127.0.0.1:${state.port}/api/hub/status?token=${encodeURIComponent(state.token)}`,
         undefined,
       );
       if (status.status === 200) {
-        if (values['port'] !== undefined && port !== state.port) {
-          console.error(`error: a hub is already running on ${state.port}`);
+        const statusJson =
+          typeof status.json === 'object' && status.json !== null
+            ? (status.json as { version?: unknown })
+            : undefined;
+        const liveVersion = typeof statusJson?.version === 'string' ? statusJson.version : undefined;
+        const effectiveVersion = liveVersion ?? state.version;
+
+        if (effectiveVersion === KIT_VERSION) {
+          if (values['port'] !== undefined && port !== state.port) {
+            console.error(`error: a hub is already running on ${state.port}`);
+            return 1;
+          }
+          return await attachToHub({
+            cwd,
+            port: state.port,
+            token: state.token,
+            attach,
+            openBrowser,
+            noOpen,
+          });
+        }
+
+        console.error(
+          `hub v${effectiveVersion ?? 'unknown'} is older than this CLI (v${KIT_VERSION}) — restarting it`,
+        );
+        killPid(state.pid);
+        let dead = !isAlive(state.pid);
+        for (let attempt = 0; !dead && attempt < STOP_POLL_MAX_ATTEMPTS; attempt++) {
+          await sleep(STOP_POLL_INTERVAL_MS);
+          dead = !isAlive(state.pid);
+        }
+        if (dead) {
+          clearHubState(home, state.pid);
+          // fall through to the fresh-start path below
+        } else {
+          console.error(`error: could not stop the outdated hub (pid ${state.pid}) — stop it manually and re-run`);
           return 1;
         }
-        return await attachToHub({
-          cwd,
-          port: state.port,
-          token: state.token,
-          attach,
-          openBrowser,
-          noOpen,
-        });
       }
     } catch {
     }
@@ -239,7 +275,7 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
     return 1;
   }
 
-  writeHubState(home, { pid, port: hub.port, token });
+  writeHubState(home, { pid, port: hub.port, token, version: KIT_VERSION });
   const result = hub.register({ cwd, file: outPath, regenerate });
   if (!result.ok) {
     await hub.close();
