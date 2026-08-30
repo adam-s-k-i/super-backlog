@@ -13,11 +13,12 @@ onMounted(() => {
 
   const DETAILS = {
     init: {
-      text: 'Plans and applies a change set: installs backlog.md as a devDependency, injects the workflow block into AGENTS.md, copies the glue skills, wires npm scripts, and (with --guard) installs the pre-commit hook.',
+      text: 'Plans and applies a change set: installs backlog.md as a devDependency, injects the workflow block into AGENTS.md, copies the glue skills, wires npm scripts, and (with --guard) installs the pre-commit hook. Pick the package manager with --pm, target harnesses with --harness, and preview everything first with --dry-run.',
       cmds: [
         ['sbl init', 'defaults for both harnesses'],
         ['sbl init --pm npm --guard', 'pin package manager + integrity hook'],
         ['sbl init --dry-run', 'preview the exact change set'],
+        ['sbl init --pm npm --guard --dry-run', 'combine: pm + guard + preview'],
       ],
     },
     dashboard: {
@@ -133,7 +134,7 @@ onMounted(() => {
     <h2>sbl Commands</h2>
     <span class="tagline">hover for details · click Details for the full picture</span>
   </div>
-  <p class="sec-sub">Every command is one click from your clipboard. Hover the <b>ⓘ</b> for parameters — the tooltip carries the complete, copyable command.</p>
+  <p class="sec-sub">Every command is one click from your clipboard. Click <b>Details</b> for flags, variants, and the full picture.</p>
 
   <div class="cmd-grid">
     <div class="sbl-cmd cmd-card">
@@ -141,41 +142,26 @@ onMounted(() => {
       <div class="cmd-short">Wire Backlog.md, Superpowers skills, npm scripts, and hooks into the current project.</div>
       <div class="cmd-foot">
         <button class="details-btn" data-details="init">Details</button>
-        <span class="info">i<span class="tip">
-          <div class="t-head">Useful flags</div>
-          <div class="t-text">Pick the package manager, target harnesses, add the guard hook, or preview everything first.</div>
-          <div class="t-cmd"><code>sbl init --pm npm --guard --dry-run</code><button class="copy" data-copy="sbl init --pm npm --guard --dry-run">copy</button></div>
-        </span></span>
       </div>
     </div>
 
-  <div class="sbl-cmd cmd-card">
+    <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl dashboard</span><button class="copy" data-copy="sbl dashboard">copy</button></div>
       <div class="cmd-short">Live Project Dashboard on port 6428 — reloads connected tabs automatically. Alias: sbl db.</div>
       <div class="cmd-foot">
         <button class="details-btn" data-details="dashboard">Details</button>
-        <span class="info">i<span class="tip">
-          <div class="t-head">Useful flags</div>
-          <div class="t-text">Custom port, or start without opening a browser tab.</div>
-          <div class="t-cmd"><code>sbl dashboard --port 8080 --no-open</code><button class="copy" data-copy="sbl dashboard --port 8080 --no-open">copy</button></div>
-        </span></span>
       </div>
     </div>
 
-  <div class="sbl-cmd cmd-card">
+    <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl phase</span><button class="copy" data-copy="sbl phase TASK-1">copy</button></div>
       <div class="cmd-short">Show or advance a task's pipeline phase: spec → plan → impl → verify, done clears it.</div>
       <div class="cmd-foot">
         <button class="details-btn" data-details="phase">Details</button>
-        <span class="info">i<span class="tip">
-          <div class="t-head">Typical flow</div>
-          <div class="t-text">Advance only after the matching gate was approved by a human.</div>
-          <div class="t-cmd"><code>sbl phase TASK-1 plan</code><button class="copy" data-copy="sbl phase TASK-1 plan">copy</button></div>
-        </span></span>
       </div>
     </div>
 
-  <div class="sbl-cmd cmd-card">
+    <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl doctor</span><button class="copy" data-copy="sbl doctor">copy</button></div>
       <div class="cmd-short">Check Node, PowerShell policy, the backlog CLI, and phase-label hygiene.</div>
       <div class="cmd-foot">
@@ -183,42 +169,27 @@ onMounted(() => {
       </div>
     </div>
 
-  <div class="sbl-cmd cmd-card">
+    <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl update</span><button class="copy" data-copy="sbl update">copy</button></div>
       <div class="cmd-short">Self-update the CLI to the latest npm version, then refresh every injected file.</div>
       <div class="cmd-foot">
         <button class="details-btn" data-details="update">Details</button>
-        <span class="info">i<span class="tip">
-          <div class="t-head">Opt out of self-update</div>
-          <div class="t-text">Refresh managed files without touching the installed CLI.</div>
-          <div class="t-cmd"><code>sbl update --no-self</code><button class="copy" data-copy="sbl update --no-self">copy</button></div>
-        </span></span>
       </div>
     </div>
 
-  <div class="sbl-cmd cmd-card">
+    <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl models</span><button class="copy" data-copy="sbl models show">copy</button></div>
       <div class="cmd-short">Optional model router: cheap tiers for simple agents, your main model for hard work.</div>
       <div class="cmd-foot">
         <button class="details-btn" data-details="models">Details</button>
-        <span class="info">i<span class="tip">
-          <div class="t-head">Toggle routing</div>
-          <div class="t-text">Installed via sbl init --models; flipped at runtime.</div>
-          <div class="t-cmd"><code>sbl models enable</code><button class="copy" data-copy="sbl models enable">copy</button></div>
-        </span></span>
       </div>
     </div>
 
-  <div class="sbl-cmd cmd-card">
+    <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl uninstall</span><button class="copy" data-copy="sbl uninstall">copy</button></div>
       <div class="cmd-short">Remove everything super-backlog owns — your backlog/ task data stays.</div>
       <div class="cmd-foot">
         <button class="details-btn" data-details="uninstall">Details</button>
-        <span class="info">i<span class="tip">
-          <div class="t-head">Remove everything</div>
-          <div class="t-text">Including the backlog/ data directory. Permanent.</div>
-          <div class="t-cmd"><code>sbl uninstall --with-backlog</code><button class="copy" data-copy="sbl uninstall --with-backlog">copy</button></div>
-        </span></span>
       </div>
     </div>
   </div>
@@ -396,21 +367,6 @@ section { margin-top: 64px; }
   transition: background 140ms ease-out;
 }
 .details-btn:hover { background: var(--vp-c-brand-soft); }
-.info { margin-left: auto; position: relative; display: inline-flex; width: 17px; height: 17px;
-  align-items: center; justify-content: center; border-radius: 50%;
-  border: 1px solid var(--vp-c-border); color: var(--vp-c-text-3); font: 600 .6rem var(--vp-font-family-mono, monospace); cursor: help; }
-.info:hover { border-color: var(--vp-c-brand-1); color: var(--vp-c-brand-1); }
-.tip {
-  position: absolute; bottom: calc(100% + 10px); right: 0; z-index: 30;
-  width: 320px; text-align: left;
-  background: var(--vp-c-bg-elv); border: 1px solid var(--vp-c-border); border-radius: 10px;
-  box-shadow: 0 10px 28px rgba(0,0,0,.3); padding: 12px 14px;
-  opacity: 0; transform: translateY(4px); pointer-events: none;
-  transition: opacity 150ms ease-out, transform 150ms ease-out;
-}
-.cmd-card:hover .tip, .hint-chip:hover .tip { opacity: 1; transform: translateY(0); pointer-events: auto; }
-.tip .t-head { font: 600 .62rem var(--vp-font-family-mono, monospace); letter-spacing: 1px; text-transform: uppercase; color: var(--vp-c-text-3); margin-bottom: 6px; }
-.tip .t-text { font-size: .78rem; color: var(--vp-c-text-2); margin-bottom: 9px; }
 .t-cmd {
   display: flex; align-items: center; gap: 8px;
   background: var(--vp-c-bg); border: 1px solid var(--vp-c-divider); border-radius: 7px; padding: 6px 9px;
