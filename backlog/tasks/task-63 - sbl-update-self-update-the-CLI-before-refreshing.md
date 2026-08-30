@@ -1,10 +1,10 @@
 ---
 id: TASK-63
 title: 'sbl update: self-update the CLI before refreshing'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-30 10:47'
-updated_date: '2026-08-30 11:14'
+updated_date: '2026-08-30 12:00'
 labels:
   - cli
 dependencies: []
@@ -20,11 +20,11 @@ New src/lib/self-update.ts: detectInstallKind (global npm prefix vs project node
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Global install + newer version on npm: sbl update installs it and the refresh runs via the new binary exactly once
-- [ ] #2 --no-self, SBL_SELF_UPDATED=1 and SBL_SKIP_UPDATE_CHECK each skip the self-update
-- [ ] #3 Offline or failed npm install degrades to a warning; refresh still completes with the old version
-- [ ] #4 Local (devDependency) installs are never modified; a hint is printed instead
-- [ ] #5 Unit tests cover install-kind detection and the decision logic with injected deps (no real npm)
+- [x] #1 Global install + newer version on npm: sbl update installs it and the refresh runs via the new binary exactly once
+- [x] #2 --no-self, SBL_SELF_UPDATED=1 and SBL_SKIP_UPDATE_CHECK each skip the self-update
+- [x] #3 Offline or failed npm install degrades to a warning; refresh still completes with the old version
+- [x] #4 Local (devDependency) installs are never modified; a hint is printed instead
+- [x] #5 Unit tests cover install-kind detection and the decision logic with injected deps (no real npm)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -32,3 +32,9 @@ New src/lib/self-update.ts: detectInstallKind (global npm prefix vs project node
 <!-- SECTION:PLAN:BEGIN -->
 1) TDD: unit tests for detectInstallKind (global prefix vs cwd/node_modules vs unknown) and runSelfUpdate decision matrix with injected deps. 2) Implement src/lib/self-update.ts. 3) Wire into runUpdate: self-update first, re-exec new binary with SBL_SELF_UPDATED=1, forward exit code; --no-self flag in cli.ts. 4) Degradation paths (offline, npm failure, local install hint). 5) Full suite + tsc.
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Self-update wired into sbl update: detectInstallKind + runSelfUpdate (src/lib/self-update.ts), re-exec of the new binary with SBL_SELF_UPDATED guard, --no-self/SBL_SKIP_UPDATE_CHECK/SBL_FORCE_OFFLINE skips, local installs hint-only. Verified: 14 wiring tests + 15 unit tests with injected deps (no real npm after hermeticity fix rounds), tsc clean, full npm test green; two review rounds addressed Windows case-insensitive path matching and test hermeticity.
+<!-- SECTION:FINAL_SUMMARY:END -->
