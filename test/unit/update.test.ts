@@ -119,43 +119,61 @@ describe('runUpdate self-update wiring', () => {
 
   it('offline fetch (unavailable) falls through to the normal refresh, no re-exec', async () => {
     const spawnSelf = vi.fn();
+    // Hermetic seam: never shell out to a real `npm view` for the published-version
+    // check either. SBL_FORCE_OFFLINE is not an option here since it would also
+    // skip the self-update path this test is exercising.
+    const probePublished = vi.fn(() => null);
     const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, {
       fetchLatest: async () => null,
       // Fixed so this never shells out to a real `npm root -g` in a unit test.
       binRealPath: '/somewhere/not-under/cwd-or-global/bin.js',
       globalRoot: null,
       spawnSelf,
+      probePublished,
     });
     expect(typeof code).toBe('number');
     expect(spawnSelf).not.toHaveBeenCalled();
+    expect(probePublished).toHaveBeenCalledTimes(1);
   });
 
   it('newer + local/unknown install kind hints and falls through, never re-execs', async () => {
     const spawnSelf = vi.fn();
     const npmInstallGlobal = vi.fn(() => ({ status: 0 }));
+    // Injects a throwing probe (rather than SBL_FORCE_OFFLINE, which would skip
+    // self-update too) to prove runUpdate's published-version check goes through
+    // this seam instead of shelling out to a real `npm view` -- the call is
+    // still caught internally and treated as "unavailable", same as offline.
+    const probePublished = vi.fn(() => {
+      throw new Error('simulated offline probe - proves no real npm view runs');
+    });
     const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, {
       fetchLatest: async () => '999.0.0',
       binRealPath: '/somewhere/not-under/cwd-or-global/bin.js',
       globalRoot: null,
       npmInstallGlobal,
       spawnSelf,
+      probePublished,
     });
     expect(typeof code).toBe('number');
     expect(npmInstallGlobal).not.toHaveBeenCalled();
     expect(spawnSelf).not.toHaveBeenCalled();
+    expect(probePublished).toHaveBeenCalledTimes(1);
   });
 
   it('not newer (current) falls through to the normal refresh, never re-execs', async () => {
     const spawnSelf = vi.fn();
+    const probePublished = vi.fn(() => null);
     const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, {
       fetchLatest: async () => KIT_VERSION,
       // Fixed so this never shells out to a real `npm root -g` in a unit test.
       binRealPath: '/somewhere/not-under/cwd-or-global/bin.js',
       globalRoot: null,
       spawnSelf,
+      probePublished,
     });
     expect(typeof code).toBe('number');
     expect(spawnSelf).not.toHaveBeenCalled();
+    expect(probePublished).toHaveBeenCalledTimes(1);
   });
 
   it('global install + newer version: installs, re-execs the new binary exactly once, forwards its exit code', async () => {
@@ -188,6 +206,7 @@ describe('runUpdate self-update wiring', () => {
   it('failed global npm install falls through to the normal refresh, never re-execs', async () => {
     const spawnSelf = vi.fn();
     const npmInstallGlobal = vi.fn(() => ({ status: 1 }));
+    const probePublished = vi.fn(() => null);
     const cwd = scratchDir();
     const globalRoot = join(cwd, 'fake-global', 'node_modules');
     const binRealPath = join(globalRoot, 'super-backlog', 'dist', 'bin.js');
@@ -198,10 +217,12 @@ describe('runUpdate self-update wiring', () => {
       globalRoot,
       npmInstallGlobal,
       spawnSelf,
+      probePublished,
     });
 
     expect(npmInstallGlobal).toHaveBeenCalledTimes(1);
     expect(spawnSelf).not.toHaveBeenCalled();
+    expect(probePublished).toHaveBeenCalledTimes(1);
     expect(typeof code).toBe('number');
   });
 });

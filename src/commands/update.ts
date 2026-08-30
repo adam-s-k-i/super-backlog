@@ -28,6 +28,14 @@ export interface SelfUpdateOverride {
     cwd: string,
     env: NodeJS.ProcessEnv,
   ) => { status: number | null };
+  /**
+   * Test seam for the post-refresh "published version" probe (`npm view
+   * backlog.md version`). Production default is unaffected: SBL_FORCE_OFFLINE
+   * still short-circuits it, otherwise it shells out via runCapture. Unit
+   * tests should inject this instead of relying on SBL_FORCE_OFFLINE, since
+   * that env var now also skips the self-update path (see maybeSelfUpdate).
+   */
+  probePublished?: () => string | null;
 }
 
 function resolveGlobalRoot(cwd: string): string | null {
@@ -210,12 +218,17 @@ export async function runUpdate(
     }
   }
 
+  const probePublished =
+    selfUpdateOverride.probePublished ??
+    (() => {
+      // test seam: SBL_FORCE_OFFLINE makes e2e runs take the offline path deterministically
+      if (process.env.SBL_FORCE_OFFLINE) throw new Error('forced offline');
+      const view = runCapture('npm', ['view', 'backlog.md', 'version'], cwd);
+      return view.status === 0 ? firstLine(view.stdout) : null;
+    });
   let published: string | null = null;
   try {
-    // test seam: SBL_FORCE_OFFLINE makes e2e runs take the offline path deterministically
-    if (process.env.SBL_FORCE_OFFLINE) throw new Error('forced offline');
-    const view = runCapture('npm', ['view', 'backlog.md', 'version'], cwd);
-    if (view.status === 0) published = firstLine(view.stdout);
+    published = probePublished();
   } catch {
     published = null;
   }
