@@ -29,7 +29,7 @@ function isDone(status: string): boolean {
 
 function isWip(status: string): boolean {
   const s = status.toLowerCase();
-  return s.includes('progress') || s === 'review';
+  return s.includes('progress') || s.includes('review');
 }
 
 function utcDay(value: string | undefined): number | null {

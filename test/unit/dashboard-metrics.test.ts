@@ -35,11 +35,12 @@ describe('computeKpis', () => {
       task({ id: 't-2', status: 'Blocked' }),
       task({ id: 't-3', status: 'To Do' }),
       task({ id: 't-4', status: 'Done', updated: '2026-01-01' }),
+      task({ id: 't-5', status: 'Code Review' }), // "review" containment, not exact match
     ];
     const deps = [{ from: 't-3', to: 't-1' }];
     const k = computeKpis(tasks, deps, computeActivity([], TODAY), TODAY);
     expect(k.forecastDate).toBeNull();
-    expect(k.wip).toBe(1);
+    expect(k.wip).toBe(2); // t-1 (In Progress) + t-5 (Code Review)
     expect(k.blocked).toBe(2); // t-2 by status, t-3 by unresolved dep on t-1
   });
 

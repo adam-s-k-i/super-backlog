@@ -300,7 +300,7 @@ describe('status kpis', () => {
 });
 
 describe('inline app budget', () => {
-  it('keeps the inline app script within 1115 lines of vanilla JS', () => {
+  it('keeps the inline app script within 1109 lines of vanilla JS', () => {
     // Budget raised from the original 650 as approved features landed:
     // stepper detail + update badge, backlog overlay, task-dialog rework,
     // models modal, task table v2 with natural sort and locale-aware
@@ -309,12 +309,15 @@ describe('inline app budget', () => {
     // wip/blocked tile into two sibling <button>s instead of a nested button
     // (~1049 lines). Raised again for the activity calendar heatmap +
     // KPI strip + day drill-down panel that replaced the sparkline
-    // (~1101 lines). The cap still guards against unbounded growth — raise
-    // it only for approved feature work.
+    // (~1101 lines). Lowered after removing dead code from the wip-tile
+    // rework: the unreachable kpiTile `opts.special` branch, unused
+    // button.kpi CSS, and a no-op cellClass ternary (~1094 lines). The cap
+    // still guards against unbounded growth — raise it only for approved
+    // feature work.
     const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
     expect(m).toBeTruthy();
     const lines = (m?.[1] ?? '').split('\n').length;
-    expect(lines).toBeLessThanOrEqual(1115);
+    expect(lines).toBeLessThanOrEqual(1109);
   });
 });
 
@@ -552,7 +555,7 @@ describe('tasks table v2', () => {
   });
 
   it('renders status cells as chips and formats updated via Intl', () => {
-    expect(html).toMatch(/cell-status[\s\S]{0,400}status-chip/);
+    expect(html).toMatch(/el\('td', 'cell-' \+ k\)[\s\S]{0,400}status-chip/);
     expect(html).toContain('Intl.RelativeTimeFormat');
     expect(html).toContain('Intl.DateTimeFormat');
   });

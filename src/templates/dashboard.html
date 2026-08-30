@@ -329,10 +329,6 @@
     display: block; text-align: left; font: inherit; color: inherit; cursor: default;
     background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
   }
-  button.kpi { cursor: pointer; }
-  button.kpi:hover { border-color: var(--accent); }
-  button.kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  button.kpi[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
   .kpi-big { font-family: var(--mono); font-size: 1.7rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .kpi-cap { display: block; color: var(--dim); font-size: .66rem; letter-spacing: 1.4px; text-transform: uppercase; margin-top: 4px; }
   .kpi-sub { display: block; font-size: .78rem; color: var(--muted); margin-top: 8px; }
@@ -692,7 +688,7 @@
   }
   function isWipStatus(status) {
     var s = String(status || '').toLowerCase();
-    return s.indexOf('progress') !== -1 || s === 'review';
+    return s.indexOf('progress') !== -1 || s.indexOf('review') !== -1;
   }
   function isBlockedTask(task) {
     var s = String(task.status || '').toLowerCase();
@@ -765,8 +761,7 @@
       var tr = el('tr', 'task-row');
       tr.setAttribute('data-task', task.id);
       KEYS.forEach(function (k) {
-        var cellClass = k === 'status' ? 'cell-status' : 'cell-' + k;
-        var td = el('td', cellClass);
+        var td = el('td', 'cell-' + k);
         if (k === 'status') {
           var chip = el('span', 'status-chip', field(task, k));
           chip.setAttribute('data-tone', toneOf(task.status));
@@ -1065,13 +1060,7 @@
 
   var APPROX_TIP = 'Approximation from created/updated timestamps — Backlog.md keeps no status history.';
   function kpiTile(opts) {
-    var node = el(opts.special ? 'button' : 'div', 'kpi');
-    if (opts.special) {
-      node.type = 'button';
-      node.setAttribute('data-special', opts.special);
-      node.setAttribute('aria-pressed', 'false');
-      node.addEventListener('click', function () { setSpecialFilter(opts.special); });
-    }
+    var node = el('div', 'kpi');
     node.setAttribute('data-tip', APPROX_TIP);
     node.appendChild(el('span', 'kpi-big', opts.big));
     node.appendChild(el('span', 'kpi-cap', opts.cap));
@@ -1135,7 +1124,7 @@
   function ageInDays(task) {
     var raw = task.created || task.updated;
     if (!raw) return null;
-    var t = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw + 'T12:00:00Z' : raw);
+    var t = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw + 'T12:00:00' : raw);
     if (isNaN(t)) return null;
     return Math.max(0, Math.round((Date.now() - t) / 86400000));
   }
