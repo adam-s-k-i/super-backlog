@@ -1,12 +1,23 @@
 // src/lib/self-update.ts
 import { join } from 'node:path';
+import process from 'node:process';
 
 import { isNewerVersion } from './version-check.js';
 
 export type InstallKind = 'global' | 'local' | 'unknown';
 
-function normalizeSeparators(p: string): string {
-  return p.replace(/\\/g, '/');
+/**
+ * Normalizes separators for prefix comparison and, on win32, case as well:
+ * `npm root -g` and `realpathSync` can disagree on drive-letter/path casing
+ * (`C:\` vs `c:\`) even for the same install, and Windows paths are
+ * case-insensitive anyway, so comparing case-sensitively there would
+ * misclassify a real global install as `unknown`. Takes an optional
+ * `caseInsensitive` override (default: `process.platform === 'win32'`) so
+ * the function stays pure and testable for both platforms' behavior.
+ */
+function normalizeForCompare(p: string, caseInsensitive: boolean): string {
+  const withForwardSlashes = p.replace(/\\/g, '/');
+  return caseInsensitive ? withForwardSlashes.toLowerCase() : withForwardSlashes;
 }
 
 function isUnder(path: string, root: string): boolean {
@@ -24,11 +35,12 @@ export function detectInstallKind(
   binRealPath: string,
   cwd: string,
   globalRoot: string | null,
+  caseInsensitive: boolean = process.platform === 'win32',
 ): InstallKind {
-  const bin = normalizeSeparators(binRealPath);
-  const localRoot = normalizeSeparators(join(cwd, 'node_modules'));
+  const bin = normalizeForCompare(binRealPath, caseInsensitive);
+  const localRoot = normalizeForCompare(join(cwd, 'node_modules'), caseInsensitive);
   if (isUnder(bin, localRoot)) return 'local';
-  if (globalRoot !== null && isUnder(bin, normalizeSeparators(globalRoot))) return 'global';
+  if (globalRoot !== null && isUnder(bin, normalizeForCompare(globalRoot, caseInsensitive))) return 'global';
   return 'unknown';
 }
 

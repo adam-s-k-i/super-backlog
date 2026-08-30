@@ -113,6 +113,9 @@ describe('runUpdate self-update wiring', () => {
     const spawnSelf = vi.fn();
     const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, {
       fetchLatest: async () => null,
+      // Fixed so this never shells out to a real `npm root -g` in a unit test.
+      binRealPath: '/somewhere/not-under/cwd-or-global/bin.js',
+      globalRoot: null,
       spawnSelf,
     });
     expect(typeof code).toBe('number');
@@ -138,6 +141,9 @@ describe('runUpdate self-update wiring', () => {
     const spawnSelf = vi.fn();
     const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, {
       fetchLatest: async () => KIT_VERSION,
+      // Fixed so this never shells out to a real `npm root -g` in a unit test.
+      binRealPath: '/somewhere/not-under/cwd-or-global/bin.js',
+      globalRoot: null,
       spawnSelf,
     });
     expect(typeof code).toBe('number');

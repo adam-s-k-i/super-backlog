@@ -1,5 +1,6 @@
 // test/unit/self-update.test.ts
 import { join } from 'node:path';
+import process from 'node:process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { detectInstallKind, runSelfUpdate } from '../../src/lib/self-update.js';
@@ -39,6 +40,34 @@ describe('detectInstallKind', () => {
     const globalBin = 'C:\\Users\\dev\\AppData\\Roaming\\npm\\node_modules\\super-backlog\\dist\\bin.js';
     expect(detectInstallKind(localBin, cwd, globalRoot)).toBe('local');
     expect(detectInstallKind(globalBin, cwd, globalRoot)).toBe('global');
+  });
+
+  it('is case-insensitive (explicit flag) for a drive-letter-case-mismatched global root, as npm root -g vs realpathSync can disagree on Windows', () => {
+    const cwd = 'C:\\Users\\dev\\project';
+    const globalRoot = 'C:\\Users\\dev\\AppData\\Roaming\\npm\\node_modules';
+    const bin = 'c:\\users\\dev\\appdata\\roaming\\npm\\node_modules\\super-backlog\\dist\\bin.js';
+    expect(detectInstallKind(bin, cwd, globalRoot, true)).toBe('global');
+  });
+
+  it('is case-insensitive (explicit flag) for a case-mismatched local node_modules path', () => {
+    const cwd = 'C:\\Users\\dev\\project';
+    const bin = 'c:\\users\\dev\\project\\node_modules\\super-backlog\\dist\\bin.js';
+    expect(detectInstallKind(bin, cwd, null, true)).toBe('local');
+  });
+
+  it('is case-sensitive when caseInsensitive is explicitly false', () => {
+    const cwd = '/home/user/project';
+    const globalRoot = '/usr/local/lib/node_modules';
+    const bin = '/USR/LOCAL/LIB/NODE_MODULES/super-backlog/dist/bin.js';
+    expect(detectInstallKind(bin, cwd, globalRoot, false)).toBe('unknown');
+  });
+
+  it('defaults caseInsensitive to (and only to) process.platform === "win32"', () => {
+    const cwd = 'C:\\Users\\dev\\project';
+    const globalRoot = 'C:\\Users\\dev\\AppData\\Roaming\\npm\\node_modules';
+    const bin = 'c:\\users\\dev\\appdata\\roaming\\npm\\node_modules\\super-backlog\\dist\\bin.js';
+    const expected = process.platform === 'win32' ? 'global' : 'unknown';
+    expect(detectInstallKind(bin, cwd, globalRoot)).toBe(expected);
   });
 });
 
