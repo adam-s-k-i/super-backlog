@@ -40,7 +40,7 @@ uninstall options:
   --fix-all                       Also remove the global npm package (no prompts)
 
 update options:
-  (none)                          Refreshes injected files, skills, hook; prints upstream versions
+  --no-self                       Skip self-updating the CLI before refreshing
 
 dashboard options:
   --port <n>                      Port for the dashboard server (default: 6428)
@@ -109,7 +109,11 @@ export async function runCli(argv: string[]): Promise<number> {
       });
     }
     case 'update': {
-      const parsed = parseArgs({ args: rest, allowPositionals: true, options: {} });
+      const parsed = parseArgs({
+        args: rest,
+        allowPositionals: true,
+        options: { 'no-self': { type: 'boolean' } },
+      });
       return await runUpdate(process.cwd(), {
         values: parsed.values as Record<string, string | boolean | undefined>,
         positionals: parsed.positionals,

@@ -70,7 +70,8 @@ function unrefStream(stream: Readable | null | undefined): void {
   (stream as unknown as { unref?: () => void } | null | undefined)?.unref?.();
 }
 
-export async function defaultFetchLatest(): Promise<string | null> {
+/** Queries the npm registry for the latest published version, racing a timeout. */
+export async function fetchLatestVersion(timeoutMs: number = FETCH_TIMEOUT_MS): Promise<string | null> {
   const work = new Promise<string | null>((resolvePromise) => {
     let child;
     try {
@@ -102,7 +103,7 @@ export async function defaultFetchLatest(): Promise<string | null> {
 
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<null>((resolveTimeout) => {
-    timer = setTimeout(() => resolveTimeout(null), FETCH_TIMEOUT_MS);
+    timer = setTimeout(() => resolveTimeout(null), timeoutMs);
     timer.unref();
   });
   try {
@@ -112,6 +113,10 @@ export async function defaultFetchLatest(): Promise<string | null> {
   } finally {
     if (timer !== undefined) clearTimeout(timer);
   }
+}
+
+export async function defaultFetchLatest(): Promise<string | null> {
+  return fetchLatestVersion(FETCH_TIMEOUT_MS);
 }
 
 export async function applyVersionHint(installed: string, deps: VersionCheckDeps): Promise<void> {
