@@ -3,6 +3,19 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.5](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.4...v1.3.5) (2026-08-30)
+
+
+### Features
+
+* **dashboard:** milestones into Status, tasks table paging + default sort, modal comfort ([c37d0af](https://github.com/adam-s-k-i/super-backlog/commit/c37d0affce89d84dbbbb1aa7cdca062f6a4ffe42))
+* **docs:** dashboard-look landing with copyable commands, cockpit theme, hosted-hub hint ([8c5bd5c](https://github.com/adam-s-k-i/super-backlog/commit/8c5bd5cb138ec8b4e40399620adff2b3c2b2bbf8))
+
+
+### Miscellaneous Chores
+
+* pin next release ([5a198b7](https://github.com/adam-s-k-i/super-backlog/commit/5a198b7e3e6b20fd4571f72ceb718e15c20c8960))
+
 ## [1.3.4](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.3...v1.3.4) (2026-08-30)
 
 
