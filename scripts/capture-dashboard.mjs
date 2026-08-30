@@ -6,8 +6,8 @@
 //
 // How: a temp project ("acme-webshop") gets a fake backlog bin that answers
 // `backlog task list --json` with curated demo tasks (relative dates, so the
-// activity sparkline always looks alive). The real collector + renderer turn
-// that into dashboard.html, and a headless browser (Edge on Windows,
+// activity calendar heatmap always looks alive). The real collector + renderer
+// turn that into dashboard.html, and a headless browser (Edge on Windows,
 // Chrome/Chromium on Linux) captures the screenshot.
 //
 // Usage: npm run screenshot   (build first: npm run build)
