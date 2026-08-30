@@ -97,6 +97,10 @@ When enabled:
 
 The router is fully owned by super-backlog and removed by `sbl uninstall`. See the [model router design](docs/superpowers/specs/2026-08-26-sbl-model-router-design.md) for details.
 
+## Pipeline phases
+
+Tasks carry their pipeline phase as a label (`phase/spec` → `phase/plan` → `phase/impl` → `phase/verify`), managed by `sbl phase <task-id> [phase|done]` and checked by `sbl doctor`. The dashboard stepper, task table, and task modal render the live phase. Details: [docs/guide/pipeline-phases.md](docs/guide/pipeline-phases.md).
+
 ## Project Dashboard
 
 `sbl dashboard` starts a local hub that serves an HTS-style cockpit (light/dark theme toggle) rendered from your Backlog data in eight sections — Board & Quick Actions, Status (KPI tiles, donut, and an aging strip for open tasks), Feature Cycle (pipeline stepper plus an Up Next / Blocked flow view from task dependencies), Milestones, Drafts (click a card for details), Tasks (sortable/filterable table; click a row to open a modal detail view with acceptance criteria and dependencies), Activity (a 26-week calendar heatmap; click a day for its tasks), and Decisions & Docs. Glossary tooltips explain domain terms inline; extend or override them project-wide via `backlog/docs/glossary.md` (`## Term` heading plus the text below it). Typefaces load from Google Fonts with full system fallbacks — the one external resource; everything else is inline, and the dashboard still renders offline. Bookmark `http://127.0.0.1:6428/p/<project_name>/`. The hub watches `backlog/`, regenerates on change, and serves on port `6428`; connected browser tabs reload automatically via Server-Sent Events. A second repo's `sbl dashboard` attaches to the same hub. `Ctrl+C` in the hub terminal stops all projects.

@@ -20,20 +20,24 @@ function buckets(nonZero: Record<number, number>): DashboardActivityBucket[] {
 const SAMPLE_TASKS: DashboardTask[] = [
   {
     id: 'T-1', title: 'Ship auth flow', status: 'Done', priority: 'high', assignee: 'adam',
+    labels: ['phase/verify'], phase: 'verify',
     updated: '2026-08-20', milestone: 'M1', description: 'Handles <script>alert(1)</script> safely',
     acs: [{ text: 'login works', checked: true }],
   },
   {
     id: 'T-2', title: 'Add OAuth refresh', status: 'In Progress', priority: 'medium', assignee: 'kim',
+    labels: ['feature', 'phase/spec'], phase: 'spec',
     updated: '2026-08-21', milestone: 'M1',
     acs: [{ text: 'token rotation', checked: true }, { text: 'docs updated', checked: false }],
   },
   {
     id: 'T-3', title: 'Write README', status: 'To Do', priority: 'low', milestone: 'M2',
+    labels: [], phase: null,
     acs: [],
   },
   {
     id: 'T-4', title: 'Polish UI', status: 'In Progress', milestone: 'M2', updated: '2026-08-22',
+    labels: ['phase/plan'], phase: 'plan',
     acs: [{ text: 'dark mode', checked: false }],
   },
 ];
@@ -313,11 +317,30 @@ describe('inline app budget', () => {
     // rework: the unreachable kpiTile `opts.special` branch, unused
     // button.kpi CSS, and a no-op cellClass ternary (~1094 lines). The cap
     // still guards against unbounded growth — raise it only for approved
-    // feature work.
+    // feature work. Raised for pipeline-phase badges + modal advance chip
+    // (approved feature work, 1180).
     const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
     expect(m).toBeTruthy();
     const lines = (m?.[1] ?? '').split('\n').length;
-    expect(lines).toBeLessThanOrEqual(1109);
+    expect(lines).toBeLessThanOrEqual(1180);
+  });
+});
+
+describe('phase rendering', () => {
+  it('exposes phase on tasks in the data island', () => {
+    const island = JSON.parse(islandOf(html, 'sbl-data'));
+    const withPhase = island.tasks.find((t: { phase: string | null }) => t.phase === 'spec');
+    expect(withPhase).toBeTruthy();
+    expect(withPhase.labels).toContain('phase/spec');
+  });
+  it('client script computes phase counts and offers the advance command', () => {
+    const script = appScript();
+    expect(script).toContain('phaseCounts');
+    expect(script).toContain('sbl phase ');
+  });
+  it('never reintroduces command data attributes', () => {
+    expect(html).not.toContain('data-cmd=');
+    expect(html).not.toContain('data-copy=');
   });
 });
 
@@ -333,6 +356,7 @@ describe('client diagrams: donut, bars, heatmap, stepper', () => {
       expect(app).toContain(`function ${fn}`);
     }
   });
+
 
   it('builds SVG nodes with createElementNS and donut segments via stroke-dasharray', () => {
     const app = appScript();

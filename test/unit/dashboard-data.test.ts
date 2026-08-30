@@ -80,6 +80,32 @@ describe('normalizeTasks schemaVersion 1 shape', () => {
     expect(task?.updated).toBe('2026-08-01');
     expect(task?.acs).toEqual([{ text: 'plain', checked: false }]);
   });
+
+  it('maps labels and derives the pipeline phase', () => {
+    const [task] = normalizeTasks([
+      {
+        id: 'TASK-1',
+        title: 'T',
+        status: 'In Progress',
+        labels: ['feature', 'phase/plan'],
+      },
+    ]);
+    expect(task?.labels).toEqual(['feature', 'phase/plan']);
+    expect(task?.phase).toBe('plan');
+  });
+
+  it('defaults labels to [] and phase to null', () => {
+    const [task] = normalizeTasks([{ id: 'TASK-2', title: 'T', status: 'To Do' }]);
+    expect(task?.labels).toEqual([]);
+    expect(task?.phase).toBeNull();
+  });
+
+  it('is lenient on duplicate phase labels (doctor flags them)', () => {
+    const [task] = normalizeTasks([
+      { id: 'TASK-3', title: 'T', status: 'To Do', labels: ['phase/spec', 'phase/impl'] },
+    ]);
+    expect(task?.phase).toBe('spec');
+  });
 });
 
 function writeTaskFile(cwd: string, filename: string, contents: string): void {

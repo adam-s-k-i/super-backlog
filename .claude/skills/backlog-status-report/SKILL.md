@@ -3,7 +3,7 @@ name: backlog-status-report
 description: Summarize current project state from Backlog.md (task counts, in-progress work, milestones) and point to the Project Dashboard. Use when the user asks for status, progress, or a project overview.
 ---
 
-<!-- managed-by: super-backlog 0.1.0 -->
+<!-- managed-by: super-backlog 1.3.1 -->
 # Backlog Status Report: project state at a glance
 
 Read-only summary of the Backlog.md data in this project.

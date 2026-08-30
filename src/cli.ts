@@ -9,6 +9,7 @@ import { runDashboard } from './commands/dashboard.js';
 import { runDoctor } from './commands/doctor.js';
 import { runInit } from './commands/init.js';
 import { runModels } from './commands/models.js';
+import { runPhase } from './commands/phase.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
 import { KIT_VERSION } from './lib/version.js';
@@ -24,6 +25,7 @@ Commands:
   update      Refresh kit-managed files and report upstream versions
   dashboard   Start the project dashboard server (live-reload) (alias: db)
   models      Manage the model router (show, enable, disable, discover)
+  phase       Show or advance a task's pipeline phase (spec|plan|impl|verify|done)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
 
   init options:
@@ -47,7 +49,10 @@ dashboard options:
   --no-open                       Do not open the dashboard browser automatically
 
 doctor options:
-  (none)                          Prints one [ok]/[warn]/[skip] line per check; exit 4 on any warn
+  (none)                          Prints one [ok]/[warn]/[skip]/[fail] line per check; exit 4 on any warn, 1 on any fail
+
+phase options:
+  --json                          Print the query result as JSON (phase + labels)
 
 Global options:
   --version                       Print the super-backlog version and exit
@@ -148,6 +153,19 @@ export async function runCli(argv: string[]): Promise<number> {
     }
     case 'doctor':
       return runDoctor(process.cwd());
+    case 'phase': {
+      const parsed = parseArgs({
+        args: rest,
+        allowPositionals: true,
+        options: {
+          json: { type: 'boolean' },
+        },
+      });
+      return runPhase(process.cwd(), {
+        values: parsed.values as Record<string, string | boolean | undefined>,
+        positionals: parsed.positionals,
+      });
+    }
     default:
       console.error(`Unknown command "${command}".\n`);
       console.error(HELP);
