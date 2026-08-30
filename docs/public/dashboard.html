@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>super-backlog &middot; Project Dashboard</title>
+<title>__PROJECT_NAME__ &middot; Project Dashboard</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%235cc8ff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
   :root {
     --bg:#0a0e16;
@@ -16,7 +19,7 @@
     --line-strong:#2c3b57;
     --text:#e8edf6;
     --muted:#8fa0ba;
-    --dim:#5d6d88;
+    --dim:#72839f;
     --accent:#5cc8ff;
     --accent-dim:#234257;
     --ok:#3ecf8e;
@@ -25,27 +28,59 @@
     --warn-bg:#33260f;
     --danger:#ff7a7a;
     --danger-bg:#331718;
-    --mono:"Cascadia Code",Consolas,"Courier New",monospace;
+    --sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+    --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+    --ok-line:#2b5642;
+    --accent-bg:#10202e;
+    --accent-line:#274a63;
+    --warn-line:#5c4520;
+    --danger-line:#5c2c2c;
+    --backdrop:rgba(4,7,12,.65);
+    --tip-bg:rgba(13,19,32,.97);
+    --shadow-dialog:0 24px 80px rgba(0,0,0,.55);
+    --shadow-tip:0 10px 28px rgba(0,0,0,.5);
+    --glow-accent:rgba(92,200,255,.6);
+    --glow-warn:rgba(255,180,84,.25);
+    --glow-warn-soft:rgba(255,180,84,.3);
+    --focus-ring:rgba(92,200,255,.15);
   }
-  @font-face {
-    font-family: 'Inter';
-    src: local('Inter'), local('Inter-Regular');
-    font-weight: 400; font-style: normal;
-  }
-  @font-face {
-    font-family: 'Inter';
-    src: local('Inter Medium'), local('Inter-Medium');
-    font-weight: 500; font-style: normal;
-  }
-  @font-face {
-    font-family: 'Inter';
-    src: local('Inter SemiBold'), local('Inter-SemiBold');
-    font-weight: 600; font-style: normal;
+  :root[data-theme="light"] {
+    --bg:#f3f6fb;
+    --bg-glow-1: rgba(11,116,181,.05);
+    --bg-glow-2: rgba(23,122,78,.04);
+    --surface:#ffffff;
+    --surface-2:#e9eef7;
+    --line:#d7dfeb;
+    --line-strong:#b6c3d8;
+    --text:#17202f;
+    --muted:#4c5d77;
+    --dim:#5a6881;
+    --accent:#0a6ca8;
+    --accent-dim:#bcdcf0;
+    --ok:#16764b;
+    --ok-bg:#dff3e8;
+    --warn:#8a5a00;
+    --warn-bg:#fbecd2;
+    --danger:#b83a3a;
+    --danger-bg:#fbe3e3;
+    --ok-line:#9fd4b8;
+    --accent-bg:#e2f0f9;
+    --accent-line:#a8cfe6;
+    --warn-line:#e3c68e;
+    --danger-line:#eab5b5;
+    --backdrop:rgba(23,32,47,.45);
+    --tip-bg:rgba(255,255,255,.98);
+    --shadow-dialog:0 24px 80px rgba(23,32,47,.25);
+    --shadow-tip:0 10px 28px rgba(23,32,47,.18);
+    --glow-accent:rgba(11,116,181,.35);
+    --glow-warn:rgba(138,90,0,.2);
+    --glow-warn-soft:rgba(138,90,0,.25);
+    --focus-ring:rgba(11,116,181,.18);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
-    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--sans);
     background:
       radial-gradient(1100px 500px at 85% -10%, var(--bg-glow-1), transparent 60%),
       radial-gradient(900px 500px at -10% 30%, var(--bg-glow-2), transparent 55%),
@@ -66,8 +101,15 @@
 
   /* ---------- Sidebar ---------- */
   .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-  .brand-glyph { color: var(--accent); font-size: .8rem; line-height: 1; text-shadow: 0 0 12px rgba(92,200,255,.6); }
+  .brand-glyph { color: var(--accent); font-size: .8rem; line-height: 1; text-shadow: 0 0 12px var(--glow-accent); }
   .brand b { font-size: .98rem; letter-spacing: .4px; overflow-wrap: anywhere; }
+  .theme-toggle {
+    margin-left: auto; width: 28px; height: 28px; border-radius: 50%;
+    font: inherit; font-size: .9rem; line-height: 1; cursor: pointer;
+    color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-strong);
+  }
+  .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .kicker {
     color: var(--dim); font-size: .72rem; letter-spacing: 1.6px;
     text-transform: uppercase; margin-bottom: 22px;
@@ -88,10 +130,10 @@
     white-space: nowrap; cursor: pointer;
   }
   .pill .n { color: inherit; font-weight: 700; margin-right: 4px; }
-  .pill[data-tone="ok"] { color: var(--ok); border-color: #2b5642; background: var(--ok-bg); }
-  .pill[data-tone="accent"] { color: var(--accent); border-color: #274a63; background: #10202e; }
-  .pill[data-tone="warn"] { color: var(--warn); border-color: #5c4520; background: var(--warn-bg); }
-  .pill[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
+  .pill[data-tone="ok"] { color: var(--ok); border-color: var(--ok-line); background: var(--ok-bg); }
+  .pill[data-tone="accent"] { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
+  .pill[data-tone="warn"] { color: var(--warn); border-color: var(--warn-line); background: var(--warn-bg); }
+  .pill[data-tone="danger"] { color: var(--danger); border-color: var(--danger-line); background: var(--danger-bg); }
   .pill:hover { filter: brightness(1.25); }
   .pill.active { outline: 2px solid var(--accent); outline-offset: 1px; }
   .pill-empty { color: var(--dim); font-size: .78rem; }
@@ -101,20 +143,21 @@
   .term:hover { color: var(--accent); border-color: var(--accent); }
   #sbl-tip {
     position: fixed; z-index: 70; max-width: 340px; padding: 8px 12px;
-    background: rgba(13,19,32,.97); border: 1px solid var(--line-strong); border-radius: 8px;
+    background: var(--tip-bg); border: 1px solid var(--line-strong); border-radius: 8px;
     font-size: .78rem; line-height: 1.45; color: var(--text);
-    box-shadow: 0 10px 28px rgba(0,0,0,.5); pointer-events: none;
+    box-shadow: var(--shadow-tip); pointer-events: none;
   }
 
   /* ---------- Detail panel ---------- */
+  dialog { margin: auto; } /* the global reset removes the UA margin that centers dialogs */
   #task-dialog {
-    width: min(640px, 92vw); max-height: 85vh; overflow-y: auto; padding: 0;
+    width: min(720px, 92vw); max-height: 85vh; overflow-y: auto; overflow-x: hidden; padding: 0;
     border: 1px solid var(--line-strong); border-radius: 14px;
     background: var(--surface); color: var(--text);
-    box-shadow: 0 24px 80px rgba(0,0,0,.55);
+    box-shadow: var(--shadow-dialog);
   }
   #task-dialog::backdrop {
-    background: rgba(4,7,12,.65);
+    background: var(--backdrop);
     backdrop-filter: blur(2px);
   }
   #task-dialog[open] { animation: sbl-dialog-in .18s ease-out; }
@@ -122,26 +165,85 @@
     #task-dialog[open] { animation: none; }
   }
   @keyframes sbl-dialog-in { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
-  .dialog-content { padding: 22px 24px 28px; }
-  .detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+
+  /* ---------- Backlog browser overlay ---------- */
+  #backlog-dialog {
+    width: 96vw; height: 94vh; max-width: none; max-height: none; padding: 0;
+    display: none; flex-direction: column;
+    border: 1px solid var(--line-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    box-shadow: var(--shadow-dialog);
+  }
+  #backlog-dialog[open] { display: flex; animation: sbl-dialog-in .18s ease-out; }
+  #backlog-dialog::backdrop { background: var(--backdrop); backdrop-filter: blur(2px); }
+  @media (prefers-reduced-motion: reduce) {
+    #backlog-dialog[open] { animation: none; }
+  }
+  .backlog-dialog-bar {
+    display: flex; align-items: center; gap: 14px; padding: 8px 14px;
+    border-bottom: 1px solid var(--line-strong); background: var(--surface-2);
+  }
+  .backlog-dialog-title { font-weight: 700; font-size: .9rem; }
+  .backlog-dialog-bar a {
+    margin-left: auto; font-family: var(--mono); font-size: .72rem;
+    color: var(--muted); text-decoration: none;
+  }
+  .backlog-dialog-bar a:hover { color: var(--accent); }
+  #backlog-close {
+    font: inherit; font-size: 1.1rem; line-height: 1; cursor: pointer;
+    color: var(--muted); background: none; border: 1px solid transparent;
+    border-radius: 8px; padding: 4px 10px;
+  }
+  #backlog-close:hover { color: var(--text); border-color: var(--line); }
+  #backlog-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #backlog-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
+  .dialog-content { padding: 6px 32px 32px; }
+  .detail-head {
+    position: sticky; top: 0; z-index: 1;
+    display: flex; align-items: center; gap: 10px;
+    margin: 0 -32px 12px; padding: 16px 32px 12px;
+    background: var(--surface); border-bottom: 1px solid var(--line);
+  }
   .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
   .status-chip { font-family: var(--mono); font-size: .68rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--muted); white-space: nowrap; }
-  .status-chip[data-tone="ok"] { color: var(--ok); border-color: #2b5642; background: var(--ok-bg); }
-  .status-chip[data-tone="accent"] { color: var(--accent); border-color: #274a63; background: #10202e; }
-  .status-chip[data-tone="warn"] { color: var(--warn); border-color: #5c4520; background: var(--warn-bg); }
-  .status-chip[data-tone="danger"] { color: var(--danger); border-color: #5c2c2c; background: var(--danger-bg); }
+  .status-chip[data-tone="ok"] { color: var(--ok); border-color: var(--ok-line); background: var(--ok-bg); }
+  .status-chip[data-tone="accent"] { color: var(--accent); border-color: var(--accent-line); background: var(--accent-bg); }
+  .status-chip[data-tone="warn"] { color: var(--warn); border-color: var(--warn-line); background: var(--warn-bg); }
+  .status-chip[data-tone="danger"] { color: var(--danger); border-color: var(--danger-line); background: var(--danger-bg); }
   .detail-close { margin-left: auto; background: none; border: none; color: var(--dim); font-size: 1.3rem; cursor: pointer; line-height: 1; }
   .detail-close:hover { color: var(--danger); }
-  .detail-title { font-size: 1.18rem; font-weight: 600; margin-bottom: 8px; overflow-wrap: anywhere; }
-  #task-dialog .detail-desc { color: var(--muted); margin-bottom: 14px; white-space: normal; }
-  #task-dialog h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 16px 0 6px; }
-  .meta-row { display: flex; flex-wrap: wrap; gap: 14px; font-size: .85rem; color: var(--muted); }
-  .meta-row span { display: flex; align-items: center; gap: 4px; }
-  .meta-label { color: var(--dim); }
+  .detail-title { font-size: 1.3rem; font-weight: 700; line-height: 1.3; margin-bottom: 10px; overflow-wrap: anywhere; }
+  #task-dialog .detail-desc { color: var(--muted); line-height: 1.6; margin-bottom: 10px; white-space: normal; }
+  /* the global reset strips ul padding: without this, list markers poke
+     out of the dialog's content box on the left */
+  #task-dialog ul { list-style-position: inside; padding-left: 1.15rem; }
+  #task-dialog .ac-list { list-style: none; padding-left: 0; }
+  #task-dialog h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 18px 0 8px; }
+  .detail-meta {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px 18px; margin: 16px 0 4px; padding: 14px 16px;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2);
+  }
+  .meta-cell .meta-label {
+    display: block; color: var(--dim); font-size: .66rem;
+    letter-spacing: 1.2px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .meta-value { font-size: .88rem; color: var(--text); overflow-wrap: anywhere; }
+  .meta-value.empty { color: var(--dim); }
+  .meta-value[data-tone="danger"] { color: var(--danger); }
+  .meta-value[data-tone="warn"] { color: var(--warn); }
+  .meta-value[data-tone="dim"] { color: var(--muted); }
+  .ac-progress { display: flex; align-items: center; gap: 12px; margin: 0 0 10px; }
+  .ac-count { font-family: var(--mono); font-size: .78rem; color: var(--muted); white-space: nowrap; }
+  .ac-bar { flex: 1; height: 4px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .ac-bar-fill { height: 100%; border-radius: 999px; background: var(--ok); }
   .dep-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .dep-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 7px; background: var(--dim); }
+  .dep-dot.done { background: var(--ok); }
+  .detail-cmd { margin-top: 18px; }
   .dep-link {
     font-family: var(--mono); font-size: .74rem; padding: 2px 10px; border-radius: 999px;
-    border: 1px solid #274a63; background: #10202e; color: var(--accent); cursor: pointer;
+    border: 1px solid var(--accent-line); background: var(--accent-bg); color: var(--accent); cursor: pointer;
   }
   .dep-link:hover { filter: brightness(1.25); }
 
@@ -157,7 +259,7 @@
     background: linear-gradient(180deg, var(--accent), transparent 130%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .sec-head h2 { font-size: 1.15rem; letter-spacing: .5px; }
+  .sec-head h2 { font-size: 1.15rem; letter-spacing: .5px; font-weight: 700; }
   .sec-head .tagline { color: var(--dim); font-size: .82rem; margin-left: auto; text-align: right; }
   .mount { min-height: 24px; }
 
@@ -172,12 +274,11 @@
   }
   .cmd-btn:hover { background: var(--surface-2); border-color: var(--accent); }
   .cmd-btn:active { transform: translateY(1px); }
-  .cmd-title { font-size: .95rem; font-weight: 600; color: var(--text); }
+  .cmd-title { font-size: .95rem; font-weight: 700; color: var(--text); }
   .cmd-btn:hover .cmd-title { color: var(--accent); }
   .cmd-line { font-family: var(--mono); font-size: .72rem; color: var(--dim); }
   .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
   .drafts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .drafts-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .88rem; }
   code.inline {
     font-family: var(--mono); font-size: .85em;
     background: var(--surface-2); border: 1px solid var(--line);
@@ -185,12 +286,16 @@
   }
 
   /* ---------- Tasks table ---------- */
-  .toolbar { display: flex; justify-content: flex-end; margin-bottom: var(--sp, 12px); }
-  input[type="search"] {
+  .toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: var(--sp, 12px); }
+  .status-grid { display: grid; grid-template-columns: minmax(240px, 360px) 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .status-grid { grid-template-columns: 1fr; } }
+  input[type="search"], #tasksize {
     background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong);
     border-radius: 999px; padding: 7px 16px; min-width: 260px; font: inherit;
   }
-  input[type="search"]:focus { outline: none; border-color: var(--accent-dim); box-shadow: 0 0 0 2px rgba(92,200,255,.15); }
+  #tasksize { min-width: 0; padding: 7px 12px; cursor: pointer; }
+  #tasksize:focus { outline: none; border-color: var(--accent-dim); box-shadow: 0 0 0 2px var(--focus-ring); }
+  input[type="search"]:focus { outline: none; border-color: var(--accent-dim); box-shadow: 0 0 0 2px var(--focus-ring); }
   .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: .89rem; }
   th, td { text-align: left; padding: 8px 14px; border-bottom: 1px solid var(--line); vertical-align: top; white-space: nowrap; }
@@ -206,7 +311,8 @@
   .task-row:hover td { background: var(--surface-2); }
   .cell-id { color: var(--accent); font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .cell-title { font-weight: 400; white-space: normal; min-width: 220px; }
-  .cell-updated { font-family: var(--mono); color: var(--muted); }
+  .cell-updated { font-family: var(--mono); color: var(--muted); text-align: center; }
+  th[data-key="updated"] { text-align: center; }
 
   /* ---------- Footer ---------- */
   .footer {
@@ -225,6 +331,30 @@
   .legend-list li:hover { color: var(--text); }
   .legend-list .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 
+  /* ---------- KPI tiles ---------- */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .kpi {
+    display: block; text-align: left; font: inherit; color: inherit; cursor: default;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  .kpi-big { font-family: var(--mono); font-size: 1.7rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi-cap { display: block; color: var(--dim); font-size: .66rem; letter-spacing: 1.4px; text-transform: uppercase; margin-top: 4px; }
+  .kpi-sub { display: block; font-size: .78rem; color: var(--muted); margin-top: 8px; }
+  .kpi-sub[data-tone="ok"] { color: var(--ok); }
+  .kpi-sub[data-tone="danger"] { color: var(--danger); }
+  .kpi-link { font: inherit; background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font-family: var(--mono); font-size: .78rem; }
+  .kpi-link:hover { filter: brightness(1.25); }
+  .kpi-special-btn { display: block; width: 100%; text-align: left; font: inherit; color: inherit; background: none; border: none; border-radius: 8px; padding: 2px 4px; margin: -2px -4px; cursor: pointer; }
+  .kpi-special-btn:hover { background: var(--surface-2); }
+  .kpi-special-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .kpi-special-btn[aria-pressed="true"] { background: var(--accent-bg); }
+  /* ---------- Aging strip ---------- */
+  .aging-lane-label { fill: var(--text); font-size: 12px; font-family: var(--mono); }
+  .aging-axis { fill: var(--dim); font-size: 10px; font-family: var(--mono); }
+  .aging-track { stroke: var(--line); }
+  .age-dot { cursor: pointer; }
+  .age-dot:hover { opacity: .8; }
+
   /* ---------- Milestone bars ---------- */
   .bars text { font-family: var(--mono); }
   .bar-label { fill: var(--text); font-size: 12.5px; }
@@ -233,35 +363,110 @@
   .bar-fill { fill: var(--accent); }
   .bar-fill.complete { fill: var(--ok); }
 
-  /* ---------- Sparkline ---------- */
-  .spark-line {
-    fill: none; stroke: var(--accent); stroke-width: 2;
-    stroke-linejoin: round; stroke-linecap: round;
-    filter: drop-shadow(0 0 6px rgba(92,200,255,.4));
-  }
-  .spark-area { fill: rgba(92,200,255,.09); stroke: none; }
-  .spark-dot { fill: var(--bg); stroke: var(--dim); stroke-width: 1; }
-  .spark-dot.nonzero { fill: var(--accent); stroke: var(--accent); }
-  .spark-axis { fill: var(--dim); font-size: 10px; font-family: var(--mono); }
+  /* ---------- Activity heatmap ---------- */
+  .hm-cell { cursor: pointer; }
+  .hm-cell:hover { stroke: var(--accent); stroke-width: 1; }
+  .hm-0 { fill: var(--surface-2); }
+  .hm-1 { fill: var(--accent); opacity: .3; }
+  .hm-2 { fill: var(--accent); opacity: .55; }
+  .hm-3 { fill: var(--accent); opacity: .8; }
+  .hm-4 { fill: var(--accent); }
+  .hm-axis { fill: var(--dim); font-size: 9px; font-family: var(--mono); }
+  #day-panel { margin-top: 16px; }
+  #day-panel h4 { font-family: var(--mono); }
 
   /* ---------- Pipeline stepper ---------- */
-  .stepper { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); margin: 4px 0 8px; }
-  .step { position: relative; min-width: 0; padding: 0 3px; text-align: center; }
+  .stepper { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 2px; margin: 4px 0 6px; }
+  .step {
+    position: relative; min-width: 0; padding: 10px 4px 12px; text-align: center;
+    background: none; border: 1px solid transparent; border-radius: 10px; cursor: pointer;
+    font: inherit; color: inherit; transition: background .15s ease, border-color .15s ease;
+  }
   .step::before {
-    content: ""; position: absolute; top: 15px; left: -50%; width: 100%; height: 2px;
+    content: ""; position: absolute; top: 27px; left: -50%; width: 100%; height: 2px;
     background: var(--line-strong); z-index: 0;
   }
   .step:first-child::before { display: none; }
+  .step:hover { background: var(--surface-2); border-color: var(--line); }
+  .step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .step[aria-expanded="true"] { background: var(--accent-dim); border-color: var(--accent); }
+  .step[aria-expanded="true"].gate { border-color: var(--warn); background: var(--warn-bg); }
   .step-num {
-    position: relative; z-index: 1; width: 32px; height: 32px; margin: 0 auto 8px;
+    position: relative; z-index: 1; width: 34px; height: 34px; margin: 0 auto 10px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 50%; font-family: var(--mono); font-size: .82rem; font-weight: 700;
+    border-radius: 50%; font-family: var(--mono); font-size: .9rem; font-weight: 700;
     background: var(--surface-2); border: 2px solid var(--line-strong); color: var(--muted);
   }
-  .step.gate .step-num { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); box-shadow: 0 0 14px rgba(255,180,84,.25); }
-  .step-label { font-size: .63rem; color: var(--muted); line-height: 1.35; }
-  .step-label b { display: block; color: var(--text); font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .step.gate .step-label b { color: var(--warn); }
+  .step.gate .step-num { border-color: var(--warn); color: var(--warn); background: var(--warn-bg); box-shadow: 0 0 14px var(--glow-warn); }
+  .step-label {
+    display: block; font-size: .8rem; font-weight: 600; color: var(--text); line-height: 1.3;
+    overflow-wrap: break-word;
+  }
+  .step.gate .step-label { color: var(--warn); }
+  .step .step-count { position: relative; z-index: 1; display: inline-block; margin-top: 6px;
+    padding: 0 .45rem; border-radius: 999px; font: 600 .68rem/1.5 var(--mono);
+    background: color-mix(in oklab, var(--accent) 18%, transparent); color: var(--accent); }
+
+  /* ---------- Phase chip in task rows ---------- */
+  .cell-id .status-chip { margin-left: .45rem; }
+
+  /* ---------- Phase detail panel ---------- */
+  #phase-detail {
+    margin: 2px 0 12px; padding: 14px 18px; border: 1px solid var(--line-strong);
+    border-left: 3px solid var(--accent); border-radius: 10px; background: var(--surface);
+  }
+  #phase-detail.open { animation: phasein .18s ease; }
+  #phase-detail.gate { border-left-color: var(--warn); }
+  @keyframes phasein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .phase-detail-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+  .phase-detail-num { font-family: var(--mono); font-size: .85rem; font-weight: 700; color: var(--accent); }
+  #phase-detail.gate .phase-detail-num { color: var(--warn); }
+  .phase-detail-name { font-size: 1rem; font-weight: 700; }
+  .phase-detail-gate { margin: 0 0 10px; font-size: .88rem; line-height: 1.55; color: var(--muted); }
+  .phase-cmd {
+    display: inline-flex; align-items: center; gap: 10px; padding: 7px 12px;
+    font: inherit; cursor: pointer; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text);
+    transition: border-color .15s ease;
+  }
+  .phase-cmd:hover { border-color: var(--accent); }
+  .phase-cmd:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .phase-cmd .cmd-line { font-family: var(--mono); font-size: .8rem; color: var(--accent); }
+  .phase-cmd .cmd-title { font-size: .72rem; color: var(--dim); text-transform: uppercase; letter-spacing: .06em; }
+  @media (prefers-reduced-motion: reduce) {
+    .step, .phase-cmd { transition: none; }
+    #phase-detail.open { animation: none; }
+  }
+
+  /* ---------- Sidebar version + update badge ---------- */
+  .side-version {
+    display: flex; align-items: center; gap: 8px; margin: 6px 0 2px;
+    font-family: var(--mono); font-size: .78rem; color: var(--dim);
+  }
+  .update-badge {
+    font: inherit; font-family: var(--mono); font-size: .68rem; cursor: pointer;
+    color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn);
+    border-radius: 999px; padding: 2px 9px; transition: box-shadow .15s ease;
+  }
+  .update-badge:hover { box-shadow: 0 0 10px var(--glow-warn-soft); }
+  .update-badge:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
+  .update-badge .cmd-title { font-size: inherit; font-weight: 600; color: inherit; }
+
+  /* ---------- Models modal ---------- */
+  #models-dialog {
+    width: min(560px, 92vw); max-height: 80vh; overflow-y: auto; overflow-x: hidden; padding: 0;
+    border: 1px solid var(--line-strong); border-radius: 14px;
+    background: var(--surface); color: var(--text);
+    box-shadow: var(--shadow-dialog);
+  }
+  #models-dialog::backdrop { background: var(--backdrop); backdrop-filter: blur(2px); }
+  #models-dialog[open] { animation: sbl-dialog-in .18s ease-out; }
+  @media (prefers-reduced-motion: reduce) {
+    #models-dialog[open] { animation: none; }
+  }
+  .phase-cmd:disabled { opacity: .6; cursor: default; }
+  .models-head-title { font-weight: 700; }
+  .models-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; flex-wrap: wrap; }
 
   /* ---------- Dependency flow ---------- */
   .sub-head {
@@ -295,27 +500,39 @@
     main { padding: 24px 20px 40px; }
   }
 </style>
+<script>
+(function () {
+  var theme = null;
+  try { theme = localStorage.getItem('sbl-theme'); } catch (e) { theme = null; }
+  if (theme !== 'light' && theme !== 'dark') {
+    theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', theme);
+})();
+</script>
 </head>
 <body>
 <div class="layout">
 
 <aside class="sbl-side">
-  <div class="brand"><span class="brand-glyph">●</span><b>super-backlog</b></div>
+  <div class="brand"><span class="brand-glyph">●</span><b>__PROJECT_NAME__</b>
+    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch color theme">◐</button>
+  </div>
   <div class="kicker">SUPERPOWERS × BACKLOG.MD</div>
+  <div class="side-version" id="side-version"><span>v__KIT_VERSION__</span></div>
   <nav aria-label="Dashboard sections">
     <a href="#sec-01"><span class="n">01</span>Board &amp; Quick Actions</a>
     <a href="#sec-02"><span class="n">02</span>Status</a>
-    <a href="#sec-03"><span class="n">03</span>Milestones</a>
-    <a href="#sec-04"><span class="n">04</span>Tasks</a>
-    <a href="#sec-05"><span class="n">05</span>Feature Cycle</a>
+    <a href="#sec-03"><span class="n">03</span>Feature Cycle</a>
+    <a href="#sec-04"><span class="n">04</span>Drafts</a>
+    <a href="#sec-05"><span class="n">05</span>Tasks</a>
     <a href="#sec-06"><span class="n">06</span>Activity</a>
     <a href="#sec-07"><span class="n">07</span>Decisions &amp; Docs</a>
   </nav>
   <div class="legend">
     <h4>Status</h4>
     <div class="pill-row" id="pills">
-      <button type="button" class="pill" data-status="Done" data-count="43" data-tone="ok"><span class="n">43</span> Done</button>
-      <button type="button" class="pill" data-status="In Progress" data-count="1" data-tone="accent"><span class="n">1</span> In Progress</button>
+      __STATUS_PILLS__
     </div>
   </div>
 </aside>
@@ -323,36 +540,57 @@
 <main>
 
 <section id="sec-01">
-  <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">commands &middot; board mirror only</span></div>
+  <div class="sec-head"><span class="sec-num">01</span><h2>Board &amp; Quick Actions</h2><span class="tagline">the full Backlog.md UI &middot; one click away</span></div>
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
-      <button type="button" class="cmd-btn" data-cmd="browser"><span class="cmd-title">Backlog Browser</span><span class="cmd-line">backlog browser</span></button>
-      <button type="button" class="cmd-btn" data-cmd="board"><span class="cmd-title">Backlog Board</span><span class="cmd-line">backlog board</span></button>
-      <button type="button" class="cmd-btn" data-copy="sbl dashboard"><span class="cmd-title">Live Dashboard</span><span class="cmd-line">sbl dashboard</span></button>
+      <button type="button" class="cmd-btn" id="backlog-btn"><span class="cmd-title">Backlog</span><span class="cmd-line">board &middot; tasks &middot; docs &middot; decisions</span></button>
+      <button type="button" class="cmd-btn" id="models-btn"><span class="cmd-title">Model Router</span><span class="cmd-line">workhorse &middot; budget &middot; tiers</span></button>
     </div>
-    <p class="hint">The board mirrors Backlog.md &mdash; it never writes execution state.</p>
-  </div>
-  <div id="drafts" class="mount">
-    <h3 class="sub-head">Drafts</h3>
-    <ul id="drafts-list" class="drafts-list"></ul>
+    <p class="hint">Opens the Backlog.md browser in an overlay &mdash; served locally per project, started on demand.</p>
   </div>
 </section>
 
 <section id="sec-02">
-  <div class="sec-head"><span class="sec-num">02</span><h2>Status</h2><span class="tagline">tasks per status</span></div>
-  <div id="donut" class="mount"></div>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Status</h2><span class="tagline">progress &middot; velocity &middot; wip &middot; age</span></div>
+  <div id="kpis" class="mount"></div>
+  <div class="status-grid">
+    <div id="donut" class="mount"></div>
+    <div class="bars-col">
+      <h3 class="sub-head"><span class="term" data-term="Milestone">Milestone</span> &mdash; done / total</h3>
+      <div id="bars" class="mount"></div>
+    </div>
+  </div>
+  <h3 class="sub-head">Aging &mdash; open tasks by days in the backlog</h3>
+  <div id="aging" class="mount"></div>
 </section>
 
 <section id="sec-03">
-  <div class="sec-head"><span class="sec-num">03</span><h2>Milestones</h2><span class="tagline">done / total per <span class="term" data-term="Milestone">Milestone</span></span></div>
-  <div id="bars" class="mount"></div>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included &middot; click a step for details</span></div>
+  <div id="stepper" class="mount"></div>
+  <div id="phase-detail" hidden></div>
+  <h3 class="sub-head">Flow</h3>
+  <div id="depgraph" class="mount"></div>
 </section>
 
 <section id="sec-04">
-  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Drafts</h2><span class="tagline">ideas before they enter the backlog &middot; click a card for details</span></div>
+  <div id="drafts" class="mount">
+    <ul id="drafts-list" class="drafts-list"></ul>
+  </div>
+</section>
+
+<section id="sec-05">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
   <div id="tasks" class="mount">
     <div class="toolbar">
       <input id="taskfilter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
+      <select id="tasksize" aria-label="Rows to show">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="all">all</option>
+      </select>
     </div>
     <div class="table-wrap">
       <table id="tasks-table">
@@ -373,16 +611,11 @@
   </div>
 </section>
 
-<section id="sec-05">
-  <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included</span></div>
-  <div id="stepper" class="mount"></div>
-  <h3 class="sub-head">Flow</h3>
-  <div id="depgraph" class="mount"></div>
-</section>
-
 <section id="sec-06">
-  <div class="sec-head"><span class="sec-num">06</span><h2>Activity</h2><span class="tagline">last 30 days</span></div>
-  <div id="spark" class="mount"></div>
+  <div class="sec-head"><span class="sec-num">06</span><h2>Activity</h2><span class="tagline">last 26 weeks &middot; click a day for its tasks</span></div>
+  <div id="activity-kpis" class="mount"></div>
+  <div id="heatmap" class="mount"></div>
+  <div id="day-panel" class="flow-block" hidden></div>
 </section>
 
 <section id="sec-07">
@@ -392,19 +625,39 @@
 </section>
 
 <footer class="footer">
-  Generated 2026-08-28T16:49:45.695Z &middot; super-backlog v0.10.2 &middot; <span id="source-badge"></span> &middot;
+  Generated __GENERATED_AT__ &middot; super-backlog v__KIT_VERSION__ &middot; <span id="source-badge"></span> &middot;
   served live by <code class="inline">sbl dashboard</code> &mdash; reloads automatically while the server is running.
 </footer>
 
 </main>
 </div>
 
-<dialog id="task-dialog" aria-label="Task details"></dialog>
+<dialog id="task-dialog"></dialog>
+
+<dialog id="backlog-dialog" aria-label="Backlog browser">
+  <div class="backlog-dialog-bar">
+    <span class="backlog-dialog-title">Backlog</span>
+    <a id="backlog-open-tab" href="#" target="_blank" rel="noopener">open in new tab</a>
+    <button type="button" id="backlog-close" aria-label="Close">&#215;</button>
+  </div>
+  <iframe id="backlog-frame" title="Backlog.md browser"></iframe>
+</dialog>
+
+<dialog id="models-dialog" aria-label="Model router">
+  <div class="dialog-content">
+    <div class="detail-head">
+      <span class="detail-id">MODELS</span>
+      <span class="models-head-title">Model router</span>
+      <button type="button" class="detail-close" id="models-close" aria-label="Close">&#215;</button>
+    </div>
+    <div id="models-body"></div>
+  </div>
+</dialog>
 <div id="sbl-tip" role="tooltip" hidden></div>
 
-<script type="application/json" id="sbl-data">{"project":{"name":"super-backlog","description":"One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard."},"generatedAt":"2026-08-28T16:49:45.695Z","kitVersion":"0.10.2","statuses":[{"status":"Done","count":43},{"status":"In Progress","count":1}],"milestones":[{"name":"m-0","done":5,"total":5}],"tasks":[{"id":"TASK-9","title":"Automate PR and issue hygiene (templates, labels, title check, auto-merge, stale)","status":"Done","priority":"high","acs":[]},{"id":"TASK-10","title":"Set up release-please release pipeline on master","status":"Done","priority":"high","acs":[]},{"id":"TASK-17","title":"Windows PowerShell execution policy: quickstart docs, init warning, sbl doctor","status":"Done","priority":"high","acs":[]},{"id":"TASK-18","title":"Fix release pipeline: package.json repository field + duplicate GitHub Release step","status":"Done","priority":"high","acs":[]},{"id":"TASK-20","title":"Fix release.yml Publish job skipped when release-please creates a release","status":"Done","priority":"high","acs":[]},{"id":"TASK-12","title":"Schedule weekly and monthly QA workflows","status":"Done","priority":"medium","acs":[]},{"id":"TASK-13","title":"Harden repository security (pinning enforcement, least privilege, CODEOWNERS)","status":"Done","priority":"medium","acs":[]},{"id":"TASK-14","title":"Document operations: workflows, cadence, failure behavior, setup checklist","status":"Done","priority":"medium","acs":[]},{"id":"TASK-1","title":"v1.0.1: unify invalid-JSON exit codes and fix planner warning text","status":"Done","acs":[]},{"id":"TASK-2","title":"Add CI matrix workflow (windows + ubuntu)","status":"Done","acs":[]},{"id":"TASK-3","title":"Capture Project Dashboard screenshot for README","status":"Done","acs":[]},{"id":"TASK-4","title":"Prepare npm publish (v0.1.0)","status":"Done","acs":[]},{"id":"TASK-5","title":"Roadmap skills: backlog-status-report and task-review-gate","status":"Done","acs":[]},{"id":"TASK-6","title":"Add styleguide gate to CI (markdownlint-cli2 + cspell)","status":"Done","acs":[]},{"id":"TASK-7","title":"Build tested automation gate scripts (title regex, pack list, SHA pinning)","status":"Done","acs":[]},{"id":"TASK-8","title":"Publish VitePress docs site with live dashboard to GitHub Pages","status":"Done","acs":[]},{"id":"TASK-15","title":"Dashboard v2: HTS-style project cockpit with freshness hook","status":"Done","acs":[]},{"id":"TASK-16","title":"Fix CLI under Node 24 (weekly QA matrix finding)","status":"Done","acs":[]},{"id":"TASK-19","title":"Migrate npm publish to OIDC trusted publishing and retire NPM_TOKEN","status":"Done","acs":[]},{"id":"TASK-21","title":"Add robust cross-platform installer scripts","status":"Done","acs":[]},{"id":"TASK-22","title":"Preflight module: check/fix/verify units","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-23","title":"sbl init: preflight integration and --fix-all flag","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-24","title":"Slim installer wrapper scripts (install.ps1/install.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-25","title":"Harden sbl uninstall: error collection, verification, self-removal","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-26","title":"Uninstall wrapper scripts (uninstall.ps1/uninstall.sh)","status":"Done","milestone":"m-0","acs":[]},{"id":"TASK-27","title":"Add check-docs-required gate script with unit tests","status":"Done","acs":[]},{"id":"TASK-28","title":"Wire Docs-Gate job into pr-hygiene workflow","status":"Done","acs":[]},{"id":"TASK-29","title":"Add documentation style guide and backfill type frontmatter","status":"Done","acs":[]},{"id":"TASK-30","title":"Harden docs freshness gate: sidebar matching, parsing edge cases, self-exemption note","status":"Done","acs":[]},{"id":"TASK-31","title":"Fix Dependabot vulnerabilities in vitepress/vite/esbuild chain","status":"Done","acs":[]},{"id":"TASK-32","title":"Dashboard: directory-name fallback for project identity","status":"Done","acs":[]},{"id":"TASK-33","title":"init: scaffold minimal package.json when absent","status":"Done","acs":[]},{"id":"TASK-34","title":"Fix Pages dashboard links and stale /main/ docs URLs","status":"Done","acs":[]},{"id":"TASK-35","title":"Auto-refresh README dashboard screenshot with curated demo data","status":"Done","acs":[]},{"id":"TASK-36","title":"Project Dashboard: render quick-action commands as executable buttons","status":"Done","acs":[]},{"id":"TASK-37","title":"Project Dashboard: integrate drafts into the dashboard","status":"Done","acs":[]},{"id":"TASK-38","title":"Project Dashboard: add a custom browser icon","status":"Done","acs":[]},{"id":"TASK-39","title":"Investigate task count mismatch between Backlog browser and Project Dashboard","status":"Done","acs":[]},{"id":"TASK-40","title":"Unify kit commands under sbl aliases","status":"Done","acs":[]},{"id":"TASK-41","title":"Project Dashboard: modal task details, Inter font, non-bold titles, and Up Next/Blocked flow","status":"Done","acs":[]},{"id":"TASK-42","title":"Dashboard live-sync with Backlog browser (SSE live-reload + combined serve)","status":"Done","acs":[]},{"id":"TASK-43","title":"Release v0.10.0 with dashboard live-sync (SSE + sbl serve)","status":"Done","acs":[]},{"id":"TASK-44","title":"Dashboard quick actions: localhost fallback for static mode + button restyle","status":"Done","acs":[]},{"id":"TASK-45","title":"Remove static project dashboard; make sbl dashboard serve-only","status":"In Progress","acs":[]}],"deps":[],"drafts":[],"activity":[{"date":"2026-07-30","count":0},{"date":"2026-07-31","count":0},{"date":"2026-08-01","count":0},{"date":"2026-08-02","count":0},{"date":"2026-08-03","count":0},{"date":"2026-08-04","count":0},{"date":"2026-08-05","count":0},{"date":"2026-08-06","count":0},{"date":"2026-08-07","count":0},{"date":"2026-08-08","count":0},{"date":"2026-08-09","count":0},{"date":"2026-08-10","count":0},{"date":"2026-08-11","count":0},{"date":"2026-08-12","count":0},{"date":"2026-08-13","count":0},{"date":"2026-08-14","count":0},{"date":"2026-08-15","count":0},{"date":"2026-08-16","count":0},{"date":"2026-08-17","count":0},{"date":"2026-08-18","count":0},{"date":"2026-08-19","count":0},{"date":"2026-08-20","count":0},{"date":"2026-08-21","count":0},{"date":"2026-08-22","count":0},{"date":"2026-08-23","count":0},{"date":"2026-08-24","count":0},{"date":"2026-08-25","count":0},{"date":"2026-08-26","count":0},{"date":"2026-08-27","count":0},{"date":"2026-08-28","count":44}],"glossary":[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"Run `sbl dashboard` to serve a live dashboard that reloads automatically while the server is running."}],"source":"backlog-json"}</script>
-<script type="application/json" id="sbl-glossary">[{"term":"AC","definition":"Acceptance criterion — one checkable condition a task must satisfy before it can be done."},{"term":"DoD","definition":"Definition of Done — the shared bar every task must clear before moving to Done."},{"term":"Milestone","definition":"A named delivery waypoint that groups tasks and tracks done/total progress."},{"term":"Review Gate","definition":"A human checkpoint where specs, plans or code are reviewed before work proceeds."},{"term":"TDD","definition":"Test-Driven Development — write the failing test first (RED), then minimal code to pass (GREEN)."},{"term":"Brainstorming","definition":"Structured exploration of intent, requirements and design before any creative work."},{"term":"Design Gate","definition":"The point where a human approves the design document before decomposition."},{"term":"Spec-to-Backlog","definition":"Decomposing an approved design into reviewed backlog tasks with acceptance criteria."},{"term":"Plan-before-Code","definition":"Implementation starts only after a written implementation plan is approved."},{"term":"Draft","definition":"An unapproved Backlog.md task proposal awaiting promotion to the board."},{"term":"Worktree","definition":"An isolated git checkout (e.g. .worktrees/\u003cbranch>) used for feature work."},{"term":"Backlog.md","definition":"File-based task management CLI owning specs, statuses and history under backlog/."},{"term":"Superpowers","definition":"The methodology skill set that decides HOW the work is done."},{"term":"Pipeline","definition":"The nine workflow phases from Idea to Merge & archive."},{"term":"Freshness Hook","definition":"Run `sbl dashboard` to serve a live dashboard that reloads automatically while the server is running."}]</script>
-<script type="application/json" id="sbl-phases">[{"n":1,"name":"Idea","gate":"User states a need; capture it before doing anything else"},{"n":2,"name":"Brainstorming","gate":"Explore intent, requirements and design before any creative work"},{"n":3,"name":"Design gate","gate":"Human approves the design document"},{"n":4,"name":"Spec-to-backlog","gate":"Decompose the approved design into reviewed tasks with acceptance criteria"},{"n":5,"name":"Review gate","gate":"Human reviews specs and acceptance criteria before any code exists"},{"n":6,"name":"Plan-before-code","gate":"A written implementation plan is approved by the human"},{"n":7,"name":"TDD implementation","gate":"Failing test first, then code; one task per session/PR"},{"n":8,"name":"Verification & final summary","gate":"Run tests/lint/typecheck; verification evidence before success claims"},{"n":9,"name":"Merge & archive","gate":"Merge the branch, then close/archive the task via the backlog CLI"}]</script>
+<script type="application/json" id="sbl-data">__SBL_DATA_JSON__</script>
+<script type="application/json" id="sbl-glossary">__SBL_GLOSSARY_JSON__</script>
+<script type="application/json" id="sbl-phases">__SBL_PHASES_JSON__</script>
 <script id="sbl-app">
 (function () {
   'use strict';
@@ -422,8 +675,18 @@
     badge.textContent = data.source === 'fallback-empty' ? 'no live data' : 'live backlog data';
   }
 
+  var sideVersion = $('#side-version');
+  if (sideVersion && data.latestVersion) {
+    var upd = el('button', 'update-badge');
+    upd.type = 'button';
+    upd.appendChild(el('span', 'cmd-title', 'v' + data.latestVersion + ' available'));
+    upd.setAttribute('data-tip', 'Update: run sbl update (click copies npm i -g super-backlog)');
+    upd.addEventListener('click', function () { copyCommand(upd, 'npm i -g super-backlog'); });
+    sideVersion.appendChild(upd);
+  }
+
   var KEYS = ['id', 'title', 'status', 'milestone', 'priority', 'assignee', 'updated'];
-  var state = { key: 'id', dir: 1, query: '', status: null, hoverStatus: null };
+  var state = { key: 'updated', dir: -1, size: 20, query: '', status: null, hoverStatus: null, special: null };
   function field(task, key) {
     var v = task[key];
     return v === undefined || v === null ? '' : String(v);
@@ -434,6 +697,8 @@
   function matches(task) {
     var eff = activeStatus();
     if (eff && field(task, 'status').toLowerCase() !== eff.toLowerCase()) return false;
+    if (state.special === 'wip' && !isWipStatus(task.status)) return false;
+    if (state.special === 'blocked' && !isBlockedTask(task)) return false;
     if (!state.query) return true;
     var hit = KEYS.some(function (k) {
       return field(task, k).toLowerCase().indexOf(state.query) !== -1;
@@ -442,15 +707,71 @@
       return ac.text.toLowerCase().indexOf(state.query) !== -1;
     });
   }
+  function isWipStatus(status) {
+    var s = String(status || '').toLowerCase();
+    return s.indexOf('progress') !== -1 || s.indexOf('review') !== -1;
+  }
+  function isBlockedTask(task) {
+    var s = String(task.status || '').toLowerCase();
+    if (isDoneStatus(task.status)) return false;
+    if (s.indexOf('block') !== -1) return true;
+    if (!depsOut) return false;
+    var blockers = depsOut[task.id] || [];
+    for (var i = 0; i < blockers.length; i++) {
+      var dep = findTask(blockers[i]);
+      if (dep && !isDoneStatus(dep.status)) return true;
+    }
+    return false;
+  }
+  function setSpecialFilter(kind) {
+    state.special = state.special === kind ? null : kind;
+    state.status = null;
+    document.querySelectorAll('#pills .pill').forEach(function (pill) { pill.classList.remove('active'); });
+    document.querySelectorAll('[data-special]').forEach(function (tile) {
+      tile.setAttribute('aria-pressed', String(state.special === tile.getAttribute('data-special')));
+    });
+    renderTasks();
+  }
   var tbody = $('#task-rows');
+  function compareTasks(a, b, key) {
+    if (key === 'updated') {
+      var ta = Date.parse(field(a, key)) || 0;
+      var tb = Date.parse(field(b, key)) || 0;
+      if (ta !== tb) return ta - tb;
+    }
+    return field(a, key).localeCompare(field(b, key), undefined, { numeric: true, sensitivity: 'base' });
+  }
+  var relFmt = window.Intl && Intl.RelativeTimeFormat ? new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' }) : null;
+  var exactFmt = window.Intl && Intl.DateTimeFormat ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : null;
+  var REL_UNITS = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
+  function parseWhen(value) {
+    if (!value) return null;
+    /* date-only strings get a local noon so the day never shifts across timezones */
+    var t = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(value) ? value + 'T12:00:00' : value);
+    return isNaN(t) ? null : t;
+  }
+  function formatRelative(value) {
+    var t = parseWhen(value);
+    if (t === null || !relFmt) return value;
+    var diff = (t - Date.now()) / 1000;
+    for (var i = 0; i < REL_UNITS.length; i++) {
+      if (Math.abs(diff) >= REL_UNITS[i][1] || i === REL_UNITS.length - 1) {
+        return relFmt.format(Math.round(diff / REL_UNITS[i][1]), REL_UNITS[i][0]);
+      }
+    }
+    return value;
+  }
+  function formatExact(value) {
+    var t = parseWhen(value);
+    return t === null || !exactFmt ? '' : exactFmt.format(new Date(t));
+  }
   function renderTasks() {
     var rows = data.tasks
       .filter(matches)
-      .sort(function (a, b) {
-        return field(a, state.key).localeCompare(field(b, state.key)) * state.dir;
-      });
+      .sort(function (a, b) { return compareTasks(a, b, state.key) * state.dir; });
+    var shown = state.size === 'all' ? rows : rows.slice(0, state.size);
     tbody.textContent = '';
-    if (rows.length === 0) {
+    if (shown.length === 0) {
       var emptyTr = el('tr');
       var emptyTd = el('td', '', 'No matching tasks.');
       emptyTd.colSpan = KEYS.length;
@@ -458,11 +779,30 @@
       tbody.appendChild(emptyTr);
       return;
     }
-    rows.forEach(function (task) {
+    shown.forEach(function (task) {
       var tr = el('tr', 'task-row');
       tr.setAttribute('data-task', task.id);
       KEYS.forEach(function (k) {
-        tr.appendChild(el('td', 'cell-' + k, field(task, k)));
+        var td = el('td', 'cell-' + k);
+        if (k === 'status') {
+          var chip = el('span', 'status-chip', field(task, k));
+          chip.setAttribute('data-tone', toneOf(task.status));
+          td.appendChild(chip);
+        } else if (k === 'id') {
+          td.textContent = field(task, k);
+          if (task.phase) {
+            var pc = el('span', 'status-chip', 'phase/' + task.phase);
+            pc.setAttribute('data-tone', 'accent');
+            td.appendChild(pc);
+          }
+        } else if (k === 'updated') {
+          td.textContent = formatRelative(field(task, k));
+          var exact = formatExact(field(task, k));
+          if (exact) td.setAttribute('data-tip', exact);
+        } else {
+          td.textContent = field(task, k);
+        }
+        tr.appendChild(td);
       });
       tr.addEventListener('click', function () { openDetail(task.id); });
       tbody.appendChild(tr);
@@ -487,6 +827,18 @@
       renderTasks();
     });
   });
+  var initialTh = document.querySelector('#tasks-table th[data-key="updated"]');
+  if (initialTh) {
+    initialTh.classList.add('sorted-desc');
+    initialTh.setAttribute('aria-sort', 'descending');
+  }
+  var sizeSel = document.getElementById('tasksize');
+  if (sizeSel) {
+    sizeSel.addEventListener('change', function () {
+      state.size = this.value === 'all' ? 'all' : parseInt(this.value, 10);
+      renderTasks();
+    });
+  }
   var filterInput = document.getElementById('taskfilter');
   if (filterInput) {
     filterInput.addEventListener('input', function (event) {
@@ -496,8 +848,12 @@
   }
   function setStatusFilter(status) {
     state.status = status || null;
+    state.special = null;
     document.querySelectorAll('#pills .pill').forEach(function (pill) {
       pill.classList.toggle('active', !!state.status && pill.getAttribute('data-status') === state.status);
+    });
+    document.querySelectorAll('[data-special]').forEach(function (tile) {
+      tile.setAttribute('aria-pressed', 'false');
     });
     renderTasks();
   }
@@ -512,36 +868,160 @@
   /* ---------- Quick action buttons ---------- */
   function cmdFeedback(btn, text) {
     var title = btn.querySelector('.cmd-title');
-    if (!title || btn.getAttribute('data-busy')) return;
-    btn.setAttribute('data-busy', '1');
-    var orig = title.textContent;
+    if (!title) return;
+    if (btn.__sblFbTimer) {
+      clearTimeout(btn.__sblFbTimer); /* newer feedback overrides the pending one */
+    } else {
+      btn.__sblFbOrig = title.textContent;
+    }
     title.textContent = text;
-    setTimeout(function () { title.textContent = orig; btn.removeAttribute('data-busy'); }, 1200);
+    btn.__sblFbTimer = setTimeout(function () {
+      title.textContent = btn.__sblFbOrig;
+      btn.__sblFbTimer = null;
+    }, 1200);
   }
   function copyCommand(btn, command) {
     if (navigator.clipboard) navigator.clipboard.writeText(command).catch(function () {});
     cmdFeedback(btn, 'copied \u2713');
   }
-  document.querySelectorAll('#cmd-buttons .cmd-btn').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var copy = b.getAttribute('data-copy');
-      if (copy) { copyCommand(b, copy); return; }
-      var cmd = b.getAttribute('data-cmd');
-      fetch('/api/run', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ command: cmd }) })
-        .then(function (res) { if (!res.ok) throw new Error('run failed'); cmdFeedback(b, 'started \u2713'); })
+  var backlogBtn = document.getElementById('backlog-btn');
+  var backlogDialog = document.getElementById('backlog-dialog');
+  var backlogFrame = document.getElementById('backlog-frame');
+  var backlogTab = document.getElementById('backlog-open-tab');
+  function openBacklog(url) {
+    if (!backlogDialog || !backlogFrame) return;
+    if (backlogFrame.getAttribute('src') !== url) backlogFrame.setAttribute('src', url);
+    if (backlogTab) backlogTab.setAttribute('href', url);
+    backlogDialog.showModal();
+  }
+  if (backlogBtn) {
+    backlogBtn.addEventListener('click', function () {
+      var hosted = location.hostname !== '127.0.0.1' && location.hostname !== 'localhost';
+      if (hosted) {
+        /* static preview (e.g. GitHub Pages): no hub, no browser process */
+        cmdFeedback(backlogBtn, 'needs local hub');
+        backlogBtn.setAttribute('data-tip', 'Static preview: this button opens the Backlog.md UI only under sbl dashboard. Run sbl dashboard in your project and open http://localhost:6428');
+        backlogBtn.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+        return;
+      }
+      cmdFeedback(backlogBtn, 'starting\u2026');
+      fetch('api/backlog-browser', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+        .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+        .then(function (r) {
+          if (!r.ok || !r.data || !r.data.url) throw new Error('start failed');
+          openBacklog(r.data.url);
+        })
+        .catch(function () { cmdFeedback(backlogBtn, 'failed \u2717'); });
+    });
+  }
+  var backlogClose = document.getElementById('backlog-close');
+  if (backlogClose && backlogDialog) {
+    backlogClose.addEventListener('click', function () { backlogDialog.close(); });
+    backlogDialog.addEventListener('click', function (e) {
+      if (e.target === backlogDialog) backlogDialog.close();
+    });
+  }
+
+  /* ---------- Theme toggle ---------- */
+  var themeToggle = document.getElementById('theme-toggle');
+  function syncThemeToggle() {
+    if (!themeToggle) return;
+    var mode = document.documentElement.getAttribute('data-theme');
+    themeToggle.textContent = mode === 'light' ? '☾' : '☀';
+    themeToggle.setAttribute('aria-label', mode === 'light' ? 'Switch to dark theme' : 'Switch to light theme');
+  }
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function () {
+      var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('sbl-theme', next); } catch (e) { /* private mode */ }
+      syncThemeToggle();
+    });
+    syncThemeToggle();
+  }
+
+  /* ---------- Models modal ---------- */
+  var modelsBtn = document.getElementById('models-btn');
+  var modelsDialog = document.getElementById('models-dialog');
+  var modelsBody = document.getElementById('models-body');
+  function tierCell(label, value) {
+    var c = el('div', 'meta-cell');
+    c.appendChild(el('span', 'meta-label', label));
+    c.appendChild(el('span', 'meta-value' + (value ? '' : ' empty'), value || '—'));
+    return c;
+  }
+  function actionButton(cmdLine, label, onClick) {
+    var b = el('button', 'phase-cmd');
+    b.type = 'button';
+    b.appendChild(el('span', 'cmd-line', cmdLine));
+    b.appendChild(el('span', 'cmd-title', label));
+    b.addEventListener('click', onClick);
+    return b;
+  }
+  function renderTiers(mount, tiers) {
+    mount.textContent = '';
+    if (!tiers || tiers.error || (!tiers.workhorse && !tiers.budget)) {
+      mount.appendChild(el('p', 'hint', 'Discovery failed — is the OpenCode CLI available?'));
+      return;
+    }
+    mount.appendChild(tierCell('Workhorse', tiers.workhorse));
+    mount.appendChild(tierCell('Budget', tiers.budget));
+  }
+  function renderModelsDialog(info) {
+    if (!modelsBody) return;
+    modelsBody.textContent = '';
+    var enabled = !!(info.config && info.config.enabled);
+    var row = el('div', 'models-row');
+    var chip = el('span', 'status-chip', info.installed ? (enabled ? 'enabled' : 'disabled') : 'not installed');
+    if (info.installed) chip.setAttribute('data-tone', enabled ? 'ok' : 'warn');
+    row.appendChild(chip);
+    var toggle = actionButton(
+      enabled ? 'sbl models disable' : 'sbl models enable',
+      enabled ? 'disable' : 'enable',
+      function () {
+        fetch('api/models/' + (enabled ? 'disable' : 'enable'), { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+          .then(function (res) { if (!res.ok) throw new Error('toggle failed'); return res.json(); })
+          .then(function (next) { renderModelsDialog(next); })
+          .catch(function () { cmdFeedback(toggle, 'failed ✗'); });
+      },
+    );
+    row.appendChild(toggle);
+    var discover = actionButton('sbl models discover', 'run', function () {
+      discover.disabled = true;
+      cmdFeedback(discover, 'running…');
+      fetch('api/models/discover', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+        .then(function (res) { return res.json(); })
+        .then(function (r) { renderTiers(document.getElementById('models-tiers'), r); })
+        .catch(function () { cmdFeedback(discover, 'failed ✗'); })
+        .then(function () { discover.disabled = false; });
+    });
+    row.appendChild(discover);
+    modelsBody.appendChild(row);
+    var tiers = el('div', 'detail-meta');
+    tiers.id = 'models-tiers';
+    var resolved = (info.config && info.config.resolved) || {};
+    tiers.appendChild(tierCell('Workhorse', resolved.workhorse));
+    tiers.appendChild(tierCell('Budget', resolved.budget));
+    modelsBody.appendChild(tiers);
+    if (!info.installed) {
+      modelsBody.appendChild(el('p', 'hint', 'Install the router first, then enable it:'));
+      var hint = actionButton('sbl init --models', 'copy', function () { copyCommand(hint, 'sbl init --models'); });
+      modelsBody.appendChild(hint);
+    }
+  }
+  if (modelsBtn && modelsDialog) {
+    modelsBtn.addEventListener('click', function () {
+      fetch('api/models')
+        .then(function (res) { if (!res.ok) throw new Error('load failed'); return res.json(); })
+        .then(function (info) { renderModelsDialog(info); modelsDialog.showModal(); })
         .catch(function () {});
     });
-  });
-
-  /* ---------- Drafts ---------- */
-  function renderDrafts(drafts) {
-    var list = document.getElementById('drafts-list');
-    if (!list) return;
-    list.textContent = '';
-    if (!drafts || drafts.length === 0) { list.appendChild(el('li', '', 'No drafts.')); return; }
-    drafts.forEach(function (d) { list.appendChild(el('li', '', d.id + ' \u2014 ' + d.title)); });
+    var modelsClose = document.getElementById('models-close');
+    if (modelsClose) modelsClose.addEventListener('click', function () { modelsDialog.close(); });
+    modelsDialog.addEventListener('click', function (e) {
+      if (e.target === modelsDialog) modelsDialog.close();
+    });
   }
-  renderDrafts(data.drafts);
 
   /* ---------- Shared diagram helpers ---------- */
   var SVGNS = 'http://www.w3.org/2000/svg';
@@ -627,6 +1107,123 @@
     mount.appendChild(wrap);
   }
 
+  var APPROX_TIP = 'Approximation from created/updated timestamps — Backlog.md keeps no status history.';
+  function kpiTile(opts) {
+    var node = el('div', 'kpi');
+    node.setAttribute('data-tip', APPROX_TIP);
+    node.appendChild(el('span', 'kpi-big', opts.big));
+    node.appendChild(el('span', 'kpi-cap', opts.cap));
+    if (opts.sub) {
+      var sub = el('span', 'kpi-sub', opts.sub);
+      if (opts.tone) sub.setAttribute('data-tone', opts.tone);
+      node.appendChild(sub);
+    }
+    return node;
+  }
+  function wipBlockedTile(k) {
+    var node = el('div', 'kpi');
+    node.setAttribute('data-tip', APPROX_TIP);
+    var wipBtn = el('button', 'kpi-special-btn');
+    wipBtn.type = 'button';
+    wipBtn.setAttribute('data-special', 'wip');
+    wipBtn.setAttribute('aria-pressed', 'false');
+    wipBtn.addEventListener('click', function () { setSpecialFilter('wip'); });
+    wipBtn.appendChild(el('span', 'kpi-big', String(k.wip)));
+    wipBtn.appendChild(el('span', 'kpi-cap', 'in progress'));
+    node.appendChild(wipBtn);
+    var blockedBtn = el('button', 'kpi-special-btn');
+    blockedBtn.type = 'button';
+    blockedBtn.setAttribute('data-special', 'blocked');
+    blockedBtn.setAttribute('aria-pressed', 'false');
+    blockedBtn.addEventListener('click', function () { setSpecialFilter('blocked'); });
+    var sub = el('span', 'kpi-sub', k.blocked + ' blocked · click to filter');
+    if (k.blocked > 0) sub.setAttribute('data-tone', 'danger');
+    blockedBtn.appendChild(sub);
+    node.appendChild(blockedBtn);
+    return node;
+  }
+  function renderKpis(mount, k) {
+    mount.textContent = '';
+    if (!k) return;
+    var grid = el('div', 'kpi-grid');
+    grid.appendChild(kpiTile({
+      big: k.progressPct + '%', cap: 'complete',
+      sub: k.done + ' / ' + k.total + ' done' + (k.forecastDate ? ' · at this pace done ~' + k.forecastDate : ''),
+    }));
+    var delta = k.velocity7 - k.velocityPrev7;
+    grid.appendChild(kpiTile({
+      big: String(k.velocity7), cap: 'done / last 7 days',
+      sub: delta === 0 ? '± 0 vs previous week' : (delta > 0 ? '▲ +' : '▼ ') + delta + ' vs previous week',
+      tone: delta > 0 ? 'ok' : delta < 0 ? 'danger' : undefined,
+    }));
+    grid.appendChild(wipBlockedTile(k));
+    var age = kpiTile({
+      big: k.oldestOpenDays === null ? '—' : k.oldestOpenDays + 'd', cap: 'oldest open task',
+      sub: k.medianOpenAgeDays === null ? '' : 'median ' + k.medianOpenAgeDays + 'd open',
+    });
+    if (k.oldestOpenId) {
+      var link = el('button', 'kpi-link', k.oldestOpenId);
+      link.type = 'button';
+      link.addEventListener('click', function () { openDetail(k.oldestOpenId); });
+      age.appendChild(link);
+    }
+    grid.appendChild(age);
+    mount.appendChild(grid);
+  }
+  function ageInDays(task) {
+    var raw = task.created || task.updated;
+    if (!raw) return null;
+    var t = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw + 'T12:00:00' : raw);
+    if (isNaN(t)) return null;
+    return Math.max(0, Math.round((Date.now() - t) / 86400000));
+  }
+  var STALE_DAYS = 14;
+  function renderAging(mount, tasks) {
+    mount.textContent = '';
+    var lanes = [];
+    var byStatus = {};
+    tasks.forEach(function (t) {
+      if (isDoneStatus(t.status)) return;
+      var days = ageInDays(t);
+      if (days === null) return;
+      if (!byStatus[t.status]) { byStatus[t.status] = []; lanes.push(t.status); }
+      byStatus[t.status].push({ task: t, days: days });
+    });
+    if (lanes.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No datable open tasks.'));
+      return;
+    }
+    var maxDays = 1;
+    lanes.forEach(function (s) { byStatus[s].forEach(function (e) { if (e.days > maxDays) maxDays = e.days; }); });
+    var labelW = 130, w = 780, laneH = 34, padR = 20;
+    var h = lanes.length * laneH + 24;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'aging', role: 'img', 'aria-label': 'Open tasks by age in days' });
+    lanes.forEach(function (s, i) {
+      var y = i * laneH + 22;
+      var lbl = svgEl('text', { x: labelW - 12, y: y + 4, 'text-anchor': 'end', 'class': 'aging-lane-label' });
+      lbl.textContent = s;
+      svg.appendChild(lbl);
+      svg.appendChild(svgEl('line', { x1: labelW, y1: y, x2: w - padR, y2: y, 'class': 'aging-track' }));
+      byStatus[s].forEach(function (e) {
+        var cx = labelW + (w - labelW - padR) * e.days / maxDays;
+        var dot = svgEl('circle', {
+          cx: cx.toFixed(1), cy: y, r: 6, 'class': 'age-dot',
+          fill: e.days >= STALE_DAYS ? 'var(--warn)' : TONE_VAR[toneOf(s)]
+        });
+        attachTitle(dot, e.task.id + ' · ' + e.task.title + ' · ' + e.days + 'd');
+        dot.addEventListener('click', function () { openDetail(e.task.id); });
+        svg.appendChild(dot);
+      });
+    });
+    var axis0 = svgEl('text', { x: labelW, y: h - 4, 'class': 'aging-axis' });
+    axis0.textContent = '0d';
+    var axisMax = svgEl('text', { x: w - padR, y: h - 4, 'text-anchor': 'end', 'class': 'aging-axis' });
+    axisMax.textContent = maxDays + 'd';
+    svg.appendChild(axis0);
+    svg.appendChild(axisMax);
+    mount.appendChild(svg);
+  }
+
   function renderBars(mount, milestones) {
     mount.textContent = '';
     if (milestones.length === 0) {
@@ -662,45 +1259,118 @@
     mount.appendChild(svg);
   }
 
-  function renderSparkline(mount, activity) {
+  function weekdayName(idx, style) {
+    /* 2024-01-07 was a Sunday; offset from it gives any weekday */
+    var ref = new Date(Date.UTC(2024, 0, 7 + idx));
+    try {
+      return new Intl.DateTimeFormat(undefined, { weekday: style, timeZone: 'UTC' }).format(ref);
+    } catch (e) {
+      return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][idx];
+    }
+  }
+  function renderActivityKpis(mount, k) {
     mount.textContent = '';
-    if (!activity || activity.length < 2) {
+    if (!k) return;
+    var grid = el('div', 'kpi-grid');
+    grid.appendChild(kpiTile({ big: String(k.activityTotal30), cap: 'tasks touched / 30 days' }));
+    grid.appendChild(kpiTile({ big: String(k.activityAvgPerWeek), cap: 'avg per week (26w)' }));
+    grid.appendChild(kpiTile({
+      big: k.busiestWeekday === null ? '—' : weekdayName(k.busiestWeekday, 'long'),
+      cap: 'most active day'
+    }));
+    grid.appendChild(kpiTile({ big: k.streakDays + 'd', cap: 'current streak' }));
+    mount.appendChild(grid);
+  }
+  function renderDayPanel(panel, bucket) {
+    panel.textContent = '';
+    panel.hidden = false;
+    var head = el('h4', '', bucket.date + ' — ' + bucket.count + ' task' + (bucket.count === 1 ? '' : 's'));
+    panel.appendChild(head);
+    var list = el('ul', 'flow-list');
+    var shown = 0;
+    bucket.ids.forEach(function (id) {
+      var t = findTask(id);
+      if (!t) return;
+      shown++;
+      var li = el('li', 'flow-card');
+      var h = el('div', 'flow-card-head');
+      h.appendChild(el('span', 'flow-card-id', t.id));
+      var chip = el('span', 'status-chip', t.status);
+      chip.setAttribute('data-tone', toneOf(t.status));
+      h.appendChild(chip);
+      li.appendChild(h);
+      li.appendChild(el('div', 'flow-card-title', t.title));
+      li.addEventListener('click', function () { openDetail(t.id); });
+      list.appendChild(li);
+    });
+    if (shown === 0) panel.appendChild(el('p', 'flow-empty', 'No task details for this day.'));
+    else panel.appendChild(list);
+  }
+  function renderHeatmap(mount, activity) {
+    mount.textContent = '';
+    if (!activity || activity.length === 0) {
       mount.appendChild(el('p', 'hint', 'No activity data.'));
       return;
     }
-    var w = 780, h = 150, padL = 14, padR = 14, padT = 18, padB = 26;
+    var panel = document.getElementById('day-panel');
+    var cell = 12, gap = 3, padL = 34, padT = 16;
+    var first = new Date(activity[0].date + 'T00:00:00Z');
+    var offset = first.getUTCDay();
+    var cols = Math.ceil((activity.length + offset) / 7);
+    var w = padL + cols * (cell + gap);
+    var h = padT + 7 * (cell + gap) + 14;
     var max = 1;
     activity.forEach(function (b) { if (b.count > max) max = b.count; });
-    function px(i) { return padL + (w - padL - padR) * i / (activity.length - 1); }
-    function py(c) { return padT + (h - padT - padB) * (1 - c / max); }
-    var svg = svgEl('svg', {
-      viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'spark',
-      role: 'img', 'aria-label': 'Task activity over the last 30 days'
+    var svg = svgEl('svg', { viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'heatmap', role: 'img', 'aria-label': 'Daily task activity, last 26 weeks' });
+    [1, 3, 5].forEach(function (row) {
+      var lbl = svgEl('text', { x: padL - 6, y: padT + row * (cell + gap) + cell - 2, 'text-anchor': 'end', 'class': 'hm-axis' });
+      lbl.textContent = weekdayName(row, 'short');
+      svg.appendChild(lbl);
     });
-    var coords = activity.map(function (b, i) {
-      return px(i).toFixed(1) + ',' + py(b.count).toFixed(1);
-    });
-    var areaD = 'M' + px(0).toFixed(1) + ',' + (h - padB) +
-      ' L ' + coords.join(' L ') +
-      ' L ' + px(activity.length - 1).toFixed(1) + ',' + (h - padB) + ' Z';
-    svg.appendChild(svgEl('path', { d: areaD, 'class': 'spark-area' }));
-    svg.appendChild(svgEl('polyline', { points: coords.join(' '), 'class': 'spark-line' }));
+    var lastMonth = '';
     activity.forEach(function (b, i) {
-      var dot = svgEl('circle', {
-        cx: px(i).toFixed(1), cy: py(b.count).toFixed(1),
-        r: b.count > 0 ? 3.5 : 2,
-        'class': b.count > 0 ? 'spark-dot nonzero' : 'spark-dot'
+      var pos = i + offset;
+      var col = Math.floor(pos / 7), row = pos % 7;
+      var level = b.count === 0 ? 0 : Math.max(1, Math.ceil((b.count / max) * 4));
+      var rect = svgEl('rect', {
+        x: padL + col * (cell + gap), y: padT + row * (cell + gap),
+        width: cell, height: cell, rx: 2.5,
+        'class': 'hm-cell hm-' + level, 'data-date': b.date
       });
-      attachTitle(dot, b.date + ': ' + b.count);
-      svg.appendChild(dot);
+      attachTitle(rect, b.date + ': ' + b.count);
+      rect.addEventListener('click', function () { if (panel) renderDayPanel(panel, b); });
+      svg.appendChild(rect);
+      var month = b.date.slice(0, 7);
+      if (row === 0 && month !== lastMonth) {
+        lastMonth = month;
+        var m = svgEl('text', { x: padL + col * (cell + gap), y: padT - 5, 'class': 'hm-axis' });
+        m.textContent = b.date.slice(5, 7);
+        svg.appendChild(m);
+      }
     });
-    var first = svgEl('text', { x: padL, y: h - 7, 'class': 'spark-axis' });
-    first.textContent = activity[0].date;
-    var last = svgEl('text', { x: w - padR, y: h - 7, 'text-anchor': 'end', 'class': 'spark-axis' });
-    last.textContent = activity[activity.length - 1].date;
-    svg.appendChild(first);
-    svg.appendChild(last);
     mount.appendChild(svg);
+  }
+
+  function renderPhaseDetail(panel, p, isGate) {
+    panel.textContent = '';
+    panel.classList.toggle('gate', isGate);
+    var head = el('div', 'phase-detail-head');
+    head.appendChild(el('span', 'phase-detail-num', String(p.n).padStart(2, '0')));
+    head.appendChild(el('span', 'phase-detail-name', p.name));
+    panel.appendChild(head);
+    panel.appendChild(el('p', 'phase-detail-gate', p.gate));
+    if (p.command) {
+      var cmd = el('button', 'phase-cmd');
+      cmd.type = 'button';
+      cmd.appendChild(el('span', 'cmd-line', p.command));
+      cmd.appendChild(el('span', 'cmd-title', 'copy'));
+      cmd.addEventListener('click', function () { copyCommand(cmd, p.command); });
+      panel.appendChild(cmd);
+    }
+    panel.hidden = false;
+    panel.classList.remove('open');
+    void panel.offsetWidth; /* restart the open animation on re-render */
+    panel.classList.add('open');
   }
 
   function renderStepper(mount, phases) {
@@ -709,17 +1379,36 @@
       mount.appendChild(el('p', 'hint', 'Pipeline unavailable.'));
       return;
     }
+    var panel = document.getElementById('phase-detail');
     var wrap = el('div', 'stepper');
+    var current = null;
     phases.forEach(function (p) {
-      var step = el('div', 'step' + (/gate/i.test(String(p.name)) ? ' gate' : ''));
+      var isGate = /gate/i.test(String(p.name));
+      var step = el('button', 'step' + (isGate ? ' gate' : ''));
+      step.type = 'button';
       step.setAttribute('data-phase', p.n);
+      step.setAttribute('aria-expanded', 'false');
+      step.setAttribute('aria-controls', 'phase-detail');
       step.appendChild(el('div', 'step-num', String(p.n)));
-      var lab = el('div', 'step-label');
-      var b = document.createElement('b');
-      b.textContent = p.name;
-      lab.appendChild(b);
-      lab.appendChild(document.createTextNode(p.gate));
-      step.appendChild(lab);
+      step.appendChild(el('span', 'step-label', p.name));
+      var phaseKey = PHASE_STEP[p.n];
+      if (phaseKey && phaseCounts[phaseKey] > 0) {
+        step.appendChild(el('span', 'step-count', String(phaseCounts[phaseKey])));
+      }
+      step.addEventListener('click', function () {
+        if (!panel) return;
+        var wasOpen = current === step;
+        wrap.querySelectorAll('.step').forEach(function (s) { s.setAttribute('aria-expanded', 'false'); });
+        if (wasOpen) {
+          panel.hidden = true;
+          panel.classList.remove('open');
+          current = null;
+          return;
+        }
+        step.setAttribute('aria-expanded', 'true');
+        current = step;
+        renderPhaseDetail(panel, p, isGate);
+      });
       wrap.appendChild(step);
     });
     mount.appendChild(wrap);
@@ -732,10 +1421,22 @@
   } catch (e) {
     phases = [];
   }
+
+  /* ---------- Pipeline phase state (labels on tasks) ---------- */
+  var PHASE_STEP = { 5: 'spec', 6: 'plan', 7: 'impl', 8: 'verify' };
+  var NEXT_PHASE = { spec: 'plan', plan: 'impl', impl: 'verify', verify: 'done' };
+  var phaseCounts = { spec: 0, plan: 0, impl: 0, verify: 0 };
+  data.tasks.forEach(function (t) {
+    if (t.phase && phaseCounts[t.phase] !== undefined) phaseCounts[t.phase] += 1;
+  });
+
   if ($('#donut')) renderDonut($('#donut'), data.statuses);
+  if ($('#kpis')) renderKpis($('#kpis'), data.kpis);
+  if ($('#aging')) renderAging($('#aging'), data.tasks);
   if ($('#bars')) renderBars($('#bars'), data.milestones);
   if ($('#stepper')) renderStepper($('#stepper'), phases);
-  if ($('#spark')) renderSparkline($('#spark'), data.activity);
+  if ($('#activity-kpis')) renderActivityKpis($('#activity-kpis'), data.kpis);
+  if ($('#heatmap')) renderHeatmap($('#heatmap'), data.activity);
 
   /* ---------- Glossary tooltips ---------- */
   var glossary = {};
@@ -831,32 +1532,68 @@
     return list;
   }
   function depSection(titleText, ids) {
+    var valid = ids.filter(function (id) { return findTask(id); });
+    if (valid.length === 0) return null;
     var block = el('div');
     block.appendChild(el('h4', '', titleText));
     var row = el('div', 'dep-row');
-    ids.filter(function (id) { return findTask(id); }).forEach(function (id) {
-      var btn = el('button', 'dep-link', id);
+    valid.forEach(function (id) {
+      var dep = findTask(id);
+      var btn = el('button', 'dep-link');
       btn.type = 'button';
+      var dot = el('span', 'dep-dot' + (dep && isDoneStatus(dep.status) ? ' done' : ''));
+      dot.setAttribute('aria-hidden', 'true');
+      btn.appendChild(dot);
+      btn.appendChild(document.createTextNode(id));
       btn.addEventListener('click', function () { openDetail(id); });
       row.appendChild(btn);
     });
-    if (row.children.length === 0) row.appendChild(el('p', 'detail-empty', 'None'));
     block.appendChild(row);
     return block;
   }
-  function metaRow(task) {
-    var row = el('div', 'meta-row');
-    function item(label, value) {
-      var s = el('span');
-      s.appendChild(el('span', 'meta-label', label + ': '));
-      s.appendChild(document.createTextNode(value || '—'));
-      return s;
+  var PRIORITY_TONE = { high: 'danger', medium: 'warn', low: 'dim' };
+  function priorityTone(priority) {
+    return PRIORITY_TONE[String(priority || '').toLowerCase()] || '';
+  }
+  function metaGrid(task) {
+    var grid = el('div', 'detail-meta');
+    function cell(label, value, tone) {
+      var c = el('div', 'meta-cell');
+      c.appendChild(el('span', 'meta-label', label));
+      var v = el('span', 'meta-value' + (value ? '' : ' empty'), value || '—');
+      if (value && tone) v.setAttribute('data-tone', tone);
+      c.appendChild(v);
+      return c;
     }
-    row.appendChild(item('Milestone', task.milestone));
-    row.appendChild(item('Priority', task.priority));
-    row.appendChild(item('Assignee', task.assignee));
-    row.appendChild(item('Updated', task.updated));
-    return row;
+    grid.appendChild(cell('Milestone', task.milestone));
+    grid.appendChild(cell('Priority', task.priority, priorityTone(task.priority)));
+    grid.appendChild(cell('Phase', task.phase ? 'phase/' + task.phase : ''));
+    grid.appendChild(cell('Assignee', task.assignee));
+    grid.appendChild(cell('Updated', task.updated));
+    return grid;
+  }
+  function descParagraphs(text) {
+    var frag = document.createDocumentFragment();
+    String(text).split(/\n\s*\n/).forEach(function (para) {
+      var trimmed = para.trim();
+      if (trimmed !== '') frag.appendChild(el('p', 'detail-desc', trimmed));
+    });
+    return frag;
+  }
+  function acSection(task) {
+    var frag = document.createDocumentFragment();
+    var done = task.acs.filter(function (ac) { return ac.checked; }).length;
+    frag.appendChild(el('h4', '', 'Acceptance criteria'));
+    var progress = el('div', 'ac-progress');
+    progress.appendChild(el('span', 'ac-count', done + ' / ' + task.acs.length + ' done'));
+    var bar = el('div', 'ac-bar');
+    var fill = el('div', 'ac-bar-fill');
+    fill.style.width = task.acs.length > 0 ? Math.round((done / task.acs.length) * 100) + '%' : '0%';
+    bar.appendChild(fill);
+    progress.appendChild(bar);
+    frag.appendChild(progress);
+    frag.appendChild(acList(task));
+    return frag;
   }
   function openDetail(id) {
     var t = findTask(id);
@@ -873,21 +1610,114 @@
     closeBtn.addEventListener('click', closeDetail);
     head.appendChild(closeBtn);
     content.appendChild(head);
-    content.appendChild(el('h3', 'detail-title', t.title));
-    content.appendChild(el('p', 'detail-desc', t.description || 'No description.'));
-    content.appendChild(metaRow(t));
-    if (t.acs.length > 0) {
-      content.appendChild(el('h4', '', 'Acceptance criteria'));
-      content.appendChild(acList(t));
+    var title = el('h3', 'detail-title', t.title);
+    title.id = 'detail-title-h';
+    dialog.setAttribute('aria-labelledby', 'detail-title-h');
+    content.appendChild(title);
+    if (t.description) {
+      content.appendChild(descParagraphs(t.description));
+    } else {
+      content.appendChild(el('p', 'detail-desc', 'No description.'));
     }
-    content.appendChild(depSection('Depends on', depsOut[id] || []));
-    content.appendChild(depSection('Needed by', depsIn[id] || []));
+    content.appendChild(metaGrid(t));
+    if (t.acs.length > 0) content.appendChild(acSection(t));
+    var out = depSection('Depends on', depsOut[id] || []);
+    if (out) content.appendChild(out);
+    var inn = depSection('Needed by', depsIn[id] || []);
+    if (inn) content.appendChild(inn);
+    var cmd = el('button', 'phase-cmd detail-cmd');
+    cmd.type = 'button';
+    /* backlog task ids are TASK-<n>; other prefixes fall back to the raw id */
+    var cmdLine = 'backlog task edit ' + t.id.replace(/^task-/i, '');
+    cmd.appendChild(el('span', 'cmd-line', cmdLine));
+    cmd.appendChild(el('span', 'cmd-title', 'copy'));
+    cmd.addEventListener('click', function () { copyCommand(cmd, cmdLine); });
+    content.appendChild(cmd);
+    if (t.phase && NEXT_PHASE[t.phase]) {
+      var advanceCmd = 'sbl phase ' + t.id.replace(/^task-/i, '') + ' ' + NEXT_PHASE[t.phase];
+      var adv = el('button', 'phase-cmd detail-cmd');
+      adv.type = 'button';
+      adv.appendChild(el('span', 'cmd-line', advanceCmd));
+      adv.appendChild(el('span', 'cmd-title', 'copy: advance'));
+      adv.addEventListener('click', function () { copyCommand(adv, advanceCmd); });
+      content.appendChild(adv);
+    }
     dialog.textContent = '';
     dialog.appendChild(content);
     dialog.showModal();
   }
   window.__sblOpenDetail = openDetail;
   if (dialog) dialog.addEventListener('click', function (ev) { if (ev.target === dialog) closeDetail(); });
+
+  /* ---------- Drafts ---------- */
+  function draftMetaGrid(d) {
+    var grid = el('div', 'detail-meta');
+    function cell(label, value, tone) {
+      var c = el('div', 'meta-cell');
+      c.appendChild(el('span', 'meta-label', label));
+      var v = el('span', 'meta-value' + (value ? '' : ' empty'), value || '—');
+      if (value && tone) v.setAttribute('data-tone', tone);
+      c.appendChild(v);
+      return c;
+    }
+    grid.appendChild(cell('Priority', d.priority, priorityTone(d.priority)));
+    grid.appendChild(cell('Assignee', d.assignee));
+    grid.appendChild(cell('Created', d.created));
+    grid.appendChild(cell('Updated', d.updated));
+    return grid;
+  }
+  function openDraftDetail(d) {
+    if (!dialog) return;
+    var content = el('div', 'dialog-content');
+    var head = el('div', 'detail-head');
+    head.appendChild(el('span', 'detail-id', d.id));
+    var chip = el('span', 'status-chip', d.status);
+    chip.setAttribute('data-tone', toneOf(d.status));
+    head.appendChild(chip);
+    var closeBtn = el('button', 'detail-close', '×');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close details');
+    closeBtn.addEventListener('click', closeDetail);
+    head.appendChild(closeBtn);
+    content.appendChild(head);
+    var title = el('h3', 'detail-title', d.title);
+    title.id = 'detail-title-h';
+    dialog.setAttribute('aria-labelledby', 'detail-title-h');
+    content.appendChild(title);
+    if (d.description) content.appendChild(descParagraphs(d.description));
+    else content.appendChild(el('p', 'detail-desc', 'No description.'));
+    content.appendChild(draftMetaGrid(d));
+    if (d.acs && d.acs.length > 0) content.appendChild(acSection(d));
+    var cmd = el('button', 'phase-cmd detail-cmd');
+    cmd.type = 'button';
+    var cmdLine = 'backlog draft promote ' + d.id.replace(/^task-/i, '');
+    cmd.appendChild(el('span', 'cmd-line', cmdLine));
+    cmd.appendChild(el('span', 'cmd-title', 'copy'));
+    cmd.addEventListener('click', function () { copyCommand(cmd, cmdLine); });
+    content.appendChild(cmd);
+    dialog.textContent = '';
+    dialog.appendChild(content);
+    dialog.showModal();
+  }
+  function renderDrafts(drafts) {
+    var list = document.getElementById('drafts-list');
+    if (!list) return;
+    list.textContent = '';
+    if (!drafts || drafts.length === 0) { list.appendChild(el('li', '', 'No drafts.')); return; }
+    drafts.forEach(function (d) {
+      var li = el('li', 'flow-card');
+      var head = el('div', 'flow-card-head');
+      head.appendChild(el('span', 'flow-card-id', d.id));
+      var chip = el('span', 'status-chip', d.status);
+      chip.setAttribute('data-tone', toneOf(d.status));
+      head.appendChild(chip);
+      li.appendChild(head);
+      li.appendChild(el('div', 'flow-card-title', d.title));
+      li.addEventListener('click', function () { openDraftDetail(d); });
+      list.appendChild(li);
+    });
+  }
+  renderDrafts(data.drafts);
 
   /* ---------- Keyboard shortcuts ---------- */
   document.addEventListener('keydown', function (ev) {
@@ -976,7 +1806,7 @@
 <script>
 (function () {
   if (!window.EventSource || (location.protocol !== 'http:' && location.protocol !== 'https:')) return;
-  var es = new EventSource('/api/events');
+  var es = new EventSource('api/events');
   es.addEventListener('reload', function () { location.reload(); });
   es.addEventListener('error', function () {});
 })();

@@ -896,6 +896,14 @@
   }
   if (backlogBtn) {
     backlogBtn.addEventListener('click', function () {
+      var hosted = location.hostname !== '127.0.0.1' && location.hostname !== 'localhost';
+      if (hosted) {
+        /* static preview (e.g. GitHub Pages): no hub, no browser process */
+        cmdFeedback(backlogBtn, 'needs local hub');
+        backlogBtn.setAttribute('data-tip', 'Static preview: this button opens the Backlog.md UI only under sbl dashboard. Run sbl dashboard in your project and open http://localhost:6428');
+        backlogBtn.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+        return;
+      }
       cmdFeedback(backlogBtn, 'starting\u2026');
       fetch('api/backlog-browser', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
