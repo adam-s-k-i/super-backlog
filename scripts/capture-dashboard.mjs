@@ -102,8 +102,16 @@ try {
     process.exit(1);
   }
   const html = renderDashboard(data);
+  // Pin the dark theme for the screenshot: the page follows
+  // prefers-color-scheme, which is "light" in headless Chrome.
+  const themeInit = "window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'";
+  const darkHtml = html.replace(themeInit, "'dark'");
+  if (darkHtml === html) {
+    console.error('error: theme init not found in rendered dashboard - screenshot would not be dark; aborted');
+    process.exit(1);
+  }
   const htmlPath = join(parent, 'dashboard.html');
-  writeFileSync(htmlPath, html);
+  writeFileSync(htmlPath, darkHtml);
 
   const browser = findBrowser();
   if (!browser) {
