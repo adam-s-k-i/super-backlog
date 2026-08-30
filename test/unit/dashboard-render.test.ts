@@ -262,17 +262,32 @@ describe('renderDashboard footer', () => {
   });
 });
 
+describe('status kpis', () => {
+  it('mounts KPI tiles and the aging strip in section 02', () => {
+    const sec = /<section id="sec-02">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    expect(sec).toContain('id="kpis"');
+    expect(sec).toContain('id="aging"');
+  });
+
+  it('declares the approximation in tile tooltips and supports special filters', () => {
+    expect(html).toContain('no status history');
+    expect(html).toContain("state.special === 'wip'");
+    expect(html).toContain("state.special === 'blocked'");
+  });
+});
+
 describe('inline app budget', () => {
-  it('keeps the inline app script within 900 lines of vanilla JS', () => {
+  it('keeps the inline app script within 1050 lines of vanilla JS', () => {
     // Budget raised from the original 650 as approved features landed:
     // stepper detail + update badge, backlog overlay, task-dialog rework,
-    // models modal (~770 lines as of the last raise), task table v2 with
-    // natural sort and locale-aware formatting (~893 lines). The cap still guards
-    // against unbounded growth — raise it only for approved feature work.
+    // models modal, task table v2 with natural sort and locale-aware
+    // formatting (900 as of the last raise), and status KPI tiles + aging
+    // strip with wip/blocked special filters (~1030 lines). The cap still
+    // guards against unbounded growth — raise it only for approved feature work.
     const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
     expect(m).toBeTruthy();
     const lines = (m?.[1] ?? '').split('\n').length;
-    expect(lines).toBeLessThanOrEqual(900);
+    expect(lines).toBeLessThanOrEqual(1050);
   });
 });
 

@@ -327,6 +327,30 @@
   .legend-list li:hover { color: var(--text); }
   .legend-list .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 
+  /* ---------- KPI tiles ---------- */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .kpi {
+    display: block; text-align: left; font: inherit; color: inherit; cursor: default;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  button.kpi { cursor: pointer; }
+  button.kpi:hover { border-color: var(--accent); }
+  button.kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.kpi[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-bg); }
+  .kpi-big { font-family: var(--mono); font-size: 1.7rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .kpi-cap { display: block; color: var(--dim); font-size: .66rem; letter-spacing: 1.4px; text-transform: uppercase; margin-top: 4px; }
+  .kpi-sub { display: block; font-size: .78rem; color: var(--muted); margin-top: 8px; }
+  .kpi-sub[data-tone="ok"] { color: var(--ok); }
+  .kpi-sub[data-tone="danger"] { color: var(--danger); }
+  .kpi-link { font: inherit; background: none; border: none; padding: 0; color: var(--accent); cursor: pointer; font-family: var(--mono); font-size: .78rem; }
+  .kpi-link:hover { filter: brightness(1.25); }
+  /* ---------- Aging strip ---------- */
+  .aging-lane-label { fill: var(--text); font-size: 12px; font-family: var(--mono); }
+  .aging-axis { fill: var(--dim); font-size: 10px; font-family: var(--mono); }
+  .aging-track { stroke: var(--line); }
+  .age-dot { cursor: pointer; }
+  .age-dot:hover { opacity: .8; }
+
   /* ---------- Milestone bars ---------- */
   .bars text { font-family: var(--mono); }
   .bar-label { fill: var(--text); font-size: 12.5px; }
@@ -517,8 +541,11 @@
 </section>
 
 <section id="sec-02">
-  <div class="sec-head"><span class="sec-num">02</span><h2>Status</h2><span class="tagline">tasks per status</span></div>
+  <div class="sec-head"><span class="sec-num">02</span><h2>Status</h2><span class="tagline">progress &middot; velocity &middot; wip &middot; age</span></div>
+  <div id="kpis" class="mount"></div>
   <div id="donut" class="mount"></div>
+  <h3 class="sub-head">Aging &mdash; open tasks by days in the backlog</h3>
+  <div id="aging" class="mount"></div>
 </section>
 
 <section id="sec-03">
@@ -639,7 +666,7 @@
   }
 
   var KEYS = ['id', 'title', 'status', 'milestone', 'priority', 'assignee', 'updated'];
-  var state = { key: 'id', dir: 1, query: '', status: null, hoverStatus: null };
+  var state = { key: 'id', dir: 1, query: '', status: null, hoverStatus: null, special: null };
   function field(task, key) {
     var v = task[key];
     return v === undefined || v === null ? '' : String(v);
@@ -650,6 +677,8 @@
   function matches(task) {
     var eff = activeStatus();
     if (eff && field(task, 'status').toLowerCase() !== eff.toLowerCase()) return false;
+    if (state.special === 'wip' && !isWipStatus(task.status)) return false;
+    if (state.special === 'blocked' && !isBlockedTask(task)) return false;
     if (!state.query) return true;
     var hit = KEYS.some(function (k) {
       return field(task, k).toLowerCase().indexOf(state.query) !== -1;
@@ -657,6 +686,31 @@
     return hit || task.acs.some(function (ac) {
       return ac.text.toLowerCase().indexOf(state.query) !== -1;
     });
+  }
+  function isWipStatus(status) {
+    var s = String(status || '').toLowerCase();
+    return s.indexOf('progress') !== -1 || s === 'review';
+  }
+  function isBlockedTask(task) {
+    var s = String(task.status || '').toLowerCase();
+    if (isDoneStatus(task.status)) return false;
+    if (s.indexOf('block') !== -1) return true;
+    if (!depsOut) return false;
+    var blockers = depsOut[task.id] || [];
+    for (var i = 0; i < blockers.length; i++) {
+      var dep = findTask(blockers[i]);
+      if (dep && !isDoneStatus(dep.status)) return true;
+    }
+    return false;
+  }
+  function setSpecialFilter(kind) {
+    state.special = state.special === kind ? null : kind;
+    state.status = null;
+    document.querySelectorAll('#pills .pill').forEach(function (pill) { pill.classList.remove('active'); });
+    document.querySelectorAll('.kpi[data-special]').forEach(function (tile) {
+      tile.setAttribute('aria-pressed', String(state.special === tile.getAttribute('data-special')));
+    });
+    renderTasks();
   }
   var tbody = $('#task-rows');
   function compareTasks(a, b, key) {
@@ -755,8 +809,12 @@
   }
   function setStatusFilter(status) {
     state.status = status || null;
+    state.special = null;
     document.querySelectorAll('#pills .pill').forEach(function (pill) {
       pill.classList.toggle('active', !!state.status && pill.getAttribute('data-status') === state.status);
+    });
+    document.querySelectorAll('.kpi[data-special]').forEach(function (tile) {
+      tile.setAttribute('aria-pressed', 'false');
     });
     renderTasks();
   }
@@ -1002,6 +1060,110 @@
     mount.appendChild(wrap);
   }
 
+  var APPROX_TIP = 'Approximation from created/updated timestamps — Backlog.md keeps no status history.';
+  function kpiTile(opts) {
+    var node = el(opts.special ? 'button' : 'div', 'kpi');
+    if (opts.special) {
+      node.type = 'button';
+      node.setAttribute('data-special', opts.special);
+      node.setAttribute('aria-pressed', 'false');
+      node.addEventListener('click', function () { setSpecialFilter(opts.special); });
+    }
+    node.setAttribute('data-tip', APPROX_TIP);
+    node.appendChild(el('span', 'kpi-big', opts.big));
+    node.appendChild(el('span', 'kpi-cap', opts.cap));
+    if (opts.sub) {
+      var sub = el('span', 'kpi-sub', opts.sub);
+      if (opts.tone) sub.setAttribute('data-tone', opts.tone);
+      node.appendChild(sub);
+    }
+    return node;
+  }
+  function renderKpis(mount, k) {
+    mount.textContent = '';
+    if (!k) return;
+    var grid = el('div', 'kpi-grid');
+    grid.appendChild(kpiTile({
+      big: k.progressPct + '%', cap: 'complete',
+      sub: k.done + ' / ' + k.total + ' done' + (k.forecastDate ? ' · at this pace done ~' + k.forecastDate : ''),
+    }));
+    var delta = k.velocity7 - k.velocityPrev7;
+    grid.appendChild(kpiTile({
+      big: String(k.velocity7), cap: 'done / last 7 days',
+      sub: delta === 0 ? '± 0 vs previous week' : (delta > 0 ? '▲ +' : '▼ ') + delta + ' vs previous week',
+      tone: delta > 0 ? 'ok' : delta < 0 ? 'danger' : undefined,
+    }));
+    grid.appendChild(kpiTile({
+      big: String(k.wip), cap: 'in progress', special: 'wip',
+      sub: k.blocked + ' blocked · click to filter', tone: k.blocked > 0 ? 'danger' : undefined,
+    }));
+    var age = kpiTile({
+      big: k.oldestOpenDays === null ? '—' : k.oldestOpenDays + 'd', cap: 'oldest open task',
+      sub: k.medianOpenAgeDays === null ? '' : 'median ' + k.medianOpenAgeDays + 'd open',
+    });
+    if (k.oldestOpenId) {
+      var link = el('button', 'kpi-link', k.oldestOpenId);
+      link.type = 'button';
+      link.addEventListener('click', function () { openDetail(k.oldestOpenId); });
+      age.appendChild(link);
+    }
+    grid.appendChild(age);
+    mount.appendChild(grid);
+  }
+  function ageInDays(task) {
+    var raw = task.created || task.updated;
+    if (!raw) return null;
+    var t = Date.parse(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw + 'T12:00:00Z' : raw);
+    if (isNaN(t)) return null;
+    return Math.max(0, Math.round((Date.now() - t) / 86400000));
+  }
+  var STALE_DAYS = 14;
+  function renderAging(mount, tasks) {
+    mount.textContent = '';
+    var lanes = [];
+    var byStatus = {};
+    tasks.forEach(function (t) {
+      if (isDoneStatus(t.status)) return;
+      var days = ageInDays(t);
+      if (days === null) return;
+      if (!byStatus[t.status]) { byStatus[t.status] = []; lanes.push(t.status); }
+      byStatus[t.status].push({ task: t, days: days });
+    });
+    if (lanes.length === 0) {
+      mount.appendChild(el('p', 'hint', 'No datable open tasks.'));
+      return;
+    }
+    var maxDays = 1;
+    lanes.forEach(function (s) { byStatus[s].forEach(function (e) { if (e.days > maxDays) maxDays = e.days; }); });
+    var labelW = 130, w = 780, laneH = 34, padR = 20;
+    var h = lanes.length * laneH + 24;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + w + ' ' + h, width: '100%', 'class': 'aging', role: 'img', 'aria-label': 'Open tasks by age in days' });
+    lanes.forEach(function (s, i) {
+      var y = i * laneH + 22;
+      var lbl = svgEl('text', { x: labelW - 12, y: y + 4, 'text-anchor': 'end', 'class': 'aging-lane-label' });
+      lbl.textContent = s;
+      svg.appendChild(lbl);
+      svg.appendChild(svgEl('line', { x1: labelW, y1: y, x2: w - padR, y2: y, 'class': 'aging-track' }));
+      byStatus[s].forEach(function (e) {
+        var cx = labelW + (w - labelW - padR) * e.days / maxDays;
+        var dot = svgEl('circle', {
+          cx: cx.toFixed(1), cy: y, r: 6, 'class': 'age-dot',
+          fill: e.days >= STALE_DAYS ? 'var(--warn)' : TONE_VAR[toneOf(s)]
+        });
+        attachTitle(dot, e.task.id + ' · ' + e.task.title + ' · ' + e.days + 'd');
+        dot.addEventListener('click', function () { openDetail(e.task.id); });
+        svg.appendChild(dot);
+      });
+    });
+    var axis0 = svgEl('text', { x: labelW, y: h - 4, 'class': 'aging-axis' });
+    axis0.textContent = '0d';
+    var axisMax = svgEl('text', { x: w - padR, y: h - 4, 'text-anchor': 'end', 'class': 'aging-axis' });
+    axisMax.textContent = maxDays + 'd';
+    svg.appendChild(axis0);
+    svg.appendChild(axisMax);
+    mount.appendChild(svg);
+  }
+
   function renderBars(mount, milestones) {
     mount.textContent = '';
     if (milestones.length === 0) {
@@ -1145,6 +1307,8 @@
     phases = [];
   }
   if ($('#donut')) renderDonut($('#donut'), data.statuses);
+  if ($('#kpis')) renderKpis($('#kpis'), data.kpis);
+  if ($('#aging')) renderAging($('#aging'), data.tasks);
   if ($('#bars')) renderBars($('#bars'), data.milestones);
   if ($('#stepper')) renderStepper($('#stepper'), phases);
   if ($('#spark')) renderSparkline($('#spark'), data.activity);
