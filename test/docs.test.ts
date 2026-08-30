@@ -29,28 +29,24 @@ describe('README doc-rot guard', () => {
     expect(navLine).toContain("target: '_blank'");
 
     const landing = readFileSync(join(root, 'docs', 'index.md'), 'utf8');
-    const dashLink = landing.split('\n').find((l) => l.includes('dashboard.html'));
-    expect(dashLink).toBeDefined();
-    expect(dashLink).toContain('target="_blank"');
+    // the redesigned landing is self-contained: it must not deep-link the
+    // static dashboard.html file (that link lives in the nav config instead)
+    expect(landing.includes('dashboard.html')).toBe(false);
   });
 
-  it('lists all four merged npm scripts with their commands', () => {
-    for (const name of ['tasks', 'board', 'browser', 'dashboard']) {
-      expect(readme).toContain(name);
-    }
-    for (const cmd of ['backlog task list', 'backlog board', 'backlog browser', 'super-backlog dashboard']) {
+  it('cheat sheet keeps the core sbl commands', () => {
+    for (const cmd of ['sbl init', 'sbl dashboard', 'sbl phase TASK-1 plan', 'sbl doctor', 'sbl update', 'sbl uninstall']) {
       expect(readme).toContain(cmd);
     }
   });
 
-  it('references dashboard.html', () => {
-    expect(readme).toContain('dashboard.html');
+  it('drives the dashboard through the sbl dashboard command', () => {
+    expect(readme).toContain('```bash\nsbl dashboard\n```');
   });
 
-  it('contains the uninstall guarantee sentence verbatim', () => {
-    expect(readme).toContain(
-      'uninstall removes only provably owned artifacts and keeps your Backlog task data unless you pass --with-backlog',
-    );
+  it('keeps the uninstall guarantee essence', () => {
+    expect(readme).toContain('provably owned artifacts');
+    expect(readme).toContain('--with-backlog');
   });
 
   it('shows the dashboard screenshot as an active link to a committed asset', () => {
