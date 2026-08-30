@@ -132,7 +132,7 @@ onMounted(() => {
   <div class="sec-head">
     <span class="sec-num">01</span>
     <h2>sbl Commands</h2>
-    <span class="tagline">hover for details · click Details for the full picture</span>
+    <span class="tagline">click Details for the full picture</span>
   </div>
   <p class="sec-sub">Every command is one click from your clipboard. Click <b>Details</b> for flags, variants, and the full picture.</p>
 
