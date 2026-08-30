@@ -14,6 +14,7 @@ function makeDeps(overrides: Partial<DepsWithLines> = {}): DepsWithLines {
     nodeVersion: '22.14.0',
     executor: () => ({ status: 0, stdout: 'RemoteSigned', stderr: '' }),
     resolveBacklog: () => 'C:\\proj\\node_modules\\.bin\\backlog.cmd',
+    readTaskLabels: () => [],
     log: (line: string) => lines.push(line),
     ...overrides,
   };
@@ -97,5 +98,50 @@ describe('runDoctor', () => {
     });
     expect(runDoctor('C:\\proj', deps)).toBe(4);
     expect(deps.lines.filter((l) => l.includes('[warn]')).length).toBe(3);
+  });
+});
+
+describe('check 4: phase label hygiene', () => {
+  interface TaskRow { id: string; status: string; labels: string[]; }
+
+  const PHASE_FIXTURES: TaskRow[] = [
+    { id: 'TASK-1', status: 'To Do', labels: ['feature', 'phase/spec'] },
+    { id: 'TASK-2', status: 'In Progress', labels: ['phase/impl'] },
+  ];
+
+  function phaseDeps(rows: TaskRow[] | null) {
+    return makeDeps({ readTaskLabels: () => rows });
+  }
+
+  it('ok when labels are clean', () => {
+    const d = phaseDeps(PHASE_FIXTURES);
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines.some((l) => l.includes('phase label hygiene clean (2 tasks)'))).toBe(true);
+  });
+
+  it('warns on In Progress without phase label (legacy)', () => {
+    const d = phaseDeps([{ id: 'TASK-3', status: 'In Progress', labels: ['feature'] }]);
+    expect(runDoctor('/proj', d)).toBe(4);
+    expect(d.lines.some((l) => l.includes('TASK-3: In Progress without phase label'))).toBe(true);
+    expect(d.lines.some((l) => l.includes('fix: sbl phase TASK-3 spec'))).toBe(true);
+  });
+
+  it('fails on multiple phase labels', () => {
+    const d = phaseDeps([{ id: 'TASK-4', status: 'To Do', labels: ['phase/spec', 'phase/impl'] }]);
+    expect(runDoctor('/proj', d)).toBe(1);
+    expect(d.lines.some((l) => l.includes('[fail]') && l.includes('TASK-4: multiple phase labels'))).toBe(true);
+  });
+
+  it('fails on unknown phase label values', () => {
+    const d = phaseDeps([{ id: 'TASK-5', status: 'To Do', labels: ['phase/deploy'] }]);
+    expect(runDoctor('/proj', d)).toBe(1);
+    expect(d.lines.some((l) => l.includes('TASK-5: unknown phase label phase/deploy'))).toBe(true);
+    expect(d.lines.some((l) => l.includes('backlog task edit TASK-5 --remove-label phase/deploy'))).toBe(true);
+  });
+
+  it('skips when task labels are unreadable', () => {
+    const d = phaseDeps(null);
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines.some((l) => l.includes('[skip]') && l.includes('phase label hygiene'))).toBe(true);
   });
 });
