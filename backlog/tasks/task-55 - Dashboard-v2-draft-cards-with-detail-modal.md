@@ -1,9 +1,10 @@
 ---
 id: TASK-55
 title: 'Dashboard v2: draft cards with detail modal'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 23:46'
+updated_date: '2026-08-30 02:16'
 labels:
   - dashboard
 milestone: m-1
@@ -23,7 +24,13 @@ Drafts render as clickable flow-card style cards (id, status chip, title); click
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Draft cards show status chips and open the modal on click
-- [ ] #2 Modal shows description, priority, assignee, created, updated and ACs when present
-- [ ] #3 Promote command is copyable from the modal
+- [x] #1 Draft cards show status chips and open the modal on click
+- [x] #2 Modal shows description, priority, assignee, created, updated and ACs when present
+- [x] #3 Promote command is copyable from the modal
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Draft flow-cards with status chips and full detail modal incl. copyable 'backlog draft promote' command. Verified: render tests; modal structure mirrors task dialog; draft card rendered in headless full-page shots.
+<!-- SECTION:FINAL_SUMMARY:END -->

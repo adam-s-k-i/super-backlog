@@ -1,9 +1,10 @@
 ---
 id: TASK-59
 title: 'Dashboard v2: status KPI tiles and aging strip'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 23:47'
+updated_date: '2026-08-30 02:16'
 labels:
   - dashboard
 milestone: m-1
@@ -23,7 +24,13 @@ Four KPI tiles (progress+forecast, velocity, wip/blocked as table filters, age w
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tiles render from data.kpis with approximation tooltips
-- [ ] #2 WIP and blocked tiles filter the tasks table and reset cleanly against pill filters
-- [ ] #3 Aging dots positioned by age, stale dots amber, click opens task modal
+- [x] #1 Tiles render from data.kpis with approximation tooltips
+- [x] #2 WIP and blocked tiles filter the tasks table and reset cleanly against pill filters
+- [x] #3 Aging dots positioned by age, stale dots amber, click opens task modal
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Four KPI tiles with approximation tooltips, wip+blocked as table filters (two sibling buttons, aria-pressed, mutual exclusion with pills), SVG aging strip with stale-amber dots opening the task modal. Verified: render tests; DOM interaction test on live server (filters, exclusion, empty state); headless shots.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,9 +1,10 @@
 ---
 id: TASK-61
 title: 'Dashboard v2: verification pass and docs touch-up'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 23:47'
+updated_date: '2026-08-30 02:16'
 labels:
   - dashboard
 milestone: m-1
@@ -23,7 +24,13 @@ Full npm test + npm run lint, stale docs wording updated (sections, sparkline, m
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 npm test and npm run lint pass
-- [ ] #2 Docs contain no stale references to the old layout
-- [ ] #3 Manual walkthrough of both themes, both modals, filters and shortcuts done
+- [x] #1 npm test and npm run lint pass
+- [x] #2 Docs contain no stale references to the old layout
+- [x] #3 Manual walkthrough of both themes, both modals, filters and shortcuts done
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Full npm test (460 pass) + lint clean; README/quickstart/capture-script wording updated to the new layout. Verified: commands re-run green after doc edits; controller completed the manual two-theme walkthrough.
+<!-- SECTION:FINAL_SUMMARY:END -->

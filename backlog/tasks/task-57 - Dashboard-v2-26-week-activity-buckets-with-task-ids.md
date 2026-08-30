@@ -1,9 +1,10 @@
 ---
 id: TASK-57
 title: 'Dashboard v2: 26-week activity buckets with task ids'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 23:47'
+updated_date: '2026-08-30 02:16'
 labels:
   - dashboard
 milestone: m-1
@@ -23,7 +24,13 @@ computeActivity produces 182 daily buckets carrying touched task ids; adds missi
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Buckets are exactly 182 days, oldest first, ending today, each with ids matching count
-- [ ] #2 camelCase updatedAt/createdAt are honored
-- [ ] #3 Render test fixtures updated
+- [x] #1 Buckets are exactly 182 days, oldest first, ending today, each with ids matching count
+- [x] #2 camelCase updatedAt/createdAt are honored
+- [x] #3 Render test fixtures updated
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+computeActivity: 182 daily buckets with touched task ids, camelCase updatedAt/createdAt fallbacks (fixes all-today bucketing). Verified: unit tests (182 buckets, ids===count, drop-not-clamp); reviewer ran tsc --noEmit clean.
+<!-- SECTION:FINAL_SUMMARY:END -->

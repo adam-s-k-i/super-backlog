@@ -1,9 +1,10 @@
 ---
 id: TASK-51
 title: 'Dashboard v2: color tokens, light theme, theme toggle'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 23:46'
+updated_date: '2026-08-30 02:15'
 labels:
   - dashboard
 milestone: m-1
@@ -22,7 +23,13 @@ Tokenize every hardcoded color in src/templates/dashboard.html, add a light pale
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 No raw hex/rgb colors outside the two token blocks; a render test guards this
-- [ ] #2 Light theme block :root[data-theme=light] with contrast-checked values
-- [ ] #3 Toggle flips and persists the theme; reload shows no flash; system preference is the default
+- [x] #1 No raw hex/rgb colors outside the two token blocks; a render test guards this
+- [x] #2 Light theme block :root[data-theme=light] with contrast-checked values
+- [x] #3 Toggle flips and persists the theme; reload shows no flash; system preference is the default
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Tokenized all template colors, added light palette + pre-paint resolver + sidebar toggle. Verified: guard test forbids raw colors outside token blocks, contrast recomputed (worst pair 4.62:1), toggle/persistence exercised in live-browser walkthrough; render suite + full unit suite green.
+<!-- SECTION:FINAL_SUMMARY:END -->

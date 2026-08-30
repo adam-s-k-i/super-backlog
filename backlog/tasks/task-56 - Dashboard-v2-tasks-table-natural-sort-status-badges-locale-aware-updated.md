@@ -1,9 +1,10 @@
 ---
 id: TASK-56
 title: 'Dashboard v2: tasks table natural sort, status badges, locale-aware updated'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 23:46'
+updated_date: '2026-08-30 02:16'
 labels:
   - dashboard
 milestone: m-1
@@ -23,7 +24,13 @@ Field-aware comparator (numeric localeCompare; updated compares timestamps), sta
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Sorting by ID yields task-1, task-2, ..., task-10
-- [ ] #2 Status cells render the same chips as the task modal
-- [ ] #3 Updated shows relative time in the browser locale, exact timestamp as tooltip, centered; unparsable values fall back to the raw string
+- [x] #1 Sorting by ID yields task-1, task-2, ..., task-10
+- [x] #2 Status cells render the same chips as the task modal
+- [x] #3 Updated shows relative time in the browser locale, exact timestamp as tooltip, centered; unparsable values fall back to the raw string
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Field-aware natural sort (numeric localeCompare, timestamp for updated), status-chip badges, centered locale-aware Updated (relative + exact tooltip, raw fallback). Verified: render tests assert comparator/Intl usage; live table showed 'vor 2 Wochen' style output and task-1..task-2..task-10 ordering.
+<!-- SECTION:FINAL_SUMMARY:END -->
