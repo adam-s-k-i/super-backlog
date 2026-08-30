@@ -6,6 +6,8 @@ import { basename, join } from 'node:path';
 import { resolveBacklogBin, runCapture } from '../lib/run.js';
 import { isNewerVersion } from '../lib/version-check.js';
 import { readSimpleKeys } from '../lib/yamlmini.js';
+import { computeKpis } from './metrics.js';
+import type { DashboardKpis } from './metrics.js';
 
 export interface DashboardAC {
   text: string;
@@ -77,6 +79,7 @@ export interface DashboardData {
   drafts: DashboardDraft[];
   activity: DashboardActivityBucket[];
   glossary: DashboardGlossaryEntry[];
+  kpis: DashboardKpis;
   source: 'backlog-json' | 'fallback-empty';
 }
 
@@ -458,6 +461,7 @@ export function collectDashboardData(
     opts.today && /^\d{4}-\d{2}-\d{2}$/.test(opts.today.trim())
       ? opts.today.trim()
       : new Date().toISOString().slice(0, 10);
+  const activity = computeActivity([], today);
   const base: DashboardData = {
     project: readProjectIdentity(cwd),
     generatedAt: new Date().toISOString(),
@@ -468,8 +472,9 @@ export function collectDashboardData(
     tasks: [],
     deps: [],
     drafts: readDrafts(cwd),
-    activity: computeActivity([], today),
+    activity,
     glossary: mergeGlossary(readProjectGlossary(cwd)),
+    kpis: computeKpis([], [], activity, today),
     source: 'fallback-empty',
   };
   try {
@@ -479,13 +484,16 @@ export function collectDashboardData(
     if (res.status !== 0) return base;
     const rawTasks = parseTasksJson(res.stdout);
     const tasks = enrichTasksFromFiles(cwd, normalizeTasks(rawTasks));
+    const deps = computeDeps(rawTasks);
+    const taskActivity = computeActivity(rawTasks, today);
     return {
       ...base,
       tasks,
       statuses: computeStatuses(tasks),
       milestones: computeMilestones(tasks),
-      deps: computeDeps(rawTasks),
-      activity: computeActivity(rawTasks, today),
+      deps,
+      activity: taskActivity,
+      kpis: computeKpis(tasks, deps, taskActivity, today),
       source: 'backlog-json',
     };
   } catch {

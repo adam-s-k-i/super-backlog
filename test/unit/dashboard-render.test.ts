@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { PIPELINE_PHASES, renderDashboard } from '../../src/dashboard/render.js';
-import type { DashboardActivityBucket, DashboardData } from '../../src/dashboard/data.js';
+import type { DashboardActivityBucket, DashboardData, DashboardDep, DashboardTask } from '../../src/dashboard/data.js';
+import { computeKpis } from '../../src/dashboard/metrics.js';
 
 function buckets(nonZero: Record<number, number>): DashboardActivityBucket[] {
   const start = Date.UTC(2026, 6, 28); // 2026-07-28
@@ -15,6 +16,34 @@ function buckets(nonZero: Record<number, number>): DashboardActivityBucket[] {
     ids: [],
   }));
 }
+
+const SAMPLE_TASKS: DashboardTask[] = [
+  {
+    id: 'T-1', title: 'Ship auth flow', status: 'Done', priority: 'high', assignee: 'adam',
+    updated: '2026-08-20', milestone: 'M1', description: 'Handles <script>alert(1)</script> safely',
+    acs: [{ text: 'login works', checked: true }],
+  },
+  {
+    id: 'T-2', title: 'Add OAuth refresh', status: 'In Progress', priority: 'medium', assignee: 'kim',
+    updated: '2026-08-21', milestone: 'M1',
+    acs: [{ text: 'token rotation', checked: true }, { text: 'docs updated', checked: false }],
+  },
+  {
+    id: 'T-3', title: 'Write README', status: 'To Do', priority: 'low', milestone: 'M2',
+    acs: [],
+  },
+  {
+    id: 'T-4', title: 'Polish UI', status: 'In Progress', milestone: 'M2', updated: '2026-08-22',
+    acs: [{ text: 'dark mode', checked: false }],
+  },
+];
+
+const SAMPLE_DEPS: DashboardDep[] = [
+  { from: 'T-2', to: 'T-1' },
+  { from: 'T-4', to: 'T-2' },
+];
+
+const SAMPLE_ACTIVITY = buckets({ 0: 1, 25: 2, 29: 1 });
 
 const SAMPLE: DashboardData = {
   project: { name: 'demo-project', description: 'A demo <b>project</b>' },
@@ -30,31 +59,9 @@ const SAMPLE: DashboardData = {
     { name: 'M1', done: 1, total: 2 },
     { name: 'M2', done: 0, total: 2 },
   ],
-  tasks: [
-    {
-      id: 'T-1', title: 'Ship auth flow', status: 'Done', priority: 'high', assignee: 'adam',
-      updated: '2026-08-20', milestone: 'M1', description: 'Handles <script>alert(1)</script> safely',
-      acs: [{ text: 'login works', checked: true }],
-    },
-    {
-      id: 'T-2', title: 'Add OAuth refresh', status: 'In Progress', priority: 'medium', assignee: 'kim',
-      updated: '2026-08-21', milestone: 'M1',
-      acs: [{ text: 'token rotation', checked: true }, { text: 'docs updated', checked: false }],
-    },
-    {
-      id: 'T-3', title: 'Write README', status: 'To Do', priority: 'low', milestone: 'M2',
-      acs: [],
-    },
-    {
-      id: 'T-4', title: 'Polish UI', status: 'In Progress', milestone: 'M2', updated: '2026-08-22',
-      acs: [{ text: 'dark mode', checked: false }],
-    },
-  ],
-  deps: [
-    { from: 'T-2', to: 'T-1' },
-    { from: 'T-4', to: 'T-2' },
-  ],
-  activity: buckets({ 0: 1, 25: 2, 29: 1 }),
+  tasks: SAMPLE_TASKS,
+  deps: SAMPLE_DEPS,
+  activity: SAMPLE_ACTIVITY,
   glossary: [
     { term: 'AC', definition: 'Acceptance criterion.' },
     { term: 'Review Gate', definition: 'Human checkpoint before proceeding.' },
@@ -62,6 +69,7 @@ const SAMPLE: DashboardData = {
   drafts: [
     { id: 'DRAFT-1', title: 'Idea: offline mode', status: 'Draft', acs: [] },
   ],
+  kpis: computeKpis(SAMPLE_TASKS, SAMPLE_DEPS, SAMPLE_ACTIVITY, '2026-08-26'),
   source: 'backlog-json',
 };
 
