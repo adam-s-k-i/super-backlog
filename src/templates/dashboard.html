@@ -197,11 +197,11 @@
   #backlog-close:hover { color: var(--text); border-color: var(--line); }
   #backlog-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #backlog-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
-  .dialog-content { padding: 0 24px 26px; }
+  .dialog-content { padding: 6px 32px 32px; }
   .detail-head {
     position: sticky; top: 0; z-index: 1;
     display: flex; align-items: center; gap: 10px;
-    margin: 0 -24px 12px; padding: 16px 24px 12px;
+    margin: 0 -32px 12px; padding: 16px 32px 12px;
     background: var(--surface); border-bottom: 1px solid var(--line);
   }
   .detail-id { font-family: var(--mono); color: var(--accent); font-weight: 700; }
@@ -214,6 +214,10 @@
   .detail-close:hover { color: var(--danger); }
   .detail-title { font-size: 1.3rem; font-weight: 700; line-height: 1.3; margin-bottom: 10px; overflow-wrap: anywhere; }
   #task-dialog .detail-desc { color: var(--muted); line-height: 1.6; margin-bottom: 10px; white-space: normal; }
+  /* the global reset strips ul padding: without this, list markers poke
+     out of the dialog's content box on the left */
+  #task-dialog ul { list-style-position: inside; padding-left: 1.15rem; }
+  #task-dialog .ac-list { list-style: none; padding-left: 0; }
   #task-dialog h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.3px; text-transform: uppercase; margin: 18px 0 8px; }
   .detail-meta {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -282,11 +286,15 @@
   }
 
   /* ---------- Tasks table ---------- */
-  .toolbar { display: flex; justify-content: flex-end; margin-bottom: var(--sp, 12px); }
-  input[type="search"] {
+  .toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-bottom: var(--sp, 12px); }
+  .status-grid { display: grid; grid-template-columns: minmax(240px, 360px) 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .status-grid { grid-template-columns: 1fr; } }
+  input[type="search"], #tasksize {
     background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong);
     border-radius: 999px; padding: 7px 16px; min-width: 260px; font: inherit;
   }
+  #tasksize { min-width: 0; padding: 7px 12px; cursor: pointer; }
+  #tasksize:focus { outline: none; border-color: var(--accent-dim); box-shadow: 0 0 0 2px var(--focus-ring); }
   input[type="search"]:focus { outline: none; border-color: var(--accent-dim); box-shadow: 0 0 0 2px var(--focus-ring); }
   .table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: .89rem; }
@@ -516,11 +524,10 @@
     <a href="#sec-01"><span class="n">01</span>Board &amp; Quick Actions</a>
     <a href="#sec-02"><span class="n">02</span>Status</a>
     <a href="#sec-03"><span class="n">03</span>Feature Cycle</a>
-    <a href="#sec-04"><span class="n">04</span>Milestones</a>
-    <a href="#sec-05"><span class="n">05</span>Drafts</a>
-    <a href="#sec-06"><span class="n">06</span>Tasks</a>
-    <a href="#sec-07"><span class="n">07</span>Activity</a>
-    <a href="#sec-08"><span class="n">08</span>Decisions &amp; Docs</a>
+    <a href="#sec-04"><span class="n">04</span>Drafts</a>
+    <a href="#sec-05"><span class="n">05</span>Tasks</a>
+    <a href="#sec-06"><span class="n">06</span>Activity</a>
+    <a href="#sec-07"><span class="n">07</span>Decisions &amp; Docs</a>
   </nav>
   <div class="legend">
     <h4>Status</h4>
@@ -546,7 +553,13 @@
 <section id="sec-02">
   <div class="sec-head"><span class="sec-num">02</span><h2>Status</h2><span class="tagline">progress &middot; velocity &middot; wip &middot; age</span></div>
   <div id="kpis" class="mount"></div>
-  <div id="donut" class="mount"></div>
+  <div class="status-grid">
+    <div id="donut" class="mount"></div>
+    <div class="bars-col">
+      <h3 class="sub-head"><span class="term" data-term="Milestone">Milestone</span> &mdash; done / total</h3>
+      <div id="bars" class="mount"></div>
+    </div>
+  </div>
   <h3 class="sub-head">Aging &mdash; open tasks by days in the backlog</h3>
   <div id="aging" class="mount"></div>
 </section>
@@ -560,22 +573,24 @@
 </section>
 
 <section id="sec-04">
-  <div class="sec-head"><span class="sec-num">04</span><h2>Milestones</h2><span class="tagline">done / total per <span class="term" data-term="Milestone">Milestone</span></span></div>
-  <div id="bars" class="mount"></div>
-</section>
-
-<section id="sec-05">
-  <div class="sec-head"><span class="sec-num">05</span><h2>Drafts</h2><span class="tagline">ideas before they enter the backlog &middot; click a card for details</span></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Drafts</h2><span class="tagline">ideas before they enter the backlog &middot; click a card for details</span></div>
   <div id="drafts" class="mount">
     <ul id="drafts-list" class="drafts-list"></ul>
   </div>
 </section>
 
-<section id="sec-06">
-  <div class="sec-head"><span class="sec-num">06</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
+<section id="sec-05">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
   <div id="tasks" class="mount">
     <div class="toolbar">
       <input id="taskfilter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
+      <select id="tasksize" aria-label="Rows to show">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        <option value="all">all</option>
+      </select>
     </div>
     <div class="table-wrap">
       <table id="tasks-table">
@@ -596,15 +611,15 @@
   </div>
 </section>
 
-<section id="sec-07">
-  <div class="sec-head"><span class="sec-num">07</span><h2>Activity</h2><span class="tagline">last 26 weeks &middot; click a day for its tasks</span></div>
+<section id="sec-06">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Activity</h2><span class="tagline">last 26 weeks &middot; click a day for its tasks</span></div>
   <div id="activity-kpis" class="mount"></div>
   <div id="heatmap" class="mount"></div>
   <div id="day-panel" class="flow-block" hidden></div>
 </section>
 
-<section id="sec-08">
-  <div class="sec-head"><span class="sec-num">08</span><h2>Decisions &amp; Docs</h2><span class="tagline">decisions &middot; docs &middot; glossary</span></div>
+<section id="sec-07">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Decisions &amp; Docs</h2><span class="tagline">decisions &middot; docs &middot; glossary</span></div>
   <div id="docs" class="mount"></div>
   <p class="hint">The <span class="term" data-term="TDD">TDD</span> loop and the <span class="term" data-term="DoD">DoD</span> ship as built-in glossary terms &mdash; extend them via <code class="inline">backlog/docs/glossary.md</code>.</p>
 </section>
@@ -671,7 +686,7 @@
   }
 
   var KEYS = ['id', 'title', 'status', 'milestone', 'priority', 'assignee', 'updated'];
-  var state = { key: 'id', dir: 1, query: '', status: null, hoverStatus: null, special: null };
+  var state = { key: 'updated', dir: -1, size: 20, query: '', status: null, hoverStatus: null, special: null };
   function field(task, key) {
     var v = task[key];
     return v === undefined || v === null ? '' : String(v);
@@ -754,8 +769,9 @@
     var rows = data.tasks
       .filter(matches)
       .sort(function (a, b) { return compareTasks(a, b, state.key) * state.dir; });
+    var shown = state.size === 'all' ? rows : rows.slice(0, state.size);
     tbody.textContent = '';
-    if (rows.length === 0) {
+    if (shown.length === 0) {
       var emptyTr = el('tr');
       var emptyTd = el('td', '', 'No matching tasks.');
       emptyTd.colSpan = KEYS.length;
@@ -763,7 +779,7 @@
       tbody.appendChild(emptyTr);
       return;
     }
-    rows.forEach(function (task) {
+    shown.forEach(function (task) {
       var tr = el('tr', 'task-row');
       tr.setAttribute('data-task', task.id);
       KEYS.forEach(function (k) {
@@ -811,6 +827,18 @@
       renderTasks();
     });
   });
+  var initialTh = document.querySelector('#tasks-table th[data-key="updated"]');
+  if (initialTh) {
+    initialTh.classList.add('sorted-desc');
+    initialTh.setAttribute('aria-sort', 'descending');
+  }
+  var sizeSel = document.getElementById('tasksize');
+  if (sizeSel) {
+    sizeSel.addEventListener('change', function () {
+      state.size = this.value === 'all' ? 'all' : parseInt(this.value, 10);
+      renderTasks();
+    });
+  }
   var filterInput = document.getElementById('taskfilter');
   if (filterInput) {
     filterInput.addEventListener('input', function (event) {

@@ -88,11 +88,10 @@ const SECTIONS = [
   ['01', 'Board & Quick Actions'],
   ['02', 'Status'],
   ['03', 'Feature Cycle'],
-  ['04', 'Milestones'],
-  ['05', 'Drafts'],
-  ['06', 'Tasks'],
-  ['07', 'Activity'],
-  ['08', 'Decisions & Docs'],
+  ['04', 'Drafts'],
+  ['05', 'Tasks'],
+  ['06', 'Activity'],
+  ['07', 'Decisions & Docs'],
 ] as const;
 
 describe('renderDashboard v2 structure', () => {
@@ -112,7 +111,7 @@ describe('renderDashboard v2 structure', () => {
     expect(aside).toContain('SUPERPOWERS × BACKLOG.MD');
   });
 
-  it('nav links to all eight numbered sections', () => {
+  it('nav links to all seven numbered sections', () => {
     const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
     for (const [num] of SECTIONS) {
       expect(aside).toContain(`href="#sec-${num}"`);
@@ -130,7 +129,7 @@ describe('renderDashboard v2 structure', () => {
     expect(html).toMatch(/data-status="To Do"[^>]*data-count="1"/);
   });
 
-  it('contains eight numbered main sections with HTS-style sec-heads', () => {
+  it('contains seven numbered main sections with HTS-style sec-heads', () => {
     for (const [num, label] of SECTIONS) {
       const section = new RegExp(`<section id="sec-${num}">([\\s\\S]*?)</section>`).exec(html)?.[1];
       expect(section, `section sec-${num}`).toBeTruthy();
@@ -150,7 +149,7 @@ describe('renderDashboard v2 structure', () => {
 
   describe('activity heatmap', () => {
     it('replaces the sparkline with heatmap, kpis and day panel', () => {
-      const sec = /<section id="sec-07">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+      const sec = /<section id="sec-06">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
       expect(sec).toContain('id="activity-kpis"');
       expect(sec).toContain('id="heatmap"');
       expect(sec).toContain('id="day-panel"');
@@ -160,7 +159,7 @@ describe('renderDashboard v2 structure', () => {
   });
 
   it('retains the v1 sortable/filterable task table shell inside #tasks', () => {
-    const tasksSection = /<section id="sec-06">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    const tasksSection = /<section id="sec-05">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
     expect(tasksSection).toContain('id="taskfilter"');
     expect(tasksSection).toContain('id="tasks-table"');
     expect(tasksSection).toContain('data-key="status"');
@@ -223,7 +222,7 @@ describe('v2 structure', () => {
   });
 
   it('hosts drafts in their own section 05', () => {
-    const sec = /<section id="sec-05">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    const sec = /<section id="sec-04">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
     expect(sec).toContain('<h2>Drafts</h2>');
     expect(sec).toContain('id="drafts-list"');
   });
@@ -341,6 +340,35 @@ describe('phase rendering', () => {
   it('never reintroduces command data attributes', () => {
     expect(html).not.toContain('data-cmd=');
     expect(html).not.toContain('data-copy=');
+  });
+});
+
+describe('layout v3: milestones in status, table paging, modal comfort', () => {
+  it('drops the Milestones section and renders the bars beside the donut in Status', () => {
+    expect(html).not.toContain('<h2>Milestones</h2>');
+    expect(html).not.toContain('id="sec-08"');
+    const sec2 = /<section id="sec-02">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    expect(sec2).toContain('id="donut"');
+    expect(sec2).toContain('id="bars"');
+    expect(sec2).toContain('status-grid');
+  });
+
+  it('defaults the tasks table to 20 rows sorted by updated with a page-size selector', () => {
+    const script = appScript();
+    expect(script).toContain("key: 'updated', dir: -1");
+    expect(script).toContain('size: 20');
+    expect(script).toContain('.slice(0,');
+    expect(html).toContain('id="tasksize"');
+    for (const opt of ['value="10"', 'value="20" selected', 'value="50"', 'value="100"', 'value="all"']) {
+      expect(html).toContain(opt);
+    }
+    expect(script).toContain('tasksize');
+  });
+
+  it('gives dialogs more padding and keeps list bullets inside the content box', () => {
+    expect(html).toContain('.dialog-content { padding: 6px 32px 32px');
+    expect(html).toContain('#task-dialog ul {');
+    expect(html).toContain('.ac-list { list-style: none');
   });
 });
 
