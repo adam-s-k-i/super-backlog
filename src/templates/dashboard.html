@@ -416,13 +416,6 @@
   .update-badge:hover { box-shadow: 0 0 10px var(--glow-warn-soft); }
   .update-badge:focus-visible { outline: 2px solid var(--warn); outline-offset: 2px; }
   .update-badge .cmd-title { font-size: inherit; font-weight: 600; color: inherit; }
-  .side-models {
-    display: block; margin: 4px 0 0; padding: 2px 0; cursor: pointer; text-align: left;
-    font: inherit; font-family: var(--mono); font-size: .78rem; color: var(--muted);
-    background: none; border: none;
-  }
-  .side-models:hover { color: var(--accent); }
-  .side-models:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
   /* ---------- Models modal ---------- */
   #models-dialog {
@@ -492,15 +485,15 @@
   </div>
   <div class="kicker">SUPERPOWERS × BACKLOG.MD</div>
   <div class="side-version" id="side-version"><span>v__KIT_VERSION__</span></div>
-  <button type="button" id="models-btn" class="side-models">model router</button>
   <nav aria-label="Dashboard sections">
     <a href="#sec-01"><span class="n">01</span>Board &amp; Quick Actions</a>
     <a href="#sec-02"><span class="n">02</span>Status</a>
-    <a href="#sec-03"><span class="n">03</span>Milestones</a>
-    <a href="#sec-04"><span class="n">04</span>Tasks</a>
-    <a href="#sec-05"><span class="n">05</span>Feature Cycle</a>
-    <a href="#sec-06"><span class="n">06</span>Activity</a>
-    <a href="#sec-07"><span class="n">07</span>Decisions &amp; Docs</a>
+    <a href="#sec-03"><span class="n">03</span>Feature Cycle</a>
+    <a href="#sec-04"><span class="n">04</span>Milestones</a>
+    <a href="#sec-05"><span class="n">05</span>Drafts</a>
+    <a href="#sec-06"><span class="n">06</span>Tasks</a>
+    <a href="#sec-07"><span class="n">07</span>Activity</a>
+    <a href="#sec-08"><span class="n">08</span>Decisions &amp; Docs</a>
   </nav>
   <div class="legend">
     <h4>Status</h4>
@@ -517,12 +510,9 @@
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
       <button type="button" class="cmd-btn" id="backlog-btn"><span class="cmd-title">Backlog</span><span class="cmd-line">board &middot; tasks &middot; docs &middot; decisions</span></button>
+      <button type="button" class="cmd-btn" id="models-btn"><span class="cmd-title">Model Router</span><span class="cmd-line">workhorse &middot; budget &middot; tiers</span></button>
     </div>
     <p class="hint">Opens the Backlog.md browser in an overlay &mdash; served locally per project, started on demand.</p>
-  </div>
-  <div id="drafts" class="mount">
-    <h3 class="sub-head">Drafts</h3>
-    <ul id="drafts-list" class="drafts-list"></ul>
   </div>
 </section>
 
@@ -532,12 +522,27 @@
 </section>
 
 <section id="sec-03">
-  <div class="sec-head"><span class="sec-num">03</span><h2>Milestones</h2><span class="tagline">done / total per <span class="term" data-term="Milestone">Milestone</span></span></div>
-  <div id="bars" class="mount"></div>
+  <div class="sec-head"><span class="sec-num">03</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included &middot; click a step for details</span></div>
+  <div id="stepper" class="mount"></div>
+  <div id="phase-detail" hidden></div>
+  <h3 class="sub-head">Flow</h3>
+  <div id="depgraph" class="mount"></div>
 </section>
 
 <section id="sec-04">
-  <div class="sec-head"><span class="sec-num">04</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
+  <div class="sec-head"><span class="sec-num">04</span><h2>Milestones</h2><span class="tagline">done / total per <span class="term" data-term="Milestone">Milestone</span></span></div>
+  <div id="bars" class="mount"></div>
+</section>
+
+<section id="sec-05">
+  <div class="sec-head"><span class="sec-num">05</span><h2>Drafts</h2><span class="tagline">ideas before they enter the backlog &middot; click a card for details</span></div>
+  <div id="drafts" class="mount">
+    <ul id="drafts-list" class="drafts-list"></ul>
+  </div>
+</section>
+
+<section id="sec-06">
+  <div class="sec-head"><span class="sec-num">06</span><h2>Tasks</h2><span class="tagline">sort &middot; filter &middot; click row for details</span></div>
   <div id="tasks" class="mount">
     <div class="toolbar">
       <input id="taskfilter" type="search" placeholder="Filter tasks&hellip;" aria-label="Filter tasks">
@@ -561,21 +566,13 @@
   </div>
 </section>
 
-<section id="sec-05">
-  <div class="sec-head"><span class="sec-num">05</span><h2>Feature Cycle</h2><span class="tagline">idea &rarr; merge &middot; every <span class="term" data-term="Review Gate">Review Gate</span> included &middot; click a step for details</span></div>
-  <div id="stepper" class="mount"></div>
-  <div id="phase-detail" hidden></div>
-  <h3 class="sub-head">Flow</h3>
-  <div id="depgraph" class="mount"></div>
-</section>
-
-<section id="sec-06">
-  <div class="sec-head"><span class="sec-num">06</span><h2>Activity</h2><span class="tagline">last 30 days</span></div>
+<section id="sec-07">
+  <div class="sec-head"><span class="sec-num">07</span><h2>Activity</h2><span class="tagline">last 30 days</span></div>
   <div id="spark" class="mount"></div>
 </section>
 
-<section id="sec-07">
-  <div class="sec-head"><span class="sec-num">07</span><h2>Decisions &amp; Docs</h2><span class="tagline">decisions &middot; docs &middot; glossary</span></div>
+<section id="sec-08">
+  <div class="sec-head"><span class="sec-num">08</span><h2>Decisions &amp; Docs</h2><span class="tagline">decisions &middot; docs &middot; glossary</span></div>
   <div id="docs" class="mount"></div>
   <p class="hint">The <span class="term" data-term="TDD">TDD</span> loop and the <span class="term" data-term="DoD">DoD</span> ship as built-in glossary terms &mdash; extend them via <code class="inline">backlog/docs/glossary.md</code>.</p>
 </section>

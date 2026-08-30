@@ -74,11 +74,12 @@ function islandOf(doc: string, id: string): string {
 const SECTIONS = [
   ['01', 'Board & Quick Actions'],
   ['02', 'Status'],
-  ['03', 'Milestones'],
-  ['04', 'Tasks'],
-  ['05', 'Feature Cycle'],
-  ['06', 'Activity'],
-  ['07', 'Decisions & Docs'],
+  ['03', 'Feature Cycle'],
+  ['04', 'Milestones'],
+  ['05', 'Drafts'],
+  ['06', 'Tasks'],
+  ['07', 'Activity'],
+  ['08', 'Decisions & Docs'],
 ] as const;
 
 describe('renderDashboard v2 structure', () => {
@@ -98,7 +99,7 @@ describe('renderDashboard v2 structure', () => {
     expect(aside).toContain('SUPERPOWERS × BACKLOG.MD');
   });
 
-  it('nav links to all seven numbered sections', () => {
+  it('nav links to all eight numbered sections', () => {
     const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
     for (const [num] of SECTIONS) {
       expect(aside).toContain(`href="#sec-${num}"`);
@@ -116,7 +117,7 @@ describe('renderDashboard v2 structure', () => {
     expect(html).toMatch(/data-status="To Do"[^>]*data-count="1"/);
   });
 
-  it('contains seven numbered main sections with HTS-style sec-heads', () => {
+  it('contains eight numbered main sections with HTS-style sec-heads', () => {
     for (const [num, label] of SECTIONS) {
       const section = new RegExp(`<section id="sec-${num}">([\\s\\S]*?)</section>`).exec(html)?.[1];
       expect(section, `section sec-${num}`).toBeTruthy();
@@ -135,7 +136,7 @@ describe('renderDashboard v2 structure', () => {
   });
 
   it('retains the v1 sortable/filterable task table shell inside #tasks', () => {
-    const tasksSection = /<section id="sec-04">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    const tasksSection = /<section id="sec-06">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
     expect(tasksSection).toContain('id="taskfilter"');
     expect(tasksSection).toContain('id="tasks-table"');
     expect(tasksSection).toContain('data-key="status"');
@@ -185,6 +186,22 @@ describe('renderDashboard v2 structure', () => {
     expect(html).toContain('<link rel="icon"');
     expect(html).toContain('data:image/svg+xml');
     expect(html).toContain("fill='%235cc8ff'");
+  });
+});
+
+describe('v2 structure', () => {
+  it('renders the model router as a command button next to Backlog', () => {
+    const row = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html)?.[1] ?? '';
+    expect(row).toContain('id="backlog-btn"');
+    expect(row).toContain('id="models-btn"');
+    expect(row).toContain('Model Router');
+    expect(html).not.toContain('class="side-models"');
+  });
+
+  it('hosts drafts in their own section 05', () => {
+    const sec = /<section id="sec-05">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    expect(sec).toContain('<h2>Drafts</h2>');
+    expect(sec).toContain('id="drafts-list"');
   });
 });
 
@@ -321,8 +338,8 @@ describe('client diagrams: donut, bars, sparkline, stepper', () => {
 
 describe('client dependency flow', () => {
   it('provides a #depgraph mount inside the feature cycle section', () => {
-    const sec5 = /<section id="sec-05">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
-    expect(sec5).toContain('id="depgraph"');
+    const sec3 = /<section id="sec-03">([\s\S]*?)<\/section>/.exec(html)?.[1] ?? '';
+    expect(sec3).toContain('id="depgraph"');
   });
 
   it('ships a renderFlow() that classifies pending tasks as Up Next or Blocked', () => {
@@ -499,12 +516,12 @@ describe('live-reload script', () => {
 });
 
 describe('backlog quick action', () => {
-  it('renders a single Backlog button in section 01', () => {
+  it('renders the Backlog button in the command row alongside Model Router', () => {
     const m = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html);
     expect(m).toBeTruthy();
     const row = m?.[1] ?? '';
     const buttons = row.match(/<button/g) ?? [];
-    expect(buttons).toHaveLength(1);
+    expect(buttons).toHaveLength(2);
     expect(row).toContain('id="backlog-btn"');
     expect(row).toContain('<span class="cmd-title">Backlog</span>');
     expect(row).not.toContain('data-cmd=');
@@ -588,9 +605,10 @@ describe('task detail dialog v2', () => {
 });
 
 describe('models modal', () => {
-  it('offers a Models trigger in the sidebar', () => {
-    const aside = /<aside class="sbl-side">([\s\S]*?)<\/aside>/.exec(html)?.[1] ?? '';
-    expect(aside).toContain('id="models-btn"');
+  it('offers a Models trigger as a command button', () => {
+    expect(html).toContain('id="models-btn"');
+    const row = /<div class="cmd-row" id="cmd-buttons">([\s\S]*?)<\/div>/.exec(html)?.[1] ?? '';
+    expect(row).toContain('id="models-btn"');
   });
 
   it('ships the models dialog shell with a close control', () => {
