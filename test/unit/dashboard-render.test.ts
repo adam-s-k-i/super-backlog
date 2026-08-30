@@ -162,9 +162,9 @@ describe('renderDashboard v2 structure', () => {
     ]) {
       expect(html).toContain(token);
     }
-    expect(html).toContain('@font-face');
-    expect(html).toContain("font-family: 'Inter'");
-    expect(html).toContain('"Cascadia Code"');
+    expect(html).toContain('--sans:');
+    expect(html).toContain('"JetBrains Mono"');
+    expect(html).toContain('"Plus Jakarta Sans"');
     expect(html).toContain('Consolas');
     expect(html).toContain('"Segoe UI"');
   });
@@ -173,9 +173,12 @@ describe('renderDashboard v2 structure', () => {
     expect(html).toMatch(/@media \(max-width:\s*900px\)/);
   });
 
-  it('references no external URLs', () => {
-    expect(html).not.toContain('src="http');
-    expect(html).not.toContain('href="http');
+  it('references no external URLs outside Google Fonts', () => {
+    const withoutFonts = html
+      .replace(/href="https:\/\/fonts\.googleapis\.com[^"]*"/g, '')
+      .replace(/href="https:\/\/fonts\.gstatic\.com[^"]*"/g, '');
+    expect(withoutFonts).not.toContain('src="http');
+    expect(withoutFonts).not.toContain('href="http');
   });
 
   it('ships an inline SVG favicon', () => {
@@ -629,6 +632,21 @@ describe('drafts rendering', () => {
   it('calls renderDrafts with the collected drafts', () => {
     const app = appScript();
     expect(app).toContain('renderDrafts(data.drafts)');
+  });
+});
+
+describe('typography', () => {
+  it('loads Plus Jakarta Sans and JetBrains Mono from Google Fonts with swap', () => {
+    expect(html).toMatch(/fonts\.googleapis\.com\/css2\?[^"]*Plus\+Jakarta\+Sans/);
+    expect(html).toMatch(/fonts\.googleapis\.com\/css2\?[^"]*JetBrains\+Mono/);
+    expect(html).toContain('display=swap');
+  });
+
+  it('uses the new stacks and drops the fake Inter font-face', () => {
+    expect(html).toContain('--sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;');
+    expect(html).toContain('--mono:"JetBrains Mono",Consolas,"Courier New",monospace;');
+    expect(html).not.toContain('@font-face');
+    expect(html).not.toContain("local('Inter')");
   });
 });
 
