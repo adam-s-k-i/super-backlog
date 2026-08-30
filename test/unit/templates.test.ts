@@ -25,6 +25,13 @@ describe('workflow-block.md', () => {
   it('points project-specific gates below the block', () => {
     expect(t).toMatch(/below the block/i);
   });
+  it('maps phases to labels and mandates sbl phase', () => {
+    for (const label of ['phase/spec', 'phase/plan', 'phase/impl', 'phase/verify']) {
+      expect(t).toContain(label);
+    }
+    expect(t).toContain('sbl phase');
+    expect(t).toMatch(/only via `sbl phase <id> <phase>`/);
+  });
 });
 
 describe('skill-spec-to-backlog.md', () => {
@@ -41,6 +48,11 @@ describe('skill-spec-to-backlog.md', () => {
     expect(t).toContain('--dep');
     expect(t).toMatch(/review gate/i);
     expect(t).toMatch(/never hand-edit/i);
+  });
+  it('creates tasks with the spec phase label', () => {
+    expect(t).toContain('phase/spec');
+    expect(t).toContain('sbl phase');
+    expect(t).toMatch(/--labels feature/);
   });
 });
 

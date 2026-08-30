@@ -41,6 +41,11 @@ describe('skill-task-review-gate.md', () => {
   it('never self-approves', () => {
     expect(t).toMatch(/never approve the gate yourself/i);
   });
+  it('is the session entry with per-phase resume behavior', () => {
+    expect(t).toContain('sbl phase');
+    expect(t).toMatch(/resume/i);
+    expect(t).toMatch(/phase\/(spec|plan|impl|verify)/);
+  });
 });
 
 describe('installed backlog-status-report skills', () => {

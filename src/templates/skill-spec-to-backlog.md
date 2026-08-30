@@ -18,15 +18,17 @@ Bridge between Superpowers (brainstorming, writing-plans) and Backlog.md.
 1. Read `backlog instructions overview` and `backlog instructions task-creation` first.
 2. Decompose: every plan unit becomes ONE task, small enough for one session/PR.
 3. Create per task:
-   backlog task create "Title" -d "<goal/context>" --ac "<criterion 1>" --ac "<criterion 2>" --type feature --label feature --ref "<path/to/plan-doc>"
+   backlog task create "Title" -d "<goal/context>" --ac "<criterion 1>" --ac "<criterion 2>" --type feature --labels feature,phase/spec --ref "<path/to/plan-doc>"
    - Dependencies: --dep TASK-y (order follows the plan).
    - Larger efforts: backlog milestone add `"<Name>"`, attach via -m.
    - Reference the plan doc via --ref; NEVER copy it into the task.
 4. Never set --plan or --notes at create time — those belong to the "task started" checkpoint after codebase research.
-5. STOP at the review gate: the human reviews specs and acceptance criteria (backlog board / backlog browser / dashboard.html) before any code exists.
+5. Every created task starts at `phase/spec`. Later phase changes happen only via `sbl phase <id> <phase>` at gate passages — never by editing labels manually.
+6. STOP at the review gate: the human reviews specs and acceptance criteria (backlog board / backlog browser / project dashboard) before any code exists.
 
 ## Boundaries
 
 - Never hand-edit task markdown; use the backlog CLI exclusively.
 - No code, no worktrees, no status changes inside this skill.
+- Phase labels are set with creation and advanced only via `sbl phase`.
 - Project-specific human-gate topics get their own tasks with an explicit review gate.
