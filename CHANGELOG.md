@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.4](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.3...v1.3.4) (2026-08-30)
+
+
+### Bug Fixes
+
+* **dashboard:** restart same-version hubs on build fingerprint mismatch ([90cdcb3](https://github.com/adam-s-k-i/super-backlog/commit/90cdcb316907074028e3d80881616c0efb043523))
+
 ## [1.3.3](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.2...v1.3.3) (2026-08-30)
 
 
