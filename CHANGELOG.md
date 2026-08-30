@@ -3,6 +3,26 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.2](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.1...v1.3.2) (2026-08-30)
+
+
+### Features
+
+* **dashboard:** restart outdated hubs on attach and add sbl db alias ([ee47a8f](https://github.com/adam-s-k-i/super-backlog/commit/ee47a8f925840e2a19316b250e0360eae29ace1d))
+* **update:** self-update the CLI before refreshing managed files ([6e9544b](https://github.com/adam-s-k-i/super-backlog/commit/6e9544b9a09eccc25a6a7cef649c0f15f5e50221))
+
+
+### Bug Fixes
+
+* **update:** case-insensitive install detection on windows; hermetic wiring tests ([e324843](https://github.com/adam-s-k-i/super-backlog/commit/e324843f0b13948991fb0501122e35a1d3996a1d))
+* **update:** hermetic published-version probe seam for unit tests ([faab861](https://github.com/adam-s-k-i/super-backlog/commit/faab861d9ef8ace16c98c185b9fe7b39c9627d59))
+* **update:** skip self-update under SBL_FORCE_OFFLINE; docs for self-update, db alias and hub restart ([1469875](https://github.com/adam-s-k-i/super-backlog/commit/1469875ab3d259143824b531eeb1ed65034893e5))
+
+
+### Miscellaneous Chores
+
+* pin next release ([c80e770](https://github.com/adam-s-k-i/super-backlog/commit/c80e770a3e66177c6b8fb985ed794964dd7885e1))
+
 ## [1.3.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.0...v1.3.1) (2026-08-30)
 
 
