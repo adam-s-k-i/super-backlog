@@ -398,6 +398,12 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     overflow-wrap: break-word;
   }
   .step.gate .step-label { color: var(--warn); }
+  .step .step-count { position: relative; z-index: 1; display: inline-block; margin-top: 6px;
+    padding: 0 .45rem; border-radius: 999px; font: 600 .68rem/1.5 var(--mono);
+    background: color-mix(in oklab, var(--accent) 18%, transparent); color: var(--accent); }
+
+  /* ---------- Phase chip in task rows ---------- */
+  .cell-id .status-chip { margin-left: .45rem; }
 
   /* ---------- Phase detail panel ---------- */
   #phase-detail {
@@ -771,6 +777,13 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
           var chip = el('span', 'status-chip', field(task, k));
           chip.setAttribute('data-tone', toneOf(task.status));
           td.appendChild(chip);
+        } else if (k === 'id') {
+          td.textContent = field(task, k);
+          if (task.phase) {
+            var pc = el('span', 'status-chip', 'phase/' + task.phase);
+            pc.setAttribute('data-tone', 'accent');
+            td.appendChild(pc);
+          }
         } else if (k === 'updated') {
           td.textContent = formatRelative(field(task, k));
           var exact = formatExact(field(task, k));
@@ -1347,6 +1360,10 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
       step.setAttribute('aria-controls', 'phase-detail');
       step.appendChild(el('div', 'step-num', String(p.n)));
       step.appendChild(el('span', 'step-label', p.name));
+      var phaseKey = PHASE_STEP[p.n];
+      if (phaseKey && phaseCounts[phaseKey] > 0) {
+        step.appendChild(el('span', 'step-count', String(phaseCounts[phaseKey])));
+      }
       step.addEventListener('click', function () {
         if (!panel) return;
         var wasOpen = current === step;
@@ -1373,6 +1390,15 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   } catch (e) {
     phases = [];
   }
+
+  /* ---------- Pipeline phase state (labels on tasks) ---------- */
+  var PHASE_STEP = { 5: 'spec', 6: 'plan', 7: 'impl', 8: 'verify' };
+  var NEXT_PHASE = { spec: 'plan', plan: 'impl', impl: 'verify', verify: 'done' };
+  var phaseCounts = { spec: 0, plan: 0, impl: 0, verify: 0 };
+  data.tasks.forEach(function (t) {
+    if (t.phase && phaseCounts[t.phase] !== undefined) phaseCounts[t.phase] += 1;
+  });
+
   if ($('#donut')) renderDonut($('#donut'), data.statuses);
   if ($('#kpis')) renderKpis($('#kpis'), data.kpis);
   if ($('#aging')) renderAging($('#aging'), data.tasks);
@@ -1510,6 +1536,7 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     }
     grid.appendChild(cell('Milestone', task.milestone));
     grid.appendChild(cell('Priority', task.priority, priorityTone(task.priority)));
+    grid.appendChild(cell('Phase', task.phase ? 'phase/' + task.phase : ''));
     grid.appendChild(cell('Assignee', task.assignee));
     grid.appendChild(cell('Updated', task.updated));
     return grid;
@@ -1575,6 +1602,15 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     cmd.appendChild(el('span', 'cmd-title', 'copy'));
     cmd.addEventListener('click', function () { copyCommand(cmd, cmdLine); });
     content.appendChild(cmd);
+    if (t.phase && NEXT_PHASE[t.phase]) {
+      var advanceCmd = 'sbl phase ' + t.id.replace(/^task-/i, '') + ' ' + NEXT_PHASE[t.phase];
+      var adv = el('button', 'phase-cmd detail-cmd');
+      adv.type = 'button';
+      adv.appendChild(el('span', 'cmd-line', advanceCmd));
+      adv.appendChild(el('span', 'cmd-title', 'copy: advance'));
+      adv.addEventListener('click', function () { copyCommand(adv, advanceCmd); });
+      content.appendChild(adv);
+    }
     dialog.textContent = '';
     dialog.appendChild(content);
     dialog.showModal();

@@ -317,11 +317,30 @@ describe('inline app budget', () => {
     // rework: the unreachable kpiTile `opts.special` branch, unused
     // button.kpi CSS, and a no-op cellClass ternary (~1094 lines). The cap
     // still guards against unbounded growth — raise it only for approved
-    // feature work.
+    // feature work. Raised for pipeline-phase badges + modal advance chip
+    // (approved feature work, 1180).
     const m = /<script id="sbl-app">([\s\S]*?)<\/script>/.exec(html);
     expect(m).toBeTruthy();
     const lines = (m?.[1] ?? '').split('\n').length;
-    expect(lines).toBeLessThanOrEqual(1109);
+    expect(lines).toBeLessThanOrEqual(1180);
+  });
+});
+
+describe('phase rendering', () => {
+  it('exposes phase on tasks in the data island', () => {
+    const island = JSON.parse(islandOf(html, 'sbl-data'));
+    const withPhase = island.tasks.find((t: { phase: string | null }) => t.phase === 'spec');
+    expect(withPhase).toBeTruthy();
+    expect(withPhase.labels).toContain('phase/spec');
+  });
+  it('client script computes phase counts and offers the advance command', () => {
+    const script = appScript();
+    expect(script).toContain('phaseCounts');
+    expect(script).toContain('sbl phase ');
+  });
+  it('never reintroduces command data attributes', () => {
+    expect(html).not.toContain('data-cmd=');
+    expect(html).not.toContain('data-copy=');
   });
 });
 
@@ -337,6 +356,7 @@ describe('client diagrams: donut, bars, heatmap, stepper', () => {
       expect(app).toContain(`function ${fn}`);
     }
   });
+
 
   it('builds SVG nodes with createElementNS and donut segments via stroke-dasharray', () => {
     const app = appScript();
