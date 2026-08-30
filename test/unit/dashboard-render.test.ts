@@ -150,7 +150,7 @@ describe('renderDashboard v2 structure', () => {
       '--line-strong:#2c3b57',
       '--text:#e8edf6',
       '--muted:#8fa0ba',
-      '--dim:#5d6d88',
+      '--dim:#72839f',
       '--accent:#5cc8ff',
       '--ok:#3ecf8e',
       '--warn:#ffb454',
