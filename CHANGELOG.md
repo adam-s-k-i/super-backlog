@@ -3,6 +3,34 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.0...v1.3.1) (2026-08-30)
+
+
+### Features
+
+* **dashboard:** 26-week activity buckets with touched task ids ([d8b6bf5](https://github.com/adam-s-k-i/super-backlog/commit/d8b6bf5bfacd19b147a38d5754649a834b905cf1))
+* **dashboard:** activity calendar heatmap with day drill-down and KPI strip ([579f2b7](https://github.com/adam-s-k-i/super-backlog/commit/579f2b7e7473ba55712b0038773410321c521776))
+* **dashboard:** draft cards with full detail modal ([cc19af7](https://github.com/adam-s-k-i/super-backlog/commit/cc19af7629719b14a7aa6f35bbbecf4c2da38f5a))
+* **dashboard:** natural task sorting, status badges and locale-aware updated column ([9c970d7](https://github.com/adam-s-k-i/super-backlog/commit/9c970d7debc7a532f9c3630dbc91e3359ef157db))
+* **dashboard:** reorder sections, promote model router to command button, dedicated drafts section ([1f25efb](https://github.com/adam-s-k-i/super-backlog/commit/1f25efb444ebf1df3746c7164b508eea033ed668))
+* **dashboard:** server-side KPI metrics (progress, velocity, wip, age, activity) ([3f63b00](https://github.com/adam-s-k-i/super-backlog/commit/3f63b00f4680ec259ce5e302e93d06057499410d))
+* **dashboard:** status KPI tiles with wip/blocked filters and aging strip ([fed6c95](https://github.com/adam-s-k-i/super-backlog/commit/fed6c95bc3f75f7d63b7b009ee90bd456707ec96))
+* **dashboard:** switch typography to Plus Jakarta Sans + JetBrains Mono ([388dcc3](https://github.com/adam-s-k-i/super-backlog/commit/388dcc320f5b49b02efa969a68518ca89b09e35a))
+* **dashboard:** task created date and enriched draft details in the data layer ([4eabfa7](https://github.com/adam-s-k-i/super-backlog/commit/4eabfa7be14357fead772eb72731cc96d3887560))
+* **dashboard:** tokenize colors, add light theme with persistent toggle ([7995d12](https://github.com/adam-s-k-i/super-backlog/commit/7995d125d95d7c9554a44b4db7f289c373867000))
+
+
+### Bug Fixes
+
+* **dashboard:** clickable blocked filter in the wip kpi tile ([8414519](https://github.com/adam-s-k-i/super-backlog/commit/84145198a465f7f003a8eb2727358a5bbb94b721))
+* **dashboard:** final review fixes (README fonts claim, review-status containment, dead code, noon convention) ([84c4afc](https://github.com/adam-s-k-i/super-backlog/commit/84c4afc15fe75aaa512dcbe6b0faa95c08b16913))
+* **dashboard:** raise dark-theme --dim to WCAG AA contrast ([9aa5ba6](https://github.com/adam-s-k-i/super-backlog/commit/9aa5ba6e4c03af1da53b7a1bebb83e4882669e75))
+
+
+### Miscellaneous Chores
+
+* pin next release ([ab01b85](https://github.com/adam-s-k-i/super-backlog/commit/ab01b858c66b82cc956212eae10e37902d2cd34c))
+
 ## [1.3.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.2.0...v1.3.0) (2026-08-29)
 
 
