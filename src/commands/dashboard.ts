@@ -233,7 +233,7 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
         }
 
         console.error(
-          `hub v${effectiveVersion ?? 'unknown'} is older than this CLI (v${KIT_VERSION}) — restarting it`,
+          `hub v${effectiveVersion ?? 'unknown'} does not match this CLI (v${KIT_VERSION}) — restarting it`,
         );
         killPid(state.pid);
         let dead = !isAlive(state.pid);

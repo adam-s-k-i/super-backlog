@@ -62,7 +62,8 @@ async function maybeSelfUpdate(
   const skip =
     args.values['no-self'] === true ||
     Boolean(process.env.SBL_SELF_UPDATED) ||
-    Boolean(process.env.SBL_SKIP_UPDATE_CHECK);
+    Boolean(process.env.SBL_SKIP_UPDATE_CHECK) ||
+    Boolean(process.env.SBL_FORCE_OFFLINE);
   if (skip) return null;
 
   const binRealPath = override.binRealPath !== undefined ? override.binRealPath : resolveBinRealPath();

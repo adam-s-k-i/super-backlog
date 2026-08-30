@@ -83,7 +83,11 @@ An automated check for this situation arrives with `sbl doctor` (v2 backlog).
 ## Environment seams (for testing and CI)
 
 - `SBL_SKIP_INSTALL=1` — makes `init` fabricate a minimal `backlog/config.yml` instead of invoking upstream installs. Tests never touch the network or install packages.
-- `SBL_FORCE_OFFLINE=1` — forces `sbl update` to take its offline path deterministically (skips the published-version comparison), so e2e runs behave identically without network access.
+- `SBL_FORCE_OFFLINE=1` — forces `sbl update` to take its offline path deterministically: it also skips the self-update check (see below) and skips the published-version comparison, so e2e runs behave identically without network access.
 - `SBL_FAKE_POLICY=<policy>` — overrides the PowerShell execution policy that `sbl doctor` and `init` detect. Accepts `Restricted`, `AllSigned`, `RemoteSigned`, `Unrestricted`, `Bypass`, or `Undefined`. Makes tests deterministic on every platform.
 
-Both variables are unset-and-empty tolerant; any non-empty value activates the seam.
+These variables are unset-and-empty tolerant; any non-empty value activates the seam.
+
+### Skipping the self-update
+
+`sbl update` first checks whether it is running as a globally installed CLI and, if a newer version is published, installs it and re-runs itself once before doing anything else. Opt out with the `--no-self` flag, or set `SBL_SKIP_UPDATE_CHECK=1` (also skips the periodic version-hint check on other commands). `SBL_FORCE_OFFLINE=1` skips it too, since it implies no network is available.

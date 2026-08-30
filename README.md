@@ -73,7 +73,9 @@ sbl dashboard                   # live Project Dashboard on http://localhost:642
 | `dashboard.html` | generated Project Dashboard | not installed in user projects; generated on demand by `sbl dashboard` |
 | `.git/hooks/pre-commit` | integrity guard hook — only with `--guard` (opt-in) | appended marker block |
 
-Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--port <n>] [--no-open]`. See `sbl help` for every flag.
+Commands: `sbl init` · `sbl models` · `sbl doctor` · `sbl uninstall [--with-backlog]` · `sbl update` · `sbl dashboard [--port <n>] [--no-open]` (alias: `sbl db`). See `sbl help` for every flag.
+
+`sbl update` first self-updates a globally installed CLI to the latest npm version and re-runs itself (opt out with `--no-self` or `SBL_SKIP_UPDATE_CHECK`), then refreshes injected files.
 
 ## Model router (opt-in)
 

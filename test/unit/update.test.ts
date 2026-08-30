@@ -61,9 +61,6 @@ describe('runUpdate self-update wiring', () => {
     return d;
   }
 
-  beforeEach(() => {
-    process.env.SBL_FORCE_OFFLINE = '1';
-  });
   afterEach(() => {
     delete process.env.SBL_FORCE_OFFLINE;
     delete process.env.SBL_SELF_UPDATED;
@@ -87,6 +84,7 @@ describe('runUpdate self-update wiring', () => {
   }
 
   it('--no-self skips the self-update path entirely', async () => {
+    process.env.SBL_FORCE_OFFLINE = '1'; // keep the published-version check deterministic too
     const override = unreachableOverride();
     const code = await runUpdate(scratchDir(), { values: { 'no-self': true }, positionals: [] }, override);
     expect(typeof code).toBe('number');
@@ -95,6 +93,7 @@ describe('runUpdate self-update wiring', () => {
 
   it('SBL_SELF_UPDATED=1 skips the self-update path entirely', async () => {
     process.env.SBL_SELF_UPDATED = '1';
+    process.env.SBL_FORCE_OFFLINE = '1'; // keep the published-version check deterministic too
     const override = unreachableOverride();
     const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, override);
     expect(typeof code).toBe('number');
@@ -103,6 +102,15 @@ describe('runUpdate self-update wiring', () => {
 
   it('SBL_SKIP_UPDATE_CHECK skips the self-update path entirely', async () => {
     process.env.SBL_SKIP_UPDATE_CHECK = '1';
+    process.env.SBL_FORCE_OFFLINE = '1'; // keep the published-version check deterministic too
+    const override = unreachableOverride();
+    const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, override);
+    expect(typeof code).toBe('number');
+    expect(override.fetchLatest).not.toHaveBeenCalled();
+  });
+
+  it('SBL_FORCE_OFFLINE skips the self-update path entirely', async () => {
+    process.env.SBL_FORCE_OFFLINE = '1';
     const override = unreachableOverride();
     const code = await runUpdate(scratchDir(), { values: {}, positionals: [] }, override);
     expect(typeof code).toBe('number');

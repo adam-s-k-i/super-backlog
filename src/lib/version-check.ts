@@ -125,7 +125,7 @@ export async function applyVersionHint(installed: string, deps: VersionCheckDeps
   const cache = readCache(deps.home);
   if (cache && isNewerVersion(cache.latest, installed)) {
     deps.log(
-      `super-backlog ${cache.latest} is available (installed ${installed}). Update: npm i -g super-backlog`,
+      `super-backlog ${cache.latest} is available (installed ${installed}). Update: sbl update (or npm i -g super-backlog)`,
     );
   }
 

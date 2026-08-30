@@ -50,7 +50,7 @@ Add `--models` to also enable the optional [model router](#model-router-opt-in).
 | `npm run browser` | Open the Backlog browser UI. |
 | `npm run dashboard` | Start the live Project Dashboard server on `http://localhost:6428`. |
 | `sbl dashboard --port 8080` | Start the dashboard server on a custom port. |
-| `sbl update` | Refresh all injected files and print harness/plugin versions. |
+| `sbl update` | First self-updates a globally installed CLI to the latest npm version and re-runs itself (opt out with `--no-self` or `SBL_SKIP_UPDATE_CHECK`), then refreshes all injected files and prints harness/plugin versions. |
 | `sbl doctor` | Check Node, PowerShell policy, and the `backlog` CLI. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
 | `sbl uninstall --with-backlog` | Remove everything, including task data. |
@@ -86,7 +86,7 @@ The router is removed cleanly by `sbl uninstall`.
 sbl dashboard
 ```
 
-Starts a local server on port `6428` that serves a self-contained Project Dashboard rendered from your backlog data: board status, milestones, tasks, dependencies, activity, and decisions. The server watches `backlog/` and reloads connected browser tabs automatically.
+`sbl dashboard` (alias: `db`) starts a local server on port `6428` that serves a self-contained Project Dashboard rendered from your backlog data: board status, milestones, tasks, dependencies, activity, and decisions. The server watches `backlog/` and reloads connected browser tabs automatically. If a hub from an older or otherwise mismatched version of super-backlog is already running, the dashboard automatically stops it and restarts a fresh one.
 
 Use `--port` to choose a different port and `--no-open` to prevent the browser from opening automatically:
 

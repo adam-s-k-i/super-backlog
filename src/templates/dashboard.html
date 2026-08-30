@@ -659,7 +659,7 @@
     var upd = el('button', 'update-badge');
     upd.type = 'button';
     upd.appendChild(el('span', 'cmd-title', 'v' + data.latestVersion + ' available'));
-    upd.setAttribute('data-tip', 'Update: npm i -g super-backlog (click to copy)');
+    upd.setAttribute('data-tip', 'Update: run sbl update (click copies npm i -g super-backlog)');
     upd.addEventListener('click', function () { copyCommand(upd, 'npm i -g super-backlog'); });
     sideVersion.appendChild(upd);
   }
