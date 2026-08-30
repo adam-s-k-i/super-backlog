@@ -59,7 +59,7 @@ const SAMPLE: DashboardData = {
     { term: 'Review Gate', definition: 'Human checkpoint before proceeding.' },
   ],
   drafts: [
-    { id: 'DRAFT-1', title: 'Idea: offline mode', file: 'draft-1.md' },
+    { id: 'DRAFT-1', title: 'Idea: offline mode', status: 'Draft', acs: [] },
   ],
   source: 'backlog-json',
 };

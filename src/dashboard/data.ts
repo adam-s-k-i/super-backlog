@@ -18,6 +18,7 @@ export interface DashboardTask {
   status: string;
   priority?: string;
   assignee?: string;
+  created?: string;
   updated?: string;
   milestone?: string;
   description?: string;
@@ -44,6 +45,12 @@ export interface DashboardDraft {
   id: string;
   title: string;
   status: string;
+  description?: string;
+  priority?: string;
+  assignee?: string;
+  created?: string;
+  updated?: string;
+  acs: DashboardAC[];
 }
 
 export interface DashboardActivityBucket {
@@ -136,6 +143,7 @@ export function normalizeTasks(rawTasks: RawTask[]): DashboardTask[] {
     status: asString(t['status']) ?? 'Unknown',
     priority: asString(t['priority']),
     assignee: firstAssignee(t),
+    created: asString(t['createdAt']) ?? asString(t['created_at']) ?? asString(t['created']),
     updated: asString(t['updatedAt']) ?? asString(t['updated_at']) ?? asString(t['updated']),
     milestone: asString(t['milestone']),
     description: asString(t['description']),
@@ -294,12 +302,31 @@ function readProjectGlossary(cwd: string): DashboardGlossaryEntry[] {
 }
 
 function readDraftFile(path: string): DashboardDraft | null {
-  const keys = readSimpleKeys(path, ['id', 'title', 'status']);
+  const keys = readSimpleKeys(path, [
+    'id', 'title', 'status', 'priority', 'assignee',
+    'created_date', 'updated_date', 'created', 'updated',
+  ]);
   const id = asString(keys.id);
   const title = asString(keys.title);
   const status = asString(keys.status);
   if (!id || !title || !status) return null;
-  return { id, title, status };
+  let detail: { description?: string; acs: DashboardAC[] } = { acs: [] };
+  try {
+    detail = parseTaskFile(readFileSync(path, 'utf8'));
+  } catch {
+    // keys-only draft when the file cannot be re-read
+  }
+  return {
+    id,
+    title,
+    status,
+    description: detail.description,
+    priority: asString(keys.priority),
+    assignee: asString(keys.assignee),
+    created: asString(keys['created_date']) ?? asString(keys['created']),
+    updated: asString(keys['updated_date']) ?? asString(keys['updated']),
+    acs: detail.acs,
+  };
 }
 
 export function readDrafts(cwd: string): DashboardDraft[] {

@@ -525,6 +525,60 @@ describe('parseGlossaryMarkdown', () => {
   });
 });
 
+describe('normalizeTasks created mapping', () => {
+  it('maps createdAt / created_at / created', () => {
+    const tasks = normalizeTasks([
+      { id: 't-1', title: 'a', status: 'To Do', createdAt: '2026-08-01' },
+      { id: 't-2', title: 'b', status: 'To Do', created_at: '2026-08-02' },
+      { id: 't-3', title: 'c', status: 'To Do', created: '2026-08-03' },
+      { id: 't-4', title: 'd', status: 'To Do' },
+    ]);
+    expect(tasks.map((t) => t.created)).toEqual(['2026-08-01', '2026-08-02', '2026-08-03', undefined]);
+  });
+});
+
+describe('readDrafts enrichment', () => {
+  it('parses description, ACs and meta from the draft file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sbl-drafts-'));
+    mkdirSync(join(dir, 'backlog', 'drafts'), { recursive: true });
+    writeFileSync(
+      join(dir, 'backlog', 'drafts', 'task-9 - idea.md'),
+      [
+        '---',
+        'id: task-9',
+        'title: Offline mode',
+        'status: Draft',
+        'priority: low',
+        'assignee: adam',
+        'created_date: 2026-08-10',
+        'updated_date: 2026-08-12',
+        '---',
+        '<!-- SECTION:DESCRIPTION:BEGIN -->',
+        'Cache the board locally.',
+        '<!-- SECTION:DESCRIPTION:END -->',
+        '<!-- AC:BEGIN -->',
+        '- [ ] #1 works without network',
+        '- [x] #2 syncs on reconnect',
+        '<!-- AC:END -->',
+      ].join('\n'),
+      'utf8',
+    );
+    const drafts = readDrafts(dir);
+    expect(drafts).toHaveLength(1);
+    const d = drafts[0]!;
+    expect(d.description).toBe('Cache the board locally.');
+    expect(d.priority).toBe('low');
+    expect(d.assignee).toBe('adam');
+    expect(d.created).toBe('2026-08-10');
+    expect(d.updated).toBe('2026-08-12');
+    expect(d.acs).toEqual([
+      { text: 'works without network', checked: false },
+      { text: 'syncs on reconnect', checked: true },
+    ]);
+    rmSync(dir, { recursive: true, force: true });
+  });
+});
+
 describe('readDrafts', () => {
   it('returns an empty array when the drafts directory does not exist', () => {
     const dir = freshDir();
@@ -544,8 +598,8 @@ describe('readDrafts', () => {
       `---\nid: DRAFT-1\ntitle: 'First idea'\nstatus: Draft\n---\n`,
     );
     expect(readDrafts(dir)).toEqual([
-      { id: 'DRAFT-1', title: 'First idea', status: 'Draft' },
-      { id: 'DRAFT-2', title: 'Second idea', status: 'Draft' },
+      { id: 'DRAFT-1', title: 'First idea', status: 'Draft', acs: [] },
+      { id: 'DRAFT-2', title: 'Second idea', status: 'Draft', acs: [] },
     ]);
   });
 
@@ -568,7 +622,7 @@ describe('collectDashboardData drafts', () => {
       `---\nid: DRAFT-1\ntitle: 'First idea'\nstatus: Draft\n---\n`,
     );
     const data = collectDashboardData(dir, { kitVersion: '0.1.0' });
-    expect(data.drafts).toEqual([{ id: 'DRAFT-1', title: 'First idea', status: 'Draft' }]);
+    expect(data.drafts).toEqual([{ id: 'DRAFT-1', title: 'First idea', status: 'Draft', acs: [] }]);
   });
 });
 
