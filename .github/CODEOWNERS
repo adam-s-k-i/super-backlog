@@ -1,3 +1,7 @@
-# Each file in this repository is owned by the project maintainer.
-# The owner is automatically requested for review on every pull request.
-* @adam-s-k-i
+# Review requests fire only for shipping code. Bot-managed artifacts
+# (docs/assets/dashboard.png, release-please root files) stay review-free:
+# their PRs enable auto-merge and must not need a human review.
+/src/ @adam-s-k-i
+/test/ @adam-s-k-i
+/scripts/ @adam-s-k-i
+/.github/workflows/ @adam-s-k-i
