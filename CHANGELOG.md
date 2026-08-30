@@ -3,6 +3,18 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.6...v1.4.0) (2026-08-30)
+
+
+### Features
+
+* **dashboard:** Documentation quick-action button linking to the docs site ([7046b0c](https://github.com/adam-s-k-i/super-backlog/commit/7046b0c807aafd41a7af5c50e623bf963d2e215e))
+
+
+### Bug Fixes
+
+* **docs-landing:** working anchor scroll, fully clickable command cards, navbar brand accent ([036b82d](https://github.com/adam-s-k-i/super-backlog/commit/036b82d248a335c9e3d1cef705a53d3bfea8d5f1))
+
 ## [1.3.6](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.5...v1.3.6) (2026-08-30)
 
 
