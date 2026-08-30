@@ -5,11 +5,10 @@ status: Done
 assignee:
   - '@adamh'
 created_date: '2026-08-30 13:15'
-updated_date: '2026-08-30 13:34'
+updated_date: '2026-08-30 15:38'
 labels:
   - feature
   - dashboard
-  - phase/spec
 dependencies:
   - TASK-65
 references:

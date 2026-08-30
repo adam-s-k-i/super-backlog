@@ -1,14 +1,13 @@
 ---
 id: TASK-71
 title: 'Pipeline phase: e2e, docs, and dogfood refresh of own repo'
-status: In Progress
+status: Done
 assignee:
   - '@adamh'
 created_date: '2026-08-30 13:16'
-updated_date: '2026-08-30 13:47'
+updated_date: '2026-08-30 15:38'
 labels:
   - feature
-  - phase/spec
 dependencies:
   - TASK-66
   - TASK-67
@@ -36,7 +35,7 @@ Final unit: e2e test walking spec->plan->impl->verify->done against the real bac
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Manual acceptance walkthrough (plan section Manual acceptance checklist) done by the user, not the agent
+- [x] #1 Manual acceptance walkthrough (plan section Manual acceptance checklist) done by the user, not the agent
 <!-- DOD:END -->
 
 ## Implementation Plan
@@ -49,10 +48,12 @@ Final unit: e2e test walking spec->plan->impl->verify->done against the real bac
 
 <!-- SECTION:NOTES:BEGIN -->
 Validation: e2e 2/2 (full lifecycle spec->plan->impl->verify->done + unlabeled rejection exit 1; scaffold mirrors sbl init by writing backlog/config.yml directly since backlog init is interactive); npm test 63 files / 532 passed; npm run lint exit 0. Dogfood: node dist/bin.js update --no-self advanced AGENTS.md marker 0.1.0 -> 1.3.1 with phase table + rule 5 and refreshed 6 skill copies; .super-backlog/ gitignored (machine-local router state). P12 verified in practice: stale marker block recognized and replaced.
+
+R3/R4: user reviewed the feature and issued the ship decision (release 1.3.3) on 2026-08-30 - acceptance gate passed by user decision.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Added phase e2e against the real backlog CLI, pipeline-phases guide (sidebar + README), and refreshed this repo's own glue files via local update; suite and lint green. Manual acceptance handed to the user - production decision (R4) stays with the user.
+Added phase e2e, pipeline-phases guide (user-centric), and dogfood refresh; suite and lint green. User accepted and decided ship as release 1.3.3.
 <!-- SECTION:FINAL_SUMMARY:END -->

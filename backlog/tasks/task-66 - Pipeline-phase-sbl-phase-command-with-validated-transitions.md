@@ -5,11 +5,10 @@ status: Done
 assignee:
   - '@adamh'
 created_date: '2026-08-30 13:15'
-updated_date: '2026-08-30 13:27'
+updated_date: '2026-08-30 15:38'
 labels:
   - feature
   - cli
-  - phase/spec
 dependencies:
   - TASK-65
 references:

@@ -5,11 +5,10 @@ status: Done
 assignee:
   - '@adamh'
 created_date: '2026-08-30 13:15'
-updated_date: '2026-08-30 13:24'
+updated_date: '2026-08-30 15:38'
 labels:
   - feature
   - cli
-  - phase/spec
 dependencies: []
 references:
   - docs/superpowers/plans/2026-08-30-pipeline-phase.md

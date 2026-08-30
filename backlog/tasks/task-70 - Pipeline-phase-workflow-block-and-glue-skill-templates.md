@@ -5,11 +5,10 @@ status: Done
 assignee:
   - '@adamh'
 created_date: '2026-08-30 13:16'
-updated_date: '2026-08-30 13:41'
+updated_date: '2026-08-30 15:38'
 labels:
   - feature
   - skills
-  - phase/spec
 dependencies:
   - TASK-66
 references:
