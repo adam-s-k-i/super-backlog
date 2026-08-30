@@ -50,8 +50,10 @@ Add `--models` to also enable the optional [model router](#model-router-opt-in).
 | `npm run browser` | Open the Backlog browser UI. |
 | `npm run dashboard` | Start the live Project Dashboard server on `http://localhost:6428`. |
 | `sbl dashboard --port 8080` | Start the dashboard server on a custom port. |
+| `sbl phase TASK-1` | Show where the task stands in the pipeline (`phase/spec` → `plan` → `impl` → `verify`). |
+| `sbl phase TASK-1 plan` | Advance the phase after the gate is passed (`done` clears the label). |
 | `sbl update` | First self-updates a globally installed CLI to the latest npm version and re-runs itself (opt out with `--no-self` or `SBL_SKIP_UPDATE_CHECK`), then refreshes all injected files and prints harness/plugin versions. |
-| `sbl doctor` | Check Node, PowerShell policy, and the `backlog` CLI. |
+| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, and phase-label hygiene. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
 | `sbl uninstall --with-backlog` | Remove everything, including task data. |
 
@@ -110,16 +112,19 @@ reports the failure and nothing is spawned.
 
 Clicking a task row opens a centered detail dialog: title and status up top
 (the header stays visible while scrolling), metadata as a labelled grid with
-priority colouring, the description in readable paragraphs, acceptance
-criteria with a progress bar, dependency chips with done-markers, and a
-copyable `backlog task edit <id>` command to jump into editing. Descriptions
+priority colouring and the task's pipeline phase, the description in readable
+paragraphs, acceptance criteria with a progress bar, dependency chips with
+done-markers, and copyable `backlog task edit <id>` and `sbl phase <id> <next>`
+commands to jump into editing or advance the phase. Descriptions
 and acceptance criteria are read from the task markdown files, so the dialog
 stays complete even where `backlog task list --json` omits them.
 
 ### Feature Cycle steps
 
 The Feature Cycle section shows the nine workflow phases as a compact stepper —
-step number and name only, with the human gates highlighted. Click a step to
+step number and name only, with the human gates highlighted. Steps 5–8 carry a
+live count of the tasks currently sitting in the matching pipeline phase
+(`phase/spec` … `phase/verify`). Click a step to
 open its detail panel: the gate description plus, for tool-driven phases, the
 command that drives the phase (for example `/superpowers:brainstorming` for
 Brainstorming) with a one-click copy button. Purely human steps such as Idea
@@ -132,6 +137,26 @@ check has cached a newer release, an update badge appears next to it; clicking
 the badge copies `npm i -g super-backlog` to your clipboard. The dashboard
 never contacts the npm registry itself — the badge is fed entirely by the
 cache under `~/.super-backlog/version-check.json`.
+
+## Pipeline phases
+
+Every task carries its pipeline phase as a label, so you and your agents always
+know where work stands — no more reconstructing context at the start of a
+session. Tasks created through the spec-to-backlog flow start at `phase/spec`
+automatically; you advance phases only after the matching human gate:
+
+```bash
+sbl phase TASK-1          # where does this task stand?
+sbl phase TASK-1 plan     # review gate passed -> advance to plan
+sbl phase TASK-1 done     # archived -> clear the label
+sbl doctor                # flags missing, duplicate, or unknown phase labels
+```
+
+The dashboard shows the live phase everywhere: counts on the Feature Cycle
+stepper, chips in the tasks table, and a copyable advance command in the task
+modal.
+
+Full lifecycle and details: [Pipeline phases](./pipeline-phases).
 
 ## Harness support
 
