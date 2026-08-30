@@ -68,3 +68,9 @@ Add project-specific human gates below the block.
 3. Exception by design: PRs from the screenshot bot branch (`docs/dashboard-screenshot`) auto-merge via
    the deploy workflow — that zero-touch flow is intended and needs no approval.
 4. If a push is rejected because the remote moved, integrate locally and still ask before pushing.
+5. Changing hosted surfaces (GitHub Pages, the GitHub README) does NOT imply push approval:
+   commit locally, then present the pending commits and ask.
+6. Releases need per-version approval: each release-please PR (e.g. release 1.3.x) is merged only
+   after the user approves exactly that version. An approved version never covers later ones.
+7. Never bypass branch protection (no admin pushes, no admin merges) unless the user explicitly
+   says so for that specific case. If required checks fail, fix the cause instead of bypassing.
