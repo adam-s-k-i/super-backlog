@@ -9,6 +9,7 @@ import { startHubServer, type HubHandle } from '../dashboard/hub.js';
 import { renderDashboard } from '../dashboard/render.js';
 import { DASHBOARD_PORT } from '../dashboard/server.js';
 import { atomicWrite } from '../lib/atomic.js';
+import { defaultBuildFingerprint } from '../lib/build-fingerprint.js';
 import { clearHubState, isPidAlive, newHubToken, readHubState, writeHubState } from '../lib/hub-state.js';
 import { projectSlug } from '../lib/slug.js';
 import { KIT_VERSION } from '../lib/version.js';
@@ -23,6 +24,7 @@ export interface DashboardDeps {
   killPid?: (pid: number) => void;
   sleep?: (ms: number) => Promise<void>;
   isAlive?: typeof isPidAlive;
+  buildFingerprint?: () => string | null;
 }
 
 /** Max time to wait for an outdated hub to exit after killPid, in 100ms polls. */
@@ -188,6 +190,8 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
   const isAlive = deps.isAlive ?? isPidAlive;
   const killPid = deps.killPid ?? ((p: number): void => { process.kill(p); });
   const sleep = deps.sleep ?? ((ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms)));
+  const buildFingerprint = deps.buildFingerprint ?? defaultBuildFingerprint;
+  const myFingerprint = buildFingerprint();
 
   let slugResult;
   try {
@@ -212,12 +216,19 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
       if (status.status === 200) {
         const statusJson =
           typeof status.json === 'object' && status.json !== null
-            ? (status.json as { version?: unknown })
+            ? (status.json as { version?: unknown; fingerprint?: unknown })
             : undefined;
         const liveVersion = typeof statusJson?.version === 'string' ? statusJson.version : undefined;
         const effectiveVersion = liveVersion ?? state.version;
+        const liveFingerprint = typeof statusJson?.fingerprint === 'string' ? statusJson.fingerprint : undefined;
 
-        if (effectiveVersion === KIT_VERSION) {
+        // Same version AND (proven identical build OR build cannot be
+        // assessed locally) -> attach. A missing live fingerprint from a
+        // same-version hub means it was started by an older CLI and cannot
+        // see the current build, so it is restarted exactly once.
+        const buildMatches = myFingerprint !== null && liveFingerprint === myFingerprint;
+        const buildUnassessable = myFingerprint === null;
+        if (effectiveVersion === KIT_VERSION && (buildMatches || buildUnassessable)) {
           if (values['port'] !== undefined && port !== state.port) {
             console.error(`error: a hub is already running on ${state.port}`);
             return 1;
@@ -232,9 +243,15 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
           });
         }
 
-        console.error(
-          `hub v${effectiveVersion ?? 'unknown'} does not match this CLI (v${KIT_VERSION}) — restarting it`,
-        );
+        if (effectiveVersion === KIT_VERSION) {
+          console.error(
+            `hub build changed (fingerprint mismatch, same version v${KIT_VERSION}) — restarting it`,
+          );
+        } else {
+          console.error(
+            `hub v${effectiveVersion ?? 'unknown'} does not match this CLI (v${KIT_VERSION}) — restarting it`,
+          );
+        }
         killPid(state.pid);
         let dead = !isAlive(state.pid);
         for (let attempt = 0; !dead && attempt < STOP_POLL_MAX_ATTEMPTS; attempt++) {
@@ -275,7 +292,7 @@ export async function runDashboard(cwd: string, args: ParsedArgs, deps: Dashboar
     return 1;
   }
 
-  writeHubState(home, { pid, port: hub.port, token, version: KIT_VERSION });
+  writeHubState(home, { pid, port: hub.port, token, version: KIT_VERSION, fingerprint: myFingerprint ?? undefined });
   const result = hub.register({ cwd, file: outPath, regenerate });
   if (!result.ok) {
     await hub.close();

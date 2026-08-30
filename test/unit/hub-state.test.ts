@@ -47,6 +47,26 @@ describe('hub-state', () => {
     expect(readHubState(home)).toEqual({ pid: 42, port: 6428, token: 'abc', version: '1.2.3' });
   });
 
+  it('round-trips a hub.json that carries a build fingerprint', () => {
+    const home = mkdtempSync(join(tmpdir(), 'sbl-hub-home-'));
+    dirs.push(home);
+    writeHubState(home, { pid: 42, port: 6428, token: 'abc', version: '1.3.2', fingerprint: '0123abcd4567ef89' });
+    expect(readHubState(home)).toEqual({
+      pid: 42,
+      port: 6428,
+      token: 'abc',
+      version: '1.3.2',
+      fingerprint: '0123abcd4567ef89',
+    });
+  });
+
+  it('reads a hub.json without a fingerprint as fingerprint: undefined', () => {
+    const home = mkdtempSync(join(tmpdir(), 'sbl-hub-home-'));
+    dirs.push(home);
+    writeHubState(home, { pid: 7, port: 6428, token: 'y', version: '1.3.2' });
+    expect(readHubState(home)?.fingerprint).toBeUndefined();
+  });
+
   it('reads a legacy hub.json without a version as version: undefined', () => {
     const home = mkdtempSync(join(tmpdir(), 'sbl-hub-home-'));
     dirs.push(home);

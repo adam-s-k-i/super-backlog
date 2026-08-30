@@ -10,6 +10,8 @@ export interface HubState {
   token: string;
   /** Hub's KIT_VERSION at start time. Missing on hub.json written by older CLIs. */
   version?: string;
+  /** Content hash of the hub's build. Missing on hub.json written by older CLIs. */
+  fingerprint?: string;
 }
 
 export function hubStatePath(home: string): string {
@@ -28,8 +30,14 @@ export function readHubState(home: string): HubState | null {
     ) {
       return null;
     }
-    const { pid, port, token, version } = parsed as HubState;
-    return typeof version === 'string' ? { pid, port, token, version } : { pid, port, token };
+    const { pid, port, token, version, fingerprint } = parsed as HubState;
+    return {
+      pid,
+      port,
+      token,
+      ...(typeof version === 'string' ? { version } : {}),
+      ...(typeof fingerprint === 'string' ? { fingerprint } : {}),
+    };
   } catch {
     return null;
   }

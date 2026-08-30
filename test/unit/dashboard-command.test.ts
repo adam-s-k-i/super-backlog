@@ -178,7 +178,7 @@ describe('runDashboard', () => {
     const killPid = vi.fn();
     const attach = vi.fn(async (url: string, body: unknown) => {
       if (url.includes('/api/hub/status')) {
-        return { status: 200, json: { pid: process.pid, port: 6428, version: KIT_VERSION } };
+        return { status: 200, json: { pid: process.pid, port: 6428, version: KIT_VERSION, fingerprint: 'fp-a' } };
       }
       expect(body).toEqual({ cwd, token: 'tok' });
       return { status: 200, json: { ok: true, slug: 'bravo', url: 'http://127.0.0.1:6428/p/bravo/' } };
@@ -189,6 +189,7 @@ describe('runDashboard', () => {
       attach,
       openBrowser: (url) => opened.push(url),
       killPid,
+      buildFingerprint: () => 'fp-a',
     });
     expect(code).toBe(0);
     expect(startHub).not.toHaveBeenCalled();
@@ -196,6 +197,109 @@ describe('runDashboard', () => {
     expect(killPid).not.toHaveBeenCalled();
     expect(opened).toEqual([]);
     expect(readHubState(home)?.port).toBe(6428);
+  });
+
+  it('restarts a same-version hub whose build fingerprint differs', async () => {
+    const cwd = project('Hotel');
+    const home = tempDir('sbl-dash-home-');
+    writeHubState(home, { pid: 777, port: 6428, token: 'tok', version: KIT_VERSION });
+    let fingerprintAtRegister: string | undefined;
+    const register = vi.fn(() => {
+      fingerprintAtRegister = readHubState(home)?.fingerprint;
+      return { ok: true, slug: 'hotel', url: 'http://127.0.0.1:6428/p/hotel/' };
+    });
+    const startHub = vi.fn(async () => fakeHub(register));
+    let alive = true;
+    const killPid = vi.fn(() => {
+      alive = false;
+    });
+    const isAlive = vi.fn(() => alive);
+    const sleep = vi.fn(async () => {});
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const attach = vi.fn(async (url: string) => {
+      if (url.includes('/api/hub/status')) {
+        return { status: 200, json: { pid: 777, port: 6428, version: KIT_VERSION, fingerprint: 'old-build' } };
+      }
+      throw new Error('should not talk to the old hub again');
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: () => {},
+      killPid,
+      isAlive,
+      sleep,
+      buildFingerprint: () => 'new-build',
+    });
+    expect(code).toBe(0);
+    expect(killPid).toHaveBeenCalledWith(777);
+    expect(startHub).toHaveBeenCalledTimes(1);
+    expect(register).toHaveBeenCalled();
+    expect(log.mock.calls.map(String).join('\n')).toContain('fingerprint');
+    expect(fingerprintAtRegister).toBe('new-build');
+  });
+
+  it('restarts a same-version hub that reports no fingerprint (hub from an older CLI)', async () => {
+    const cwd = project('India');
+    const home = tempDir('sbl-dash-home-');
+    writeHubState(home, { pid: 888, port: 6428, token: 'tok', version: KIT_VERSION });
+    const startHub = vi.fn(async () => fakeHub());
+    let alive = true;
+    const killPid = vi.fn(() => {
+      alive = false;
+    });
+    const isAlive = vi.fn(() => alive);
+    const sleep = vi.fn(async () => {});
+    const attach = vi.fn(async (url: string) => {
+      if (url.includes('/api/hub/status')) {
+        return { status: 200, json: { pid: 888, port: 6428, version: KIT_VERSION } };
+      }
+      throw new Error('should not talk to the old hub again');
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: () => {},
+      killPid,
+      isAlive,
+      sleep,
+      buildFingerprint: () => 'new-build',
+    });
+    expect(code).toBe(0);
+    expect(killPid).toHaveBeenCalledWith(888);
+    expect(startHub).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps version-only behavior when the local build fingerprint is unavailable', async () => {
+    const cwd = project('Juliett');
+    const home = tempDir('sbl-dash-home-');
+    mkdirSync(join(home, '.super-backlog'), { recursive: true });
+    writeFileSync(
+      join(home, '.super-backlog', 'hub.json'),
+      JSON.stringify({ pid: process.pid, port: 6428, token: 'tok', version: KIT_VERSION }),
+    );
+    const startHub = vi.fn(async () => fakeHub());
+    const killPid = vi.fn();
+    const attach = vi.fn(async (url: string, body: unknown) => {
+      if (url.includes('/api/hub/status')) {
+        return { status: 200, json: { pid: process.pid, port: 6428, version: KIT_VERSION } };
+      }
+      expect(body).toEqual({ cwd, token: 'tok' });
+      return { status: 200, json: { ok: true, slug: 'juliett', url: 'http://127.0.0.1:6428/p/juliett/' } };
+    });
+    const code = await runDashboard(cwd, { values: { 'no-open': true }, positionals: [] }, {
+      homedir: () => home,
+      startHub,
+      attach,
+      openBrowser: () => {},
+      killPid,
+      buildFingerprint: () => null,
+    });
+    expect(code).toBe(0);
+    expect(killPid).not.toHaveBeenCalled();
+    expect(startHub).not.toHaveBeenCalled();
   });
 
   it('restarts an outdated hub on version mismatch and starts a fresh one', async () => {

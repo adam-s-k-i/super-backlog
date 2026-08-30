@@ -15,6 +15,7 @@ import {
   recursiveWatchSupported,
 } from './server.js';
 import { atomicWrite } from '../lib/atomic.js';
+import { defaultBuildFingerprint } from '../lib/build-fingerprint.js';
 import { projectSlug, realpathKey } from '../lib/slug.js';
 import { KIT_VERSION } from '../lib/version.js';
 import { createModelApiHandler } from '../models/dashboard-api.js';
@@ -116,6 +117,7 @@ export async function startHubServer(opts: {
 }): Promise<HubHandle> {
   const projects = new Map<string, ProjectEntry>();
   const token = opts.token;
+  const fingerprint = defaultBuildFingerprint();
   let port = 0;
   let watchWarned = false;
 
@@ -232,7 +234,7 @@ export async function startHubServer(opts: {
         sendText(res, 401, 'unauthorized');
         return;
       }
-      sendJson(res, 200, { pid: process.pid, port, version: KIT_VERSION });
+      sendJson(res, 200, { pid: process.pid, port, version: KIT_VERSION, fingerprint: fingerprint ?? undefined });
       return;
     }
 
