@@ -653,6 +653,19 @@ describe('drafts rendering', () => {
   });
 });
 
+describe('drafts v2', () => {
+  it('renders drafts as clickable cards with status chips', () => {
+    const app = appScript();
+    expect(app).toContain('function openDraftDetail');
+    expect(app).toMatch(/renderDrafts[\s\S]*?flow-card/);
+  });
+
+  it('offers the promote command in the draft modal', () => {
+    const app = appScript();
+    expect(app).toContain('backlog draft promote ');
+  });
+});
+
 describe('typography', () => {
   it('loads Plus Jakarta Sans and JetBrains Mono from Google Fonts with swap', () => {
     expect(html).toMatch(/fonts\.googleapis\.com\/css2\?[^"]*Plus\+Jakarta\+Sans/);

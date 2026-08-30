@@ -282,7 +282,6 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   .cmd-line { font-family: var(--mono); font-size: .72rem; color: var(--dim); }
   .hint { color: var(--dim); font-size: .8rem; margin-top: 12px; }
   .drafts-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-  .drafts-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: .88rem; }
   code.inline {
     font-family: var(--mono); font-size: .85em;
     background: var(--surface-2); border: 1px solid var(--line);
@@ -880,16 +879,6 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     });
   }
 
-  /* ---------- Drafts ---------- */
-  function renderDrafts(drafts) {
-    var list = document.getElementById('drafts-list');
-    if (!list) return;
-    list.textContent = '';
-    if (!drafts || drafts.length === 0) { list.appendChild(el('li', '', 'No drafts.')); return; }
-    drafts.forEach(function (d) { list.appendChild(el('li', '', d.id + ' \\u2014 ' + d.title)); });
-  }
-  renderDrafts(data.drafts);
-
   /* ---------- Shared diagram helpers ---------- */
   var SVGNS = 'http://www.w3.org/2000/svg';
   var TONE_VAR = { ok: 'var(--ok)', accent: 'var(--accent)', warn: 'var(--warn)', danger: 'var(--danger)', dim: 'var(--dim)' };
@@ -1321,6 +1310,76 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   }
   window.__sblOpenDetail = openDetail;
   if (dialog) dialog.addEventListener('click', function (ev) { if (ev.target === dialog) closeDetail(); });
+
+  /* ---------- Drafts ---------- */
+  function draftMetaGrid(d) {
+    var grid = el('div', 'detail-meta');
+    function cell(label, value, tone) {
+      var c = el('div', 'meta-cell');
+      c.appendChild(el('span', 'meta-label', label));
+      var v = el('span', 'meta-value' + (value ? '' : ' empty'), value || '—');
+      if (value && tone) v.setAttribute('data-tone', tone);
+      c.appendChild(v);
+      return c;
+    }
+    grid.appendChild(cell('Priority', d.priority, priorityTone(d.priority)));
+    grid.appendChild(cell('Assignee', d.assignee));
+    grid.appendChild(cell('Created', d.created));
+    grid.appendChild(cell('Updated', d.updated));
+    return grid;
+  }
+  function openDraftDetail(d) {
+    if (!dialog) return;
+    var content = el('div', 'dialog-content');
+    var head = el('div', 'detail-head');
+    head.appendChild(el('span', 'detail-id', d.id));
+    var chip = el('span', 'status-chip', d.status);
+    chip.setAttribute('data-tone', toneOf(d.status));
+    head.appendChild(chip);
+    var closeBtn = el('button', 'detail-close', '×');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close details');
+    closeBtn.addEventListener('click', closeDetail);
+    head.appendChild(closeBtn);
+    content.appendChild(head);
+    var title = el('h3', 'detail-title', d.title);
+    title.id = 'detail-title-h';
+    dialog.setAttribute('aria-labelledby', 'detail-title-h');
+    content.appendChild(title);
+    if (d.description) content.appendChild(descParagraphs(d.description));
+    else content.appendChild(el('p', 'detail-desc', 'No description.'));
+    content.appendChild(draftMetaGrid(d));
+    if (d.acs && d.acs.length > 0) content.appendChild(acSection(d));
+    var cmd = el('button', 'phase-cmd detail-cmd');
+    cmd.type = 'button';
+    var cmdLine = 'backlog draft promote ' + d.id.replace(/^task-/i, '');
+    cmd.appendChild(el('span', 'cmd-line', cmdLine));
+    cmd.appendChild(el('span', 'cmd-title', 'copy'));
+    cmd.addEventListener('click', function () { copyCommand(cmd, cmdLine); });
+    content.appendChild(cmd);
+    dialog.textContent = '';
+    dialog.appendChild(content);
+    dialog.showModal();
+  }
+  function renderDrafts(drafts) {
+    var list = document.getElementById('drafts-list');
+    if (!list) return;
+    list.textContent = '';
+    if (!drafts || drafts.length === 0) { list.appendChild(el('li', '', 'No drafts.')); return; }
+    drafts.forEach(function (d) {
+      var li = el('li', 'flow-card');
+      var head = el('div', 'flow-card-head');
+      head.appendChild(el('span', 'flow-card-id', d.id));
+      var chip = el('span', 'status-chip', d.status);
+      chip.setAttribute('data-tone', toneOf(d.status));
+      head.appendChild(chip);
+      li.appendChild(head);
+      li.appendChild(el('div', 'flow-card-title', d.title));
+      li.addEventListener('click', function () { openDraftDetail(d); });
+      list.appendChild(li);
+    });
+  }
+  renderDrafts(data.drafts);
 
   /* ---------- Keyboard shortcuts ---------- */
   document.addEventListener('keydown', function (ev) {
