@@ -51,6 +51,9 @@ jobs:
        vars.RELEASE_AUTOMERGE != 'off')
     steps:
       - env:
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
+          # Repo secrets are unavailable on Dependabot-triggered runs, so fall
+          # back to the workflow token there (auto-merge arming is allowed for
+          # it; the merge itself happens later, by GitHub, once checks pass).
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN || github.token }}
           GH_REPO: ${{ github.repository }}
         run: gh pr merge --auto --squash "${{ github.event.pull_request.number }}"
