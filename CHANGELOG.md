@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.4.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.4.0...v1.4.1) (2026-09-24)
+
+
+### Bug Fixes
+
+* **ci:** arm auto-merge on Dependabot PRs via github.token fallback ([a5d1bd2](https://github.com/adam-s-k-i/super-backlog/commit/a5d1bd29eff5a50e06af2385e0a1019c5eabc67e))
+
 ## [1.4.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.3.6...v1.4.0) (2026-08-30)
 
 
