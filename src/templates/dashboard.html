@@ -908,8 +908,9 @@
       fetch('api/backlog-browser', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
         .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
         .then(function (r) {
-          if (!r.ok || !r.data || !r.data.url) throw new Error('start failed');
-          openBacklog(r.data.url);
+          if (!r.ok || !r.data) throw new Error('start failed');
+          var underHub = location.pathname.indexOf('/p/') === 0;
+          openBacklog(underHub ? 'bb/' : r.data.url);
         })
         .catch(function () { cmdFeedback(backlogBtn, 'failed \u2717'); });
     });
@@ -921,6 +922,17 @@
       if (e.target === backlogDialog) backlogDialog.close();
     });
   }
+  function applyBacklogTheme() {
+    if (!backlogFrame) return;
+    try {
+      var doc = backlogFrame.contentDocument;
+      if (!doc || !doc.documentElement) return;
+      var dark = document.documentElement.getAttribute('data-theme') !== 'light';
+      try { backlogFrame.contentWindow.localStorage.setItem('backlog-theme', dark ? 'dark' : 'light'); } catch (e) { /* storage blocked */ }
+      doc.documentElement.classList.toggle('dark', dark);
+    } catch (e) { /* cross-origin frame keeps its own theme */ }
+  }
+  if (backlogFrame) backlogFrame.addEventListener('load', applyBacklogTheme);
 
   /* ---------- Theme toggle ---------- */
   var themeToggle = document.getElementById('theme-toggle');
@@ -935,6 +947,7 @@
       var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', next);
       try { localStorage.setItem('sbl-theme', next); } catch (e) { /* private mode */ }
+      applyBacklogTheme();
       syncThemeToggle();
     });
     syncThemeToggle();

@@ -1,6 +1,6 @@
 import { watch, type FSWatcher } from 'node:fs';
 import { readFile } from 'node:fs/promises';
-import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
+import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
@@ -66,6 +66,55 @@ function hasJsonContentType(req: IncomingMessage): boolean {
   const value = req.headers['content-type'];
   const ct = Array.isArray(value) ? value[0] : value;
   return typeof ct === 'string' && ct.toLowerCase().startsWith('application/json');
+}
+
+function cookieValue(req: IncomingMessage, name: string): string | null {
+  const raw = req.headers.cookie;
+  if (typeof raw !== 'string') return null;
+  for (const part of raw.split(';')) {
+    const idx = part.indexOf('=');
+    if (idx < 0) continue;
+    if (part.slice(0, idx).trim() === name) return part.slice(idx + 1).trim();
+  }
+  return null;
+}
+
+function proxyToOrigin(
+  origin: string,
+  pathAndQuery: string,
+  req: IncomingMessage,
+  res: ServerResponse,
+  resHeaders: Record<string, string> = {},
+): void {
+  const target = new URL(origin);
+  const headers: Record<string, string> = {};
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (key === 'host' || key === 'connection' || value === undefined) continue;
+    headers[key] = Array.isArray(value) ? value.join(', ') : String(value);
+  }
+  const upstream = httpRequest(
+    {
+      host: target.hostname,
+      port: target.port,
+      method: req.method ?? 'GET',
+      path: pathAndQuery,
+      headers,
+    },
+    (up) => {
+      const outHeaders: Record<string, string | string[]> = { ...resHeaders };
+      for (const [key, value] of Object.entries(up.headers)) {
+        if (key === 'connection' || key === 'keep-alive' || value === undefined) continue;
+        outHeaders[key] = value;
+      }
+      res.writeHead(up.statusCode ?? 502, outHeaders);
+      up.pipe(res);
+    },
+  );
+  upstream.on('error', () => {
+    if (!res.headersSent) sendText(res, 502, 'backlog browser unreachable');
+    else res.end();
+  });
+  req.pipe(upstream);
 }
 
 function projectUrl(port: number, slug: string): string {
@@ -212,13 +261,17 @@ export async function startHubServer(opts: {
 
     const method = req.method ?? 'GET';
 
-    if (method === 'POST' && !hasJsonContentType(req)) {
+    const parsed = new URL(req.url ?? '/', 'http://127.0.0.1');
+    const pathname = parsed.pathname;
+
+    const cookieSlug = cookieValue(req, 'sbl_bb');
+    const cookieEntry = cookieSlug !== null ? projects.get(cookieSlug) ?? null : null;
+    const bbScoped = /^\/p\/([^/]+)\/bb(\/.*)?$/.exec(pathname);
+
+    if (method === 'POST' && !hasJsonContentType(req) && cookieEntry === null && bbScoped === null) {
       sendText(res, 415, 'unsupported media type: expected application/json');
       return;
     }
-
-    const parsed = new URL(req.url ?? '/', 'http://127.0.0.1');
-    const pathname = parsed.pathname;
 
     if (pathname === '/' && method === 'GET') {
       const links = [...projects.keys()]
@@ -289,6 +342,15 @@ export async function startHubServer(opts: {
 
     const scoped = /^\/p\/([^/]+)(\/.*)?$/.exec(pathname);
     if (!scoped) {
+      if (cookieEntry !== null) {
+        const result = await cookieEntry.browser.ensure();
+        if (!result.ok) {
+          sendJson(res, result.code, result);
+          return;
+        }
+        proxyToOrigin(result.url, pathname + parsed.search, req, res);
+        return;
+      }
       sendText(res, 404, 'not found');
       return;
     }
@@ -305,6 +367,24 @@ export async function startHubServer(opts: {
       res.end();
       return;
     }
+
+    if (rest === '/bb') {
+      res.writeHead(302, { location: `/p/${slug}/bb/` });
+      res.end();
+      return;
+    }
+
+    if (rest === '/bb/' || rest.startsWith('/bb/')) {
+      const result = await entry.browser.ensure();
+      if (!result.ok) {
+        sendJson(res, result.code, result);
+        return;
+      }
+      const browserPath = rest.slice('/bb'.length) || '/';
+      proxyToOrigin(result.url, browserPath + parsed.search, req, res, {
+        'set-cookie': `sbl_bb=${slug}; Path=/; SameSite=Lax`,
+      });
+      return;    }
 
     if (rest.startsWith('/api/')) {
       req.url = rest;
