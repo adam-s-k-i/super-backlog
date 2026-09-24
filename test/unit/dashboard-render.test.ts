@@ -682,6 +682,20 @@ describe('backlog quick action', () => {
     expect(app).toContain('backlogDialog.showModal');
   });
 
+  it('opens the iframe same-origin under the hub via the bb/ proxy path', () => {
+    const app = appScript();
+    expect(app).toContain("'bb/'");
+    expect(app).toContain("location.pathname.indexOf('/p/') === 0");
+  });
+
+  it('syncs the dashboard theme into the same-origin backlog iframe', () => {
+    const app = appScript();
+    expect(app).toContain("'backlog-theme'");
+    expect(app).toContain('applyBacklogTheme');
+    expect(app).toContain("backlogFrame.addEventListener('load', applyBacklogTheme)");
+    expect(app).toContain('applyBacklogTheme();');
+  });
+
   it('keeps the copy feedback machinery used by phase commands and the badge', () => {
     const app = appScript();
     expect(app).toContain('copyCommand');
