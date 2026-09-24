@@ -104,9 +104,11 @@ The Board &amp; Quick Actions section has a single **Backlog** button. Clicking
 it makes the dashboard hub start a `backlog browser` process for the current
 project on a free local port (reused while it is alive, stopped when the hub
 stops) and opens the full Backlog.md UI — board, tasks, documents, decisions —
-in a near-fullscreen overlay. Use the overlay's "open in new tab" link for a
-standalone browser tab. If the `backlog` CLI is not installed, the button
-reports the failure and nothing is spawned.
+in a near-fullscreen overlay. Under the hub the overlay runs same-origin: the
+hub proxies the browser UI through `/p/<slug>/bb/`, and the dashboard theme
+toggle also switches the embedded UI between light and dark. Use the overlay's
+"open in new tab" link for a standalone browser tab. If the `backlog` CLI is
+not installed, the button reports the failure and nothing is spawned.
 
 ### Task details
 
