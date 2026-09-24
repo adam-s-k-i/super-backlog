@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.5.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.4.1...v1.5.0) (2026-09-24)
+
+
+### Features
+
+* **dashboard:** same-origin backlog browser proxy with theme sync ([#76](https://github.com/adam-s-k-i/super-backlog/issues/76)) ([288fea3](https://github.com/adam-s-k-i/super-backlog/commit/288fea36305abc7137275361d7c0598409300348))
+
 ## [1.4.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.4.0...v1.4.1) (2026-09-24)
 
 
