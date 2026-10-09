@@ -3,7 +3,7 @@ name: task-review-gate
 description: Enforce the human review checkpoint before implementation starts. Use at session start on an existing task, right after spec-to-backlog created tasks, or when the user asks to implement a specific task: present the task, its pipeline phase and acceptance criteria, and wait for explicit approval before any code.
 ---
 
-<!-- managed-by: super-backlog 1.3.1 -->
+<!-- managed-by: super-backlog 1.5.0 -->
 # Task Review Gate: session entry, review gate, resume
 
 Human checkpoint between reviewed specs and the first line of code — and the
