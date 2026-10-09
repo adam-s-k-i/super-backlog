@@ -1,14 +1,13 @@
 ---
 id: TASK-77
 title: sbl update exits silently during the self-update check
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 14:50'
-updated_date: '2026-10-09 14:59'
+updated_date: '2026-10-09 20:58'
 labels:
   - bug
   - cli
-  - phase/verify
 dependencies: []
 priority: high
 ordinal: 75000

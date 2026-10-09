@@ -1,13 +1,12 @@
 ---
 id: TASK-81
 title: 'Docs, dogfood refresh and verification for subagent model routing'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 17:48'
-updated_date: '2026-10-09 18:12'
+updated_date: '2026-10-09 20:58'
 labels:
   - feature
-  - phase/verify
 dependencies:
   - TASK-80
 references:

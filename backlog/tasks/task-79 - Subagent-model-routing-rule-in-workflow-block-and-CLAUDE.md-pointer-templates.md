@@ -1,13 +1,12 @@
 ---
 id: TASK-79
 title: 'Subagent model routing: rule in workflow block and CLAUDE.md pointer templates'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 17:48'
-updated_date: '2026-10-09 18:12'
+updated_date: '2026-10-09 20:58'
 labels:
   - feature
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-09-subagent-model-routing.md

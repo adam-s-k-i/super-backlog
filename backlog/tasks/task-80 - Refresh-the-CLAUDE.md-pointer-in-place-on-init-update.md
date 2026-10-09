@@ -1,13 +1,12 @@
 ---
 id: TASK-80
 title: Refresh the CLAUDE.md pointer in place on init/update
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 17:48'
-updated_date: '2026-10-09 18:12'
+updated_date: '2026-10-09 20:58'
 labels:
   - feature
-  - phase/verify
 dependencies:
   - TASK-79
 references:

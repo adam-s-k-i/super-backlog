@@ -1,13 +1,12 @@
 ---
 id: TASK-84
 title: Document line-ending handling and the manual upgrade from 1.3.2-1.5.0
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 18:28'
-updated_date: '2026-10-09 18:49'
+updated_date: '2026-10-09 20:59'
 labels:
   - docs
-  - phase/verify
 dependencies:
   - TASK-83
 references:

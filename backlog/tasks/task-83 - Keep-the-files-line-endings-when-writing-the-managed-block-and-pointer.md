@@ -1,13 +1,12 @@
 ---
 id: TASK-83
 title: Keep the file's line endings when writing the managed block and pointer
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-09 18:27'
-updated_date: '2026-10-09 18:49'
+updated_date: '2026-10-09 20:58'
 labels:
   - bug
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-09-crlf-managed-writes.md
