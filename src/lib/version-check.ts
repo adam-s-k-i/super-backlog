@@ -1,9 +1,10 @@
 // src/lib/version-check.ts
-import type { ChildProcess } from 'node:child_process';
+import { spawn as spawnNode, type ChildProcess } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import type { Readable } from 'node:stream';
+import { fileURLToPath } from 'node:url';
 import spawn from 'cross-spawn';
 
 export interface VersionCheckCache {
@@ -14,13 +15,16 @@ export interface VersionCheckCache {
 export interface VersionCheckDeps {
   home: string;
   now: () => Date;
-  fetchLatest: () => Promise<string | null>;
+  /** Starts a cache refresh that outlives this process; must not block. */
+  refresh: () => void;
   log: (line: string) => void;
   env: NodeJS.ProcessEnv;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 2000;
+// The refresh worker runs detached after the CLI has exited, so nobody waits on it.
+const REFRESH_TIMEOUT_MS = 10000;
 
 function cachePath(home: string): string {
   return join(home, '.super-backlog', 'version-check.json');
@@ -73,18 +77,16 @@ function unrefStream(stream: Readable | null | undefined): void {
 
 export interface FetchLatestOptions {
   /**
-   * Fire-and-forget mode for the startup hint: unref the npm child, its stdout
-   * and the timer so a pending check never delays process exit. Callers that
-   * await the result must leave this off, or Node exits mid-await once nothing
-   * else holds the event loop open.
+   * Spawn npm without a console window. The detached refresh worker has no
+   * console of its own, so on Windows npm.cmd would otherwise flash a new one.
    */
-  background?: boolean;
+  windowsHide?: boolean;
 }
 
 /** Queries the npm registry for the latest published version, racing a timeout. */
 export async function fetchLatestVersion(
   timeoutMs: number = FETCH_TIMEOUT_MS,
-  { background = false }: FetchLatestOptions = {},
+  { windowsHide = false }: FetchLatestOptions = {},
 ): Promise<string | null> {
   let child: ChildProcess | undefined;
   const work = new Promise<string | null>((resolvePromise) => {
@@ -92,13 +94,13 @@ export async function fetchLatestVersion(
       child = spawn('npm', ['view', 'super-backlog', 'version'], {
         cwd: process.cwd(),
         stdio: ['ignore', 'pipe', 'ignore'],
+        windowsHide,
       });
     } catch {
       resolvePromise(null);
       return;
     }
     let out = '';
-    if (background) unrefStream(child.stdout);
     child.stdout?.on('data', (chunk: Buffer) => {
       out += chunk.toString('utf8');
     });
@@ -112,7 +114,6 @@ export async function fetchLatestVersion(
       const v = line?.trim();
       resolvePromise(v === undefined || v === '' ? null : v);
     });
-    if (background) child.unref();
   });
 
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -122,7 +123,6 @@ export async function fetchLatestVersion(
       timedOut = true;
       resolveTimeout(null);
     }, timeoutMs);
-    if (background) timer.unref();
   });
   try {
     return await Promise.race([work, timeout]);
@@ -140,8 +140,40 @@ export async function fetchLatestVersion(
   }
 }
 
-export async function defaultFetchLatest(): Promise<string | null> {
-  return fetchLatestVersion(FETCH_TIMEOUT_MS, { background: true });
+/** Fetches the latest version into the cache; a failed fetch leaves the cache as is. */
+export async function refreshVersionCache(
+  home: string,
+  fetchLatest: () => Promise<string | null> = () => fetchLatestVersion(REFRESH_TIMEOUT_MS, { windowsHide: true }),
+  now: () => Date = () => new Date(),
+): Promise<void> {
+  let latest: string | null;
+  try {
+    latest = await fetchLatest();
+  } catch {
+    return;
+  }
+  if (latest == null || latest === '') return;
+  writeCache(home, { checkedAt: now().toISOString(), latest });
+}
+
+/**
+ * Runs refreshVersionCache in a detached worker process so it outlives the
+ * CLI. An in-process fetch never finished for short commands: the process
+ * exited first, and on Windows the npm child was even killed along with it.
+ */
+export function spawnVersionRefresh(home: string): void {
+  try {
+    const worker = fileURLToPath(new URL('../version-refresh.js', import.meta.url));
+    const child = spawnNode(process.execPath, [worker, home], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    child.on('error', () => {});
+    child.unref();
+  } catch {
+    // best-effort: the hint must never break the command
+  }
 }
 
 export async function applyVersionHint(installed: string, deps: VersionCheckDeps): Promise<void> {
@@ -155,12 +187,10 @@ export async function applyVersionHint(installed: string, deps: VersionCheckDeps
   }
 
   if (!cache || isStale(cache.checkedAt, deps.now())) {
-    void deps
-      .fetchLatest()
-      .then((latest) => {
-        if (latest == null || latest === '') return;
-        writeCache(deps.home, { checkedAt: deps.now().toISOString(), latest });
-      })
-      .catch(() => {});
+    try {
+      deps.refresh();
+    } catch {
+      // best-effort, like spawnVersionRefresh itself
+    }
   }
 }
