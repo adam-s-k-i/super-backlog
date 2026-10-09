@@ -1,13 +1,12 @@
 ---
 id: TASK-82
 title: Fix invalid YAML frontmatter in task-review-gate skill template
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-09 18:24'
-updated_date: '2026-10-09 18:26'
+updated_date: '2026-10-09 18:28'
 labels:
   - bug
-  - phase/verify
 dependencies: []
 ordinal: 75000
 ---
