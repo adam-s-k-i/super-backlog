@@ -4,10 +4,10 @@ title: 'Summary page: architecture.yml schema and validation'
 status: To Do
 assignee: []
 created_date: '2026-10-09 21:50'
-updated_date: '2026-10-09 22:00'
+updated_date: '2026-10-09 23:53'
 labels:
   - feature
-  - phase/plan
+  - phase/verify
 milestone: m-2
 dependencies:
   - TASK-85
