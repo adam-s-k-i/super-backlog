@@ -1,11 +1,11 @@
 // test/e2e/update.e2e.test.ts
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { CLI_PATH, scaffoldAndInit } from './helpers.js';
+import { CLI_PATH, fakeNpmEnv, scaffoldAndInit } from './helpers.js';
 
 interface UpdateResult {
   out: string;
@@ -109,5 +109,37 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
     expect(status).toBe(1);
     expect(err).toContain('package.json');
     expect(err).toMatch(/not valid JSON/i);
+  });
+});
+
+describe('sbl update self-update check (fake npm on PATH)', () => {
+  const dirs: string[] = [];
+  afterEach(() => {
+    for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+  });
+
+  // TASK-77: the awaited registry check used to unref every handle, so Node
+  // exited 0 mid-await and `sbl update` silently did nothing.
+  it('awaits the registry check, then refreshes without installing when already current', () => {
+    const dir = scaffoldAndInit();
+    dirs.push(dir);
+    fabricateLocalBacklogBin(dir);
+    const pkgPath = join(__dirname, '..', '..', 'package.json');
+    const installed = (JSON.parse(readFileSync(pkgPath, 'utf8')) as { version: string }).version;
+    const fake = fakeNpmEnv({ FAKE_NPM_VERSION: installed, FAKE_NPM_DELAY_MS: '300', SBL_SKIP_INSTALL: '1' });
+    dirs.push(fake.dir);
+    const log = join(fake.dir, 'calls.log');
+    // isolate the startup hint's cache from the real home directory
+    const env = { ...fake.env, FAKE_NPM_LOG: log, HOME: fake.dir, USERPROFILE: fake.dir };
+    delete env.SBL_SKIP_UPDATE_CHECK;
+    delete env.SBL_FORCE_OFFLINE;
+
+    const r = spawnSync(process.execPath, [CLI_PATH, 'update'], { cwd: dir, env, encoding: 'utf8', timeout: 30000 });
+
+    expect(r.stdout).toContain('super-backlog update complete');
+    expect(r.stdout).toContain('backlog.md (latest):   9.9.9-fake');
+    const calls = readFileSync(log, 'utf8').split(/\r?\n/);
+    expect(calls).toContain('view super-backlog version');
+    expect(calls.some((c) => /^(i|install)\b/.test(c))).toBe(false);
   });
 });
