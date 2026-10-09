@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { CLI_PATH, fakeNpmEnv, scaffoldAndInit } from './helpers.js';
+import { CLI_PATH, fakeNpmEnv, runCli, scaffoldAndInit } from './helpers.js';
 
 interface UpdateResult {
   out: string;
@@ -43,6 +43,28 @@ function fabricateLocalBacklogBin(dir: string): void {
     writeFileSync(bin, '#!/bin/sh\necho 9.9.9-e2e\n');
     chmodSync(bin, 0o755);
   }
+}
+
+const OLD_POINTER = [
+  '## Workflow system (managed by super-backlog)',
+  '',
+  'This project uses the combined Backlog.md + Superpowers workflow. Read the',
+  'integration block in AGENTS.md (section between SUPER-BACKLOG markers) and follow',
+  'it. Tasks are managed exclusively through the `backlog` CLI.',
+  '',
+].join('\n');
+
+/** Rewinds CLAUDE.md and AGENTS.md to the pre-routing-rule glue, with user content around the pointer. */
+function ageGlue(dir: string): void {
+  writeFileSync(
+    join(dir, 'CLAUDE.md'),
+    `# Project notes\n\nkeep me above\n\n${OLD_POINTER}\n## Local rules\n\nkeep me below\n`,
+  );
+  const agentsPath = join(dir, 'AGENTS.md');
+  const aged = readFileSync(agentsPath, 'utf8')
+    .replace(/### Model routing for subagents[\s\S]*?(?=Project-specific human gates)/, '')
+    .replace(/^6\. Delegate by tier.*\r?\n/m, '');
+  writeFileSync(agentsPath, aged);
 }
 
 describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
@@ -87,6 +109,46 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
     const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
     expect(agents.match(/SUPER-BACKLOG:\d+\.\d+\.\d+ START/g)).toHaveLength(1);
     expect(existsSync(join(dir, 'backlog', 'config.yml'))).toBe(true);
+  });
+
+  it('refreshes a stale CLAUDE.md pointer and AGENTS.md block, then stays stable', () => {
+    freshScaffold();
+    ageGlue(dir);
+    expect(readFileSync(join(dir, 'AGENTS.md'), 'utf8')).not.toContain('Model routing for subagents');
+
+    expect(runUpdate(dir).status).toBe(4);
+
+    const claude = readFileSync(join(dir, 'CLAUDE.md'), 'utf8');
+    expect(claude).toContain('"Model routing for subagents"');
+    expect(claude).toContain('keep me above');
+    expect(claude).toContain('## Local rules');
+    expect(claude).toContain('keep me below');
+    expect(claude.match(/^## Workflow system \(managed by super-backlog\)/gm)).toHaveLength(1);
+    const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
+    expect(agents).toContain('### Model routing for subagents');
+    expect(agents).toMatch(/^6\. Delegate by tier/m);
+
+    // second run: nothing left to change
+    expect(runUpdate(dir).status).toBe(4);
+    expect(readFileSync(join(dir, 'CLAUDE.md'), 'utf8')).toBe(claude);
+    expect(readFileSync(join(dir, 'AGENTS.md'), 'utf8')).toBe(agents);
+  });
+
+  it('uninstall after a pointer refresh removes pointer and block cleanly', () => {
+    freshScaffold();
+    ageGlue(dir);
+    runUpdate(dir);
+
+    const out = runCli(dir, ['uninstall']);
+
+    expect(out).toContain('removed: CLAUDE.md pointer section');
+    expect(out).toContain('removed: AGENTS.md managed block');
+    expect(out).not.toMatch(/^\s+- (CLAUDE\.md pointer section|AGENTS\.md managed block)$/m);
+    const claude = readFileSync(join(dir, 'CLAUDE.md'), 'utf8');
+    expect(claude).not.toMatch(/Workflow system \(managed by super-backlog\)/);
+    expect(claude).toContain('keep me above');
+    expect(claude).toContain('## Local rules');
+    expect(claude).toContain('keep me below');
   });
 
   it('exits 1 naming opencode.json when it is malformed', () => {

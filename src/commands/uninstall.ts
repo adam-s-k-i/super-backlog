@@ -4,12 +4,13 @@ import spawn from 'cross-spawn';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { findGitDir, POINTER_HEADING_RE } from '../init/execute.js';
+import { findGitDir } from '../init/execute.js';
 import { atomicWrite } from '../lib/atomic.js';
 import { GUARD_RE, REFRESH_RE, removeGuardHook, removeRefreshHook } from '../lib/hooks.js';
 import { stripOwned } from '../lib/markers.js';
 import { PLUGIN_SPEC } from '../lib/opencode.js';
 import { isOwnedSkillFile } from '../lib/ownership.js';
+import { findPointerSection, POINTER_HEADING_RE } from '../lib/pointer.js';
 import { WANTED_SCRIPTS, type PkgJson } from '../lib/pkgjson.js';
 import { uninstallModelRouter } from '../models/uninstall.js';
 import { promptYesNo, type ParsedArgs } from './init.js';
@@ -48,16 +49,9 @@ function prettyJson(value: unknown): string {
 
 function removePointerSection(content: string): { content: string; removed: boolean } {
   const lines = content.split('\n');
-  const idx = lines.findIndex((line) => POINTER_HEADING_RE.test(line));
-  if (idx === -1) return { content, removed: false };
-  let end = lines.length;
-  for (let i = idx + 1; i < lines.length; i++) {
-    if (/^#{1,6}\s/.test(lines[i])) {
-      end = i;
-      break;
-    }
-  }
-  const kept = [...lines.slice(0, idx), ...lines.slice(end)];
+  const section = findPointerSection(lines);
+  if (section === null) return { content, removed: false };
+  const kept = [...lines.slice(0, section.start), ...lines.slice(section.end)];
   while (kept.length > 0 && kept[kept.length - 1].trim() === '') kept.pop();
   return { content: kept.length > 0 ? `${kept.join('\n')}\n` : '', removed: true };
 }
