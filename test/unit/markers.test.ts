@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { MARKER_END, injectBlock, markerStart, stripOwned } from '../../src/lib/markers.js';
 
 const BLOCK = '## Workflow\n\nrules here';
+const crlf = (s: string): string => s.replace(/\n/g, '\r\n');
+const LONE_LF = /(?<!\r)\n/;
 
 describe('injectBlock', () => {
   it('creates block in empty content', () => {
@@ -59,5 +61,39 @@ describe('stripOwned', () => {
     const r = stripOwned(doc);
     expect(r.removed).toBe(true);
     expect(r.content).toContain('# H\n\n\n\nkept spacing');
+  });
+});
+
+describe('injectBlock with CRLF files', () => {
+  it('writes the block with CRLF into a CRLF file', () => {
+    const r = injectBlock('# T\r\n', '1.0.0', BLOCK);
+    expect(r.action).toBe('created');
+    expect(r.content).toBe(crlf(`# T\n${markerStart('1.0.0')}\n${BLOCK}\n${MARKER_END}\n`));
+  });
+
+  it('is unchanged on re-inject into the same CRLF file', () => {
+    const once = injectBlock(crlf('# T\n\nbody\n'), '1.0.0', BLOCK).content;
+    expect(injectBlock(once, '1.0.0', BLOCK)).toEqual({ action: 'unchanged', content: once });
+  });
+
+  it('heals an LF block inside a CRLF file once, then stays stable', () => {
+    const mixed = `# T\r\n\r\n${markerStart('1.0.0')}\n${BLOCK}\n${MARKER_END}\r\n\r\n## After\r\n`;
+    const healed = injectBlock(mixed, '1.0.0', BLOCK);
+    expect(healed.action).toBe('replaced');
+    expect(healed.content).not.toMatch(LONE_LF);
+    expect(healed.content.endsWith('\r\n\r\n## After\r\n')).toBe(true);
+    expect(injectBlock(healed.content, '1.0.0', BLOCK).action).toBe('unchanged');
+  });
+
+  it('normalizes a CRLF template before writing', () => {
+    expect(injectBlock('# T\n', '1.0.0', crlf(BLOCK)).content).not.toContain('\r');
+    expect(injectBlock('# T\r\n', '1.0.0', crlf(BLOCK)).content).not.toMatch(LONE_LF);
+  });
+});
+
+describe('stripOwned with CRLF files', () => {
+  it('removes the block and its trailing CRLF without leaving a blank line', () => {
+    const doc = injectBlock('# H\r\n', '1.0.0', BLOCK).content;
+    expect(stripOwned(doc)).toEqual({ content: '# H\r\n', removed: true });
   });
 });

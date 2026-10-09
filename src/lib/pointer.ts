@@ -1,4 +1,6 @@
 // src/lib/pointer.ts
+import { detectEol } from './eol.js';
+
 /** Heading of the CLAUDE.md pointer section owned by super-backlog. */
 export const POINTER_HEADING_RE = /^##\s+Workflow system \(managed by super-backlog\)\s*$/m;
 
@@ -31,11 +33,13 @@ export function findPointerSection(lines: string[]): PointerSection | null {
  */
 export function refreshPointer(current: string, template: string): PointerRefresh {
   const body = template.replace(/\r\n/g, '\n').trimEnd();
+  const nl = detectEol(current);
   const lines = current.split('\n');
   const section = findPointerSection(lines);
   if (section === null) {
-    const sep = current.length === 0 ? '' : current.endsWith('\n\n') ? '' : current.endsWith('\n') ? '\n' : '\n\n';
-    return { action: 'created', content: `${current}${sep}${body}\n` };
+    const sep =
+      current.length === 0 ? '' : current.endsWith(`${nl}${nl}`) ? '' : current.endsWith('\n') ? nl : `${nl}${nl}`;
+    return { action: 'created', content: `${current}${sep}${body.split('\n').join(nl)}${nl}` };
   }
   const existing = lines
     .slice(section.start, section.end)
@@ -43,7 +47,7 @@ export function refreshPointer(current: string, template: string): PointerRefres
     .join('\n')
     .trimEnd();
   if (existing === body) return { action: 'unchanged', content: current };
-  const cr = current.includes('\r\n') ? '\r' : '';
+  const cr = nl === '\r\n' ? '\r' : '';
   const atEof = section.end === lines.length;
   const replacement = [...body.split('\n').map((line) => `${line}${cr}`), atEof ? '' : cr];
   return {

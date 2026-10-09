@@ -134,6 +134,28 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
     expect(readFileSync(join(dir, 'AGENTS.md'), 'utf8')).toBe(agents);
   });
 
+  it('keeps CRLF line endings in AGENTS.md and CLAUDE.md and is byte-stable on the second run', () => {
+    freshScaffold();
+    ageGlue(dir);
+    for (const name of ['AGENTS.md', 'CLAUDE.md']) {
+      const p = join(dir, name);
+      writeFileSync(p, readFileSync(p, 'utf8').replace(/\r?\n/g, '\r\n'));
+    }
+
+    expect(runUpdate(dir).status).toBe(4);
+
+    const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
+    const claude = readFileSync(join(dir, 'CLAUDE.md'), 'utf8');
+    expect(agents).toContain('### Model routing for subagents');
+    expect(claude).toContain('"Model routing for subagents"');
+    expect(agents).not.toMatch(/(?<!\r)\n/);
+    expect(claude).not.toMatch(/(?<!\r)\n/);
+
+    expect(runUpdate(dir).status).toBe(4);
+    expect(readFileSync(join(dir, 'AGENTS.md'), 'utf8')).toBe(agents);
+    expect(readFileSync(join(dir, 'CLAUDE.md'), 'utf8')).toBe(claude);
+  });
+
   it('uninstall after a pointer refresh removes pointer and block cleanly', () => {
     freshScaffold();
     ageGlue(dir);

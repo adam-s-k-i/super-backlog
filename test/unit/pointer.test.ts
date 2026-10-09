@@ -90,4 +90,10 @@ describe('refreshPointer', () => {
     const current = `${HEADING}\n\nOld.\n\n${HEADING}\n\nSecond.\n`;
     expect(refreshPointer(current, TPL).content).toBe(`${TPL}\n${HEADING}\n\nSecond.\n`);
   });
+
+  it('appends with CRLF into a CRLF file', () => {
+    expect(refreshPointer('# Notes\r\n', TPL)).toEqual({ action: 'created', content: crlf(`# Notes\n\n${TPL}`) });
+    expect(refreshPointer('# Notes\r\n\r\n', TPL).content).toBe(crlf(`# Notes\n\n${TPL}`));
+    expect(refreshPointer('a\r\n# Notes', TPL).content).toBe(`a\r\n# Notes${crlf(`\n\n${TPL}`)}`);
+  });
 });
