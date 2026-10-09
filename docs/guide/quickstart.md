@@ -39,6 +39,8 @@ node ./node_modules/super-backlog/dist/bin.js init
 
 Add `--models` to also enable the optional [model router](#model-router-opt-in).
 
+Every initialized project also gets a binding model-routing rule in its `AGENTS.md` block: agents delegate less demanding work to subagents on cheaper models, picked by complexity. This rule is independent of the opt-in router.
+
 ## Daily commands
 
 | Command | What it does |

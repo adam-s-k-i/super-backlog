@@ -14,8 +14,14 @@ super-backlog v1 supports two agent harnesses (design decision D1): **OpenCode**
 ## Claude Code — file-based skills + marketplace
 
 - The same glue skills are installed file-based at `.claude/skills/<skill>/SKILL.md` — this always works, with or without CLI scripting support.
-- A one-line pointer section is written to `CLAUDE.md` referencing the managed block in `AGENTS.md`.
+- A short pointer section is written to `CLAUDE.md`. It references the managed block in `AGENTS.md` and its model-routing rule. `sbl init` and `sbl update` refresh this section whenever its text differs from the current kit version. Put your own CLAUDE.md content under its own heading, because text inside the pointer section is replaced.
 - Marketplace installation: init does not run `claude` commands. After writing skills, it prints the exact command to paste inside Claude Code: `/plugin install superpowers@claude-plugins-official`. Because this step must be run manually, init pushes a warning (`claude plugin install must be run manually`) and finishes as success-with-warnings (exit code 4). File-based skills work immediately either way.
+
+## Model routing rule (all harnesses)
+
+The managed `AGENTS.md` block carries a harness-neutral "Model routing for subagents" section. It tells every agent to delegate less demanding work to subagents on cheaper models, picked by complexity (light, standard, top). The rule applies regardless of the session model, and the agent must set the model explicitly on every dispatch. Short examples name the per-harness setting: for Claude Code the Agent tool's `model` parameter, for OpenCode the agent's `model` field.
+
+The rule is always on. Projects that want different behavior add their own rule below the block. It is independent of the opt-in model router (`sbl models`).
 
 ## What is file-based vs. delegated
 
@@ -27,6 +33,6 @@ super-backlog v1 supports two agent harnesses (design decision D1): **OpenCode**
 | Superpowers runtime for OpenCode | delegated to OpenCode's plugin loader via the git-backed spec string | canonical spec string only |
 | Superpowers marketplace install for Claude Code | instructed (manual one-time step) | init prints the exact command; never executed automatically |
 | `AGENTS.md` workflow block | file-based injection | start/end markers |
-| `CLAUDE.md` pointer | file-based append | recognized heading |
+| `CLAUDE.md` pointer | file-based append, refreshed in place | recognized heading; the section ends at the next heading |
 
 The manifest is designed so later harnesses (Cursor, Codex, Gemini CLI — v2 backlog) can be added without changing the ownership model.
