@@ -1,0 +1,198 @@
+# Fixture: the "kursbuchung" prototype dataset (WordPress theme + plugin).
+# Curated content stays in the author's language (German here).
+schema: 1
+pitch: >
+  Kleine Buchungsseite für Yoga- und Kochkurse: **Block-Theme** für die Darstellung,
+  ein **Plugin** für Kurse, Buchungen und Zahlung, Deploy per Tag über **GitHub Actions**.
+grid: { cols: 5, rows: 5 }
+kinds:
+  actor: { label: Akteur, color: muted }
+  theme: { label: Theme, color: violet }
+  plugin: { label: Plugin, color: accent }
+  ops: { label: Delivery, color: ok }
+  ext: { label: externer Dienst, color: dim, dashed: true }
+zones:
+  - { label: Delivery, cols: [0, 2], rows: [0, 0] }
+  - { label: "Nutzer:innen", cols: [0, 0], rows: [1, 2] }
+  - { label: Theme, cols: [1, 1], rows: [2, 2] }
+  - { label: Plugin kursbuchung-core, cols: [2, 3], rows: [1, 4] }
+  - { label: Dienste, cols: [4, 4], rows: [1, 3] }
+nodes:
+  - id: dev
+    label: "Entwickler:in"
+    sub: Git · wp-env
+    kind: actor
+    cell: [0, 0]
+    purpose: Entwickelt lokal mit wp-env, testet mit PHPUnit und löst Deploys über Git-Tags aus.
+    why: Ein Tag ist ein Release. Kein FTP, kein Klick-Deploy aus dem Admin.
+    files: [.wp-env.json, composer.json, package.json]
+    commands:
+      - { run: npx wp-env start, note: lokale WordPress-Instanz }
+  - id: gha
+    label: GitHub Actions
+    sub: ci.yml · deploy.yml
+    kind: ops
+    cell: [1, 0]
+    purpose: >
+      CI auf jedem Push (phpcs, PHPUnit, Block-Build); Deploy nur bei Tag v*:
+      Build, Staging-Smoke-Test, rsync auf den Hoster.
+    why: Deploy nur per Tag; jede Live-Version hat einen Namen und lässt sich zurückrollen.
+    files: [.github/workflows/ci.yml, .github/workflows/deploy.yml, scripts/smoke.sh]
+    commands:
+      - { run: gh workflow run deploy.yml -f ref=v2.3.1, note: Deploy manuell anstoßen }
+      - { run: gh run watch, note: laufenden Workflow verfolgen }
+  - id: hosting
+    label: Staging & Hosting
+    sub: Hetzner · rsync
+    kind: ops
+    cell: [2, 0]
+    purpose: Staging mit Mollie im Testmodus prüft Startseite, Kursliste und einen Buchungs-Dry-Run; danach rsync nach Produktion.
+    why: Nur Theme und Plugin werden deployt; Kern und Uploads bleiben beim Hoster.
+    files: [scripts/deploy.sh]
+    commands:
+      - { run: wp cache flush, note: Cache nach Deploy leeren }
+  - id: admin
+    label: Kursleitung
+    sub: WP-Admin · Rolle
+    kind: actor
+    cell: [0, 1]
+    purpose: Legt Kurse mit Terminen und Platzzahl an, sieht Buchungen und exportiert Teilnehmerlisten.
+    why: Minimale Rechte; ein kompromittiertes Konto kann keine Plugins installieren.
+    files: [includes/class-roles.php]
+    commands:
+      - { run: wp kb bookings list --kurs=yoga-mai, note: Buchungen eines Kurses }
+  - id: visitor
+    label: "Besucher:in"
+    sub: Browser · Kursseite
+    kind: actor
+    cell: [0, 2]
+    purpose: Sucht einen Kurs, bucht einen Platz und bezahlt; bekommt Bestätigung und Erinnerung per E-Mail.
+    why: Buchen ohne Konto. Jede Hürde mehr kostet Buchungen.
+  - id: theme
+    label: Block-Theme
+    sub: theme.json · Blöcke
+    kind: theme
+    cell: [1, 2]
+    purpose: Globale Styles, Templates für Kursliste und Kursdetail, zwei eigene Blöcke.
+    why: Site-Editor statt Page-Builder; Interactivity API statt eigenem Framework.
+    files: [theme.json, templates/archive-kurs.html, templates/single-kurs.html, src/blocks/buchung/view.js]
+    commands:
+      - { run: npm run build, note: Block-Assets bauen }
+  - id: cpt
+    label: Kurs & Buchung
+    sub: post-types.php
+    kind: plugin
+    cell: [2, 1]
+    purpose: Registriert die Post Types kurs und buchung mit Meta-Feldern und Admin-Spalten.
+    why: Kurse als Posts; Revisionen, Rechte und REST gibt es gratis.
+    files: [includes/class-post-types.php, includes/class-meta.php]
+  - id: rest
+    label: REST-Endpunkte
+    sub: rest/ · kb/v1
+    kind: plugin
+    cell: [2, 2]
+    purpose: POST /buchungen legt eine Buchung an, GET /kurse/{id}/plaetze liefert freie Plätze.
+    why: Eigener Namespace mit Schema; Validierung und Doku aus derselben Definition.
+    files: [includes/rest/class-bookings-controller.php]
+    commands:
+      - { run: wp rest route list --namespace=kb/v1, note: registrierte Routen }
+  - id: booking
+    label: Buchungslogik
+    sub: booking-service.php
+    kind: plugin
+    cell: [3, 2]
+    purpose: Reserviert Plätze 15 Minuten, erzeugt die Mollie-Zahlung, bestätigt oder verwirft die Buchung.
+    why: Reservierung mit Ablauf verhindert Doppelbuchungen beim letzten Platz.
+    files: [includes/class-booking-service.php, includes/class-seat-lock.php]
+    commands:
+      - { run: wp kb bookings expire --dry-run, note: verfallene Reservierungen }
+  - id: payment
+    label: Zahlungs-Webhook
+    sub: mollie-webhook.php
+    kind: plugin
+    cell: [4, 3]
+    purpose: Nimmt den Mollie-Webhook entgegen und fragt den Zahlungsstatus bei Mollie nach.
+    why: Webhook nur als Anstoß, Wahrheit kommt per API.
+    files: [includes/class-mollie-webhook.php]
+    commands:
+      - { run: wp kb mollie status tr_7UhSN1zuXS, note: Zahlung nachschlagen }
+  - id: mail
+    label: Benachrichtigungen
+    sub: wp_mail → SMTP
+    kind: plugin
+    cell: [2, 3]
+    purpose: Bestätigung, Erinnerung 24 h vorher und Absage an Teilnehmende.
+    why: Ein Relay mit DKIM landet nicht im Spam.
+    files: [includes/class-notifications.php, mu-plugins/kb-smtp.php]
+  - id: cron
+    label: Cron-Jobs
+    sub: class-cron.php
+    kind: plugin
+    cell: [3, 4]
+    purpose: Gibt abgelaufene Reservierungen frei und verschickt Erinnerungen per System-Cron.
+    why: Zwei idempotente Jobs; ein verpasster Lauf wird nachgeholt.
+    files: [includes/class-cron.php]
+    commands:
+      - { run: wp cron event run kb_reminders, note: Erinnerungen jetzt verschicken }
+  - id: mysql
+    label: MySQL
+    sub: wp_posts · locks
+    kind: ext
+    cell: [4, 1]
+    purpose: Speichert Kurse und Buchungen als Posts; Reservierungen in einer eigenen Tabelle.
+    why: Ein UNIQUE-Index macht Doppelbuchungen auf Datenbank-Ebene unmöglich.
+    commands:
+      - { run: 'wp db query "SELECT COUNT(*) FROM wp_kb_seat_locks"', note: aktive Reservierungen }
+  - id: mollie
+    label: Mollie
+    sub: API v2 · Webhooks
+    kind: ext
+    cell: [4, 2]
+    purpose: Erzeugt den Checkout, wickelt die Zahlung ab und ruft den Webhook.
+    why: Keine Kartendaten auf dem Server.
+edges:
+  - { from: dev, to: gha, label: pusht Tag v* }
+  - { from: gha, to: hosting, label: Build · rsync }
+  - { from: admin, to: cpt, label: legt Kurs an }
+  - { from: cpt, to: mysql, label: Post + Meta }
+  - { from: theme, to: cpt, label: liest Kurse }
+  - { from: visitor, to: theme, label: öffnet Kurs }
+  - { from: theme, to: rest, label: sendet Buchung, text: Das Formular schickt JSON mit Nonce an kb/v1/buchungen. }
+  - { from: rest, to: booking, label: legt an }
+  - { from: booking, to: mysql, label: Lock + Buchung }
+  - { from: booking, to: mollie, label: Zahlung }
+  - { from: mollie, to: payment, label: Webhook }
+  - { from: payment, to: booking, label: Status }
+  - { from: booking, to: mail, label: Mail auslösen }
+  - { from: mail, to: visitor, label: E-Mail (SMTP) }
+  - { from: cron, to: booking, label: expire / remind }
+flows:
+  - { id: buchen, label: Kurs buchen, steps: [visitor>theme, theme>rest, rest>booking, booking>mysql, booking>mollie] }
+  - { id: zahlung, label: Zahlung bestätigen, command: wp kb mollie status tr_7UhSN1zuXS, steps: [mollie>payment, payment>booking, booking>mysql, booking>mail, mail>visitor] }
+  - { id: anlegen, label: Kurs anlegen, color: rose, steps: [admin>cpt, cpt>mysql, theme>cpt] }
+  - { id: erinnerung, label: Erinnerung senden, color: warn, command: wp cron event run kb_reminders, steps: [cron>booking, booking>mail, mail>visitor] }
+  - { id: deploy, label: Deploy, color: violet, command: gh workflow run deploy.yml -f ref=v2.3.1, steps: [dev>gha, gha>hosting] }
+highlights:
+  - { node: booking, title: Reservierung mit Ablauf, text: Ein Platz ist 15 Minuten reserviert; ein Cron-Job gibt ihn frei. }
+  - { node: payment, title: Webhook nur als Anstoß, text: Der Zahlungsstatus wird immer per API nachgefragt. }
+  - { node: theme, title: Nur Blöcke, text: Site-Editor und theme.json; Inhalte bleiben portabel. }
+  - { node: gha, title: Deploy nur per Tag, text: Jede Live-Version hat einen Tag und einen Rollback-Weg. }
+  - { node: rest, title: Schema · Nonce · Rate-Limit, text: Schema-Validierung und 10 Anfragen pro Minute und IP. }
+stack:
+  - { name: PHP, version: "8.3", group: Runtime, role: Sprache mit strict_types, nodes: [cpt, rest, booking, payment, mail, cron] }
+  - { name: WordPress, version: "6.8", group: Runtime, role: CMS · REST · Cron · Blöcke, nodes: [theme, cpt, rest, cron, mail, admin] }
+  - { name: MySQL, version: "8.0", group: Runtime, role: Datenbank des Hosters, nodes: [mysql] }
+  - { name: mollie-api-php, package: mollie/mollie-api-php, group: Integration, role: Zahlungs-Client, nodes: [payment, mollie] }
+  - { name: GitHub Actions, group: Delivery, role: ci · deploy, nodes: [gha, hosting] }
+commands:
+  Lokal starten:
+    - { run: composer install, note: PHP-Dependencies }
+    - { run: npx wp-env start, note: WordPress in Docker }
+  Betrieb:
+    - { run: wp kb bookings list --today, note: Buchungen heute }
+    - { run: wp cron event run kb_reminders, note: Erinnerungen }
+tasks:
+  KB-21: booking
+  KB-23: rest
+  KB-24: mail
+  KB-19: payment
