@@ -1,7 +1,7 @@
 # Project Summary Page — Design Spec
 
 - **Date:** 2026-10-09
-- **Status:** Approved visual design (prototype `design-demos/project-summary-v5.html`); data model and engineering decisions in this spec await the chat design gate
+- **Status:** Approved visual design (prototype `design-demos/project-summary-v5.html`); spec approved 2026-10-09 with all six open questions decided as recommended
 - **Scope:** New hub subpage `/p/<slug>/summary/`, curated `backlog/docs/architecture.yml` per project, automatic project facts, a server-side layout engine, a generator skill, docs and dogfood
 
 ## Problem
@@ -279,7 +279,7 @@ Default follows `prefers-color-scheme`, the explicit choice is read from and wri
 
 A new glue skill `architecture-summary` ships in `src/templates/skill-architecture-summary.md`, joins `GLUE_SKILLS`, is copied to `.claude/skills/` and `.opencode/skill/` with the fingerprint line, and is listed in the uninstall paths. Procedure: read manifests, directory layout and tests; read existing `architecture.yml` if present and keep curated prose unless the code contradicts it; propose nodes (6–14), zones, edges, 3–5 flows and 4–6 highlights; write the file; run `sbl doctor` (new check 5: `architecture.yml` parses and validates, reports every problem with path) and fix until clean; present the diff for review. Boundaries: never invent files or commands that do not exist; keep `purpose`/`why` under three sentences; prefer grid positions that yield straight or single-corner routes (the doctor check also prints the layout warnings from L6).
 
-**Recommendation: in scope**, as the last implementation unit. Without it the curated file is a manual chore and the feature is unlikely to be used; with it the page can be produced for any project in one agent turn. It is independently releasable, so it can slip to the next minor if the schedule demands.
+**Decision: in scope**, as the last implementation unit. Without it the curated file is a manual chore and the feature is unlikely to be used; with it the page can be produced for any project in one agent turn. It is independently releasable, so it can slip to the next minor if the schedule demands.
 
 ## Data flow
 
@@ -324,11 +324,13 @@ Each unit is one backlog task with its own tests; order is dependency order. Uni
 - Automatic node detection from code without the skill; the hub computes facts, never architecture.
 - Full YAML support (anchors, tags, nested flow collections).
 
-## Open questions
+## Resolved questions
 
-1. **UI language.** The prototype is German, the dashboard is English. Recommendation: English chrome ("Highlights", "Open work", "Commands", "Tech stack", "Data source"); curated content stays in whatever language the author writes.
-2. **Skill in this release or a follow-up.** Recommendation: in scope as unit 7 (see Generator skill); split into its own PR so it can slip without blocking the page.
-3. **YAML subset parser vs. a dependency vs. JSON.** Recommendation: the subset parser (D7); revisit only if a second feature needs YAML beyond the subset.
-4. **Doctor check.** Adding check 5 widens `sbl doctor`. Recommendation: include it; it is the only verification loop an agent has while writing the file.
-5. **Who writes this repo's `architecture.yml`.** Recommendation: the skill generates it in unit 8 and the user reviews the prose before it is committed; the abridged example in this spec is the seed.
-6. **Backlog tab target on the summary page.** Full-page `../bb/` (R4) versus the dashboard's overlay. Recommendation: full page; the overlay belongs to the dashboard and duplicating it adds code for no gain.
+Decided 2026-10-09: every recommendation below was accepted as written.
+
+1. **UI language.** The prototype is German, the dashboard is English. Decision: English chrome ("Highlights", "Open work", "Commands", "Tech stack", "Data source"); curated content stays in whatever language the author writes.
+2. **Skill in this release or a follow-up.** Decision: in scope as unit 7 (see Generator skill); split into its own PR so it can slip without blocking the page.
+3. **YAML subset parser vs. a dependency vs. JSON.** Decision: the subset parser (D7); revisit only if a second feature needs YAML beyond the subset.
+4. **Doctor check.** Adding check 5 widens `sbl doctor`. Decision: include it; it is the only verification loop an agent has while writing the file.
+5. **Who writes this repo's `architecture.yml`.** Decision: the skill generates it in unit 8 and the user reviews the prose before it is committed; the abridged example in this spec is the seed.
+6. **Backlog tab target on the summary page.** Full-page `../bb/` (R4) versus the dashboard's overlay. Decision: full page; the overlay belongs to the dashboard and duplicating it adds code for no gain.
