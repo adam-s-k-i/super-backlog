@@ -4,10 +4,10 @@ title: 'Subagent model routing: rule in workflow block and CLAUDE.md pointer tem
 status: In Progress
 assignee: []
 created_date: '2026-10-09 17:48'
-updated_date: '2026-10-09 17:53'
+updated_date: '2026-10-09 18:12'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-09-subagent-model-routing.md
@@ -24,8 +24,14 @@ Plan Task 1. Add binding rule 6 and the harness-neutral "### Model routing for s
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 workflow-block.md contains binding rule 6 and the Model routing for subagents subsection with the Light, Standard and Top tiers, the explicit-model requirement and the regardless-of-session-model clause, worded as in the spec
-- [ ] #2 The closing 'Project-specific human gates' lines stay last in the block and no new numbered table rows appear (dashboard-render test stays green)
-- [ ] #3 claude-pointer.md keeps exactly one heading and mentions the Model routing for subagents section and passing the Agent tool's model explicitly
-- [ ] #4 templates.test.ts covers the new strings and passes
+- [x] #1 workflow-block.md contains binding rule 6 and the Model routing for subagents subsection with the Light, Standard and Top tiers, the explicit-model requirement and the regardless-of-session-model clause, worded as in the spec
+- [x] #2 The closing 'Project-specific human gates' lines stay last in the block and no new numbered table rows appear (dashboard-render test stays green)
+- [x] #3 claude-pointer.md keeps exactly one heading and mentions the Model routing for subagents section and passing the Agent tool's model explicitly
+- [x] #4 templates.test.ts covers the new strings and passes
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Added binding rule 6 and the harness-neutral 'Model routing for subagents' subsection (Light/Standard/Top tiers) to the workflow block, plus the routing sentence to the CLAUDE.md pointer template (7bf6cf1). Verified by templates.test.ts asserting subsection, tiers, rule 6 and pointer sentence; whole branch: tsc clean, npm test 579 passed / 4 skipped, lint clean.
+<!-- SECTION:FINAL_SUMMARY:END -->
