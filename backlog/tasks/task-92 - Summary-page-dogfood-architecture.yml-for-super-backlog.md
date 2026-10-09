@@ -4,9 +4,10 @@ title: 'Summary page: dogfood architecture.yml for super-backlog'
 status: To Do
 assignee: []
 created_date: '2026-10-09 21:51'
+updated_date: '2026-10-09 22:01'
 labels:
   - feature
-  - phase/spec
+  - phase/plan
 milestone: m-2
 dependencies:
   - TASK-90

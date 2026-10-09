@@ -4,9 +4,10 @@ title: 'Summary page: automatic project facts'
 status: To Do
 assignee: []
 created_date: '2026-10-09 21:51'
+updated_date: '2026-10-09 22:00'
 labels:
   - feature
-  - phase/spec
+  - phase/plan
 milestone: m-2
 dependencies: []
 references:

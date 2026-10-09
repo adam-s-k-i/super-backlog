@@ -37,7 +37,7 @@ Three earlier prototype rounds live in `design-demos/` for reference only. v2 wa
 | D4 | Versions | Resolved versions for tech-stack entries come from `package-lock.json` (`packages["node_modules/<name>"].version`) and `composer.lock` (`packages[].version`); both are JSON. Without a lockfile the declared range is shown. |
 | D5 | Backlog data | Open work and phases reuse `collectDashboardData` (`tasks`, `phase`, status). Open = not done by the existing `isDone` rule. The summary never calls the Backlog CLI a second time: `renderSummary` receives the `DashboardData` already collected for the dashboard. |
 | D6 | Reduced view | Without `architecture.yml` the page renders header facts, open work (all open tasks, unmapped), commands from `scripts` (`npm run <name>` / `pnpm run` / `bun run` by `detectPackageManager`, `composer <name>`), tech stack from manifests grouped **Runtime** / **Development**, and in place of the canvas a notice: "No architecture file yet. Run the `architecture-summary` skill in your agent or create `backlog/docs/architecture.yml` (schema: docs link)." |
-| D7 | YAML parsing | No new dependency. `src/lib/yamlmini.ts` gains `parseYamlSubset(text)` for a documented subset: block mappings and sequences with two-space indentation, single-line flow sequences `[a, b]` and flow mappings `{ k: v }` (one level, no nesting), plain/single/double-quoted scalars, integers, booleans, `>` and `\|` block scalars, `#` comments. Inside a flow collection a plain scalar ends at `,`, `}` or `]`, so values containing commas must be quoted there. Rejected: anchors, aliases, tags, multi-documents, nested flow collections, tabs. A parse error reports line and column. Rationale: the file must be hand-editable with comments (JSON is not), the repo's one runtime dependency is a deliberate property, and the subset is ~250 lines with its own tests. The schema is designed so that every value fits the subset. |
+| D7 | YAML parsing | No new dependency. `src/lib/yamlmini.ts` gains `parseYamlSubset(text)` for a documented subset: block mappings and sequences with two-space indentation, single-line flow sequences `[a, b]` and flow mappings `{ k: v }` (one level; the only nesting allowed is a flow sequence of scalars as a flow-mapping value, e.g. `{ id: cli, cell: [0, 0] }`), plain/single/double-quoted scalars, integers, booleans, `>` and `\|` block scalars, `#` comments. Inside a flow collection a plain scalar ends at `,`, `}` or `]`, so values containing commas must be quoted there. Rejected: anchors, aliases, tags, multi-documents, nested flow collections, tabs. A parse error reports line and column. Rationale: the file must be hand-editable with comments (JSON is not), the repo's one runtime dependency is a deliberate property, and the subset is ~250 lines with its own tests. The schema is designed so that every value fits the subset. |
 
 ### `architecture.yml` schema
 
@@ -322,7 +322,7 @@ Each unit is one backlog task with its own tests; order is dependency order. Uni
 - A project switcher in the app bar, cross-project overviews, or hosting the summary on GitHub Pages.
 - Resolving versions for languages other than npm/Composer lockfiles; CI status (green/red) from GitHub.
 - Automatic node detection from code without the skill; the hub computes facts, never architecture.
-- Full YAML support (anchors, tags, nested flow collections).
+- Full YAML support (anchors, tags, flow collections nested deeper than the one case D7 allows).
 
 ## Resolved questions
 

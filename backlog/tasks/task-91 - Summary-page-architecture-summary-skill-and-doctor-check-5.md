@@ -4,9 +4,10 @@ title: 'Summary page: architecture-summary skill and doctor check 5'
 status: To Do
 assignee: []
 created_date: '2026-10-09 21:51'
+updated_date: '2026-10-09 22:01'
 labels:
   - feature
-  - phase/spec
+  - phase/plan
 milestone: m-2
 dependencies:
   - TASK-86
