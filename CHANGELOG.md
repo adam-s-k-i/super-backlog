@@ -3,6 +3,23 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.6.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.5.0...v1.6.0) (2026-10-09)
+
+
+### Features
+
+* **init:** refresh a stale CLAUDE.md pointer section on init and update ([1f2bda3](https://github.com/adam-s-k-i/super-backlog/commit/1f2bda3a5a8deee1c939c42f2160ab6dc139b21b))
+* **templates:** add harness-neutral model routing rule to the workflow block ([7bf6cf1](https://github.com/adam-s-k-i/super-backlog/commit/7bf6cf1b4da4b677b6c3a021e6a58c8cd2fa285d))
+
+
+### Bug Fixes
+
+* **init:** heal line endings around legacy managed blocks and pointers ([1aad893](https://github.com/adam-s-k-i/super-backlog/commit/1aad8933ea21dc48edd283855dfe77d46919dcb8))
+* **init:** heal the line above a legacy pointer separator ([e058032](https://github.com/adam-s-k-i/super-backlog/commit/e058032b36241c2cb8fc25af2da53e7d8eb5cf3b))
+* **init:** keep the file's line endings when writing the managed block and pointer ([f6f6b48](https://github.com/adam-s-k-i/super-backlog/commit/f6f6b482bfe8d1afb4ddfdae114b7dd187342be1))
+* **templates:** make task-review-gate skill frontmatter valid YAML ([25319e1](https://github.com/adam-s-k-i/super-backlog/commit/25319e1ad13caa8149c60c867da44791179a5542))
+* **update:** keep the event loop alive during the self-update version check ([89a6746](https://github.com/adam-s-k-i/super-backlog/commit/89a674610b457a7528f007684e44a98a201ffb3a))
+
 ## [1.5.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.4.1...v1.5.0) (2026-09-24)
 
 
