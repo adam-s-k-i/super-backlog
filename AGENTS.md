@@ -23,10 +23,10 @@ Do not edit Backlog task, draft, document, decision, or milestone markdown files
 
 </CRITICAL_INSTRUCTION>
 <!-- BACKLOG.MD GUIDELINES END -->
-<!-- SUPER-BACKLOG:1.3.1 START -->
+<!-- SUPER-BACKLOG:1.5.0 START -->
 ## Workflow system
 
-This section is managed by super-backlog 1.3.1.
+This section is managed by super-backlog 1.5.0.
 
 **Roles:** Backlog.md = WHAT — specs, acceptance criteria, status and history,
 managed exclusively through the `backlog` CLI. Superpowers = HOW — the

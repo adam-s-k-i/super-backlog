@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -59,6 +59,31 @@ describe('skill-spec-to-backlog.md', () => {
 describe('claude-pointer.md', () => {
   it('points at the AGENTS.md block', () => {
     expect(read('claude-pointer.md')).toMatch(/AGENTS\.md/);
+  });
+});
+
+describe('template frontmatter', () => {
+  // Claude Code drops the whole frontmatter when it is invalid YAML and falls back to the first
+  // body line as the skill description. A plain (unquoted) scalar must not contain ': ' or ' #'.
+  const withFrontmatter = readdirSync(tplDir)
+    .filter((f) => f.endsWith('.md'))
+    .filter((f) => read(f).startsWith('---\n') || read(f).startsWith('---\r\n'));
+
+  it('covers every skill and agent template', () => {
+    expect(withFrontmatter.filter((f) => f.startsWith('skill-')).length).toBeGreaterThanOrEqual(3);
+    expect(withFrontmatter.some((f) => f.includes('agent-'))).toBe(true);
+  });
+
+  it.each(withFrontmatter)('%s has only valid plain-scalar values', (f) => {
+    const block = read(f).split(/\r?\n---\r?\n/)[0].replace(/^---\r?\n/, '');
+    for (const line of block.split(/\r?\n/)) {
+      const m = /^([A-Za-z_][\w-]*):(?: (.*))?$/.exec(line);
+      expect(m, `${f}: not a "key: value" line: ${line}`).not.toBeNull();
+      const value = (m?.[2] ?? '').trim();
+      if (/^(['"]).*\1$/.test(value)) continue;
+      expect(value, `${f}: unquoted ': ' in ${m?.[1]}`).not.toMatch(/: |:$/);
+      expect(value, `${f}: unquoted ' #' in ${m?.[1]}`).not.toMatch(/ #/);
+    }
   });
 });
 
