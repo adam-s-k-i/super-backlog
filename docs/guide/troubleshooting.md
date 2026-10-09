@@ -70,6 +70,19 @@ An automated check for this situation arrives with `sbl doctor` (v2 backlog).
 3. **On Windows under Node 24** live reload is disabled due to a libuv bug; refresh the browser tab manually or restart the server.
 4. **Restart manually:** press `Ctrl+C` and run `sbl dashboard` again — any generation errors are printed to the terminal.
 
+## `sbl update` exits without output (1.3.2 – 1.5.0)
+
+In versions 1.3.2 through 1.5.0, `sbl update` can end silently with exit code 0 during its self-update check: nothing is printed and no project files are refreshed. The check is fixed in the following release, but an affected version cannot update itself past the bug.
+
+Install the latest version once by hand, then run the update again:
+
+```bash
+npm install -g super-backlog@latest
+sbl update
+```
+
+To refresh a project's files without the self-update check, run `sbl update --no-self`.
+
 ## Exit codes
 
 | Code | Meaning |

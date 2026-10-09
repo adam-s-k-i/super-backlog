@@ -9,6 +9,7 @@ import { installGuardHook } from '../lib/hooks.js';
 import { injectBlock } from '../lib/markers.js';
 import { applyPluginEntry } from '../lib/opencode.js';
 import { OwnershipError, renderSkill } from '../lib/ownership.js';
+import { refreshPointer } from '../lib/pointer.js';
 import { writeRouterConfig } from '../models/install.js';
 import {
   addDevDependencies,
@@ -37,7 +38,6 @@ export interface ExecuteResult {
 }
 
 const UPSTREAM_PKGS = ['backlog.md@latest', 'super-backlog@latest'];
-export const POINTER_HEADING_RE = /^##\s+Workflow system \(managed by super-backlog\)\s*$/m;
 
 export const CLAUDE_PLUGIN_INSTRUCTION =
   'Claude Code: run /plugin install superpowers@claude-plugins-official inside Claude Code to enable the Superpowers plugin.';
@@ -155,11 +155,9 @@ function applyInjectAgentsBlock(cwd: string, ctx: ExecuteContext): boolean {
 function applyClaudePointer(cwd: string): boolean {
   const path = join(cwd, 'CLAUDE.md');
   const current = readTextIfExists(path) ?? '';
-  if (POINTER_HEADING_RE.test(current)) return false;
-  let template = readTemplate('claude-pointer.md');
-  if (!template.endsWith('\n')) template += '\n';
-  const sep = current.length === 0 ? '' : current.endsWith('\n\n') ? '' : current.endsWith('\n') ? '\n' : '\n\n';
-  atomicWrite(path, current + sep + template);
+  const result = refreshPointer(current, readTemplate('claude-pointer.md'));
+  if (result.action === 'unchanged') return false;
+  atomicWrite(path, result.content);
   return true;
 }
 

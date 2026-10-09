@@ -32,6 +32,21 @@ describe('workflow-block.md', () => {
     expect(t).toContain('sbl phase');
     expect(t).toMatch(/only via `sbl phase <id> <phase>`/);
   });
+  it('carries the harness-neutral model routing rule', () => {
+    expect(t).toContain('### Model routing for subagents');
+    expect(t).toMatch(/regardless of which model the current session runs on/);
+    for (const tier of ['**Light**', '**Standard**', '**Top**']) {
+      expect(t).toContain(tier);
+    }
+    expect(t).toMatch(/Set the model explicitly on every dispatch/);
+    expect(t).toMatch(/^6\. Delegate by tier/m);
+    expect(t).toContain('Claude Code:');
+    expect(t).toContain('OpenCode:');
+    expect(t).toContain('Other harnesses:');
+  });
+  it('keeps the project-gates note as the closing line', () => {
+    expect(t.trimEnd().endsWith('Add project-specific human gates below the block.')).toBe(true);
+  });
 });
 
 describe('skill-spec-to-backlog.md', () => {
@@ -57,8 +72,16 @@ describe('skill-spec-to-backlog.md', () => {
 });
 
 describe('claude-pointer.md', () => {
+  const p = read('claude-pointer.md');
   it('points at the AGENTS.md block', () => {
-    expect(read('claude-pointer.md')).toMatch(/AGENTS\.md/);
+    expect(p).toMatch(/AGENTS\.md/);
+  });
+  it('points at the model routing section and the explicit model parameter', () => {
+    expect(p).toContain('"Model routing for subagents"');
+    expect(p).toContain("Agent tool's `model` explicitly");
+  });
+  it('is a single section (refresh ends the section at the next heading)', () => {
+    expect(p.match(/^#{1,6}\s/gm)).toHaveLength(1);
   });
 });
 

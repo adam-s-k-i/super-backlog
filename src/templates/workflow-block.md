@@ -27,6 +27,25 @@ methodology skills that decide how the work is done.
 3. Task status changes always go through the CLI backed by verification evidence, never from memory.
 4. Skills take precedence over habit whenever a matching skill exists.
 5. Phase transitions only via `sbl phase <id> <phase>`, always at a gate passage — never edit phase labels by hand.
+6. Delegate by tier — less demanding work goes to subagents on cheaper models (see "Model routing for subagents" below).
+
+### Model routing for subagents
+
+Applies always, regardless of which model the current session runs on.
+
+1. Delegate less demanding work to a subagent on a cheaper model instead of doing it on the top tier. Set the model explicitly on every dispatch; never rely on inheriting the session model.
+2. Pick the tier by complexity:
+   - **Light**: routine, mechanical work (searches and file reading, running tests, lint/format/typo fixes, doc and changelog edits, Backlog.md CLI bookkeeping, fully specified plan steps).
+   - **Standard**: moderately complex work (plan tasks that need judgement, per-task reviews, debugging with a clear reproduction, non-trivial refactors).
+   - **Top**: only where its depth is needed (brainstorming and design, specs and plans, final whole-branch reviews, problems a cheaper tier could not solve).
+3. When unsure, start one tier lower and escalate if the result falls short.
+4. If the harness has no subagents or no per-dispatch model choice, this rule does not apply.
+
+Examples (current as of this super-backlog release):
+
+- Claude Code: the Agent tool's `model` parameter: light `sonnet`, standard `opus`, top = the strongest available model (e.g. Fable).
+- OpenCode: set a cheaper model on the subagent, e.g. the `model` field of an agent in `.opencode/agents/`.
+- Other harnesses: the equivalent per-subagent model setting.
 
 Project-specific human gates are intentionally out of scope for this block.
 Add project-specific human gates below the block.
