@@ -74,3 +74,20 @@ Add project-specific human gates below the block.
    after the user approves exactly that version. An approved version never covers later ones.
 7. Never bypass branch protection (no admin pushes, no admin merges) unless the user explicitly
    says so for that specific case. If required checks fail, fix the cause instead of bypassing.
+
+## Model routing for subagents (project-specific, binding)
+
+This rule always applies, regardless of which model the main session currently runs on.
+
+1. Delegate less demanding work to a subagent on a cheaper model instead of doing it with Fable
+   (the most capable, most expensive tier). Always set the model explicitly on every dispatch
+   (Claude Code: the Agent tool's `model` parameter); never rely on inheriting the session model.
+2. **Sonnet** for routine and mechanical work: codebase searches and file reading, running tests,
+   lint/format/typo fixes, doc and changelog edits, screenshots, Backlog.md CLI bookkeeping,
+   and plan tasks that are fully specified step by step.
+3. **Opus** for moderately complex work: implementing plan tasks that need judgement, per-task
+   spec/code reviews, debugging with a clear reproduction, non-trivial refactors.
+4. **Fable** only where its depth is actually needed: brainstorming and design decisions, specs
+   and plans, final whole-branch reviews, and hard debugging that stalled on a cheaper model.
+5. When unsure, pick the cheaper model and escalate if the result falls short. Other harnesses
+   (e.g. opencode) follow the same tiering with their equivalent model settings.
