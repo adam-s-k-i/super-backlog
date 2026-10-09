@@ -32,7 +32,7 @@ The rule is always on. Projects that want different behavior add their own rule 
 | `opencode.json` plugin entry | file-based merge into your config | byte-equality of entry |
 | Superpowers runtime for OpenCode | delegated to OpenCode's plugin loader via the git-backed spec string | canonical spec string only |
 | Superpowers marketplace install for Claude Code | instructed (manual one-time step) | init prints the exact command; never executed automatically |
-| `AGENTS.md` workflow block | file-based injection | start/end markers |
-| `CLAUDE.md` pointer | file-based append, refreshed in place | recognized heading; the section ends at the next heading |
+| `AGENTS.md` workflow block | file-based injection | start/end markers; written with the file's line endings |
+| `CLAUDE.md` pointer | file-based append, refreshed in place | recognized heading; the section ends at the next heading; written with the file's line endings |
 
 The manifest is designed so later harnesses (Cursor, Codex, Gemini CLI — v2 backlog) can be added without changing the ownership model.
