@@ -102,4 +102,13 @@ describe('refreshPointer', () => {
     expect(r.action).toBe('replaced');
     expect(r.content).not.toMatch(/(?<!\r)\n/);
   });
+
+  it('heals the line above a legacy pointer separator (no trailing newline before the append)', () => {
+    const legacy = `a\r\n# Notes\n\n${HEADING}\nOld.\n`;
+    const r = refreshPointer(legacy, TPL);
+    expect(r.action).toBe('replaced');
+    expect(r.content).not.toMatch(/(?<!\r)\n/);
+    expect(r.content).toContain('a\r\n# Notes\r\n');
+    expect(refreshPointer(r.content, TPL).action).toBe('unchanged');
+  });
 });

@@ -101,6 +101,15 @@ describe('injectBlock with CRLF files', () => {
     expect(injectBlock(healed.content, '1.0.0', BLOCK).action).toBe('unchanged');
   });
 
+  it('heals a lone LF on the line before the block, and stripOwned restores the original', () => {
+    const legacy = `a\r\n# T\n${markerStart('1.0.0')}\n${BLOCK}\n${MARKER_END}\n`;
+    const healed = injectBlock(legacy, '1.0.0', BLOCK);
+    expect(healed.action).toBe('replaced');
+    expect(healed.content).not.toMatch(LONE_LF);
+    expect(injectBlock(healed.content, '1.0.0', BLOCK).action).toBe('unchanged');
+    expect(stripOwned(healed.content).content).toBe('a\r\n# T\r\n');
+  });
+
   it('normalizes a CRLF template before writing', () => {
     expect(injectBlock('# T\n', '1.0.0', crlf(BLOCK)).content).not.toContain('\r');
     expect(injectBlock('# T\r\n', '1.0.0', crlf(BLOCK)).content).not.toMatch(LONE_LF);

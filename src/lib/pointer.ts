@@ -52,7 +52,12 @@ export function refreshPointer(current: string, template: string): PointerRefres
   const replacement = [...body.split('\n').map((line) => `${line}${cr}`), atEof ? '' : cr];
   const head = lines.slice(0, section.start);
   // Legacy: the blank separator lines above the heading were appended with a bare LF.
-  if (cr) for (let i = head.length - 1; i >= 0 && head[i] === ''; i--) head[i] = cr;
+  if (cr) {
+    let i = head.length - 1;
+    for (; i >= 0 && head[i] === ''; i--) head[i] = cr;
+    // The first non-blank line above them may be the unterminated last line of the original file.
+    if (i >= 0 && !head[i].endsWith(cr)) head[i] += cr;
+  }
   return {
     action: 'replaced',
     content: [...head, ...replacement, ...lines.slice(section.end)].join('\n'),
