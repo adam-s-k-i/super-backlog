@@ -1,4 +1,5 @@
 // src/lib/version-check.ts
+import type { ChildProcess } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
@@ -70,10 +71,23 @@ function unrefStream(stream: Readable | null | undefined): void {
   (stream as unknown as { unref?: () => void } | null | undefined)?.unref?.();
 }
 
+export interface FetchLatestOptions {
+  /**
+   * Fire-and-forget mode for the startup hint: unref the npm child, its stdout
+   * and the timer so a pending check never delays process exit. Callers that
+   * await the result must leave this off, or Node exits mid-await once nothing
+   * else holds the event loop open.
+   */
+  background?: boolean;
+}
+
 /** Queries the npm registry for the latest published version, racing a timeout. */
-export async function fetchLatestVersion(timeoutMs: number = FETCH_TIMEOUT_MS): Promise<string | null> {
+export async function fetchLatestVersion(
+  timeoutMs: number = FETCH_TIMEOUT_MS,
+  { background = false }: FetchLatestOptions = {},
+): Promise<string | null> {
+  let child: ChildProcess | undefined;
   const work = new Promise<string | null>((resolvePromise) => {
-    let child;
     try {
       child = spawn('npm', ['view', 'super-backlog', 'version'], {
         cwd: process.cwd(),
@@ -84,7 +98,7 @@ export async function fetchLatestVersion(timeoutMs: number = FETCH_TIMEOUT_MS): 
       return;
     }
     let out = '';
-    unrefStream(child.stdout);
+    if (background) unrefStream(child.stdout);
     child.stdout?.on('data', (chunk: Buffer) => {
       out += chunk.toString('utf8');
     });
@@ -98,13 +112,17 @@ export async function fetchLatestVersion(timeoutMs: number = FETCH_TIMEOUT_MS): 
       const v = line?.trim();
       resolvePromise(v === undefined || v === '' ? null : v);
     });
-    child.unref();
+    if (background) child.unref();
   });
 
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let timedOut = false;
   const timeout = new Promise<null>((resolveTimeout) => {
-    timer = setTimeout(() => resolveTimeout(null), timeoutMs);
-    timer.unref();
+    timer = setTimeout(() => {
+      timedOut = true;
+      resolveTimeout(null);
+    }, timeoutMs);
+    if (background) timer.unref();
   });
   try {
     return await Promise.race([work, timeout]);
@@ -112,11 +130,18 @@ export async function fetchLatestVersion(timeoutMs: number = FETCH_TIMEOUT_MS): 
     return null;
   } finally {
     if (timer !== undefined) clearTimeout(timer);
+    if (timedOut && child) {
+      // On Windows kill() only reaches the cmd.exe shim; the npm process it
+      // started still holds the stdout pipe, so release our handles as well.
+      child.kill();
+      unrefStream(child.stdout);
+      child.unref();
+    }
   }
 }
 
 export async function defaultFetchLatest(): Promise<string | null> {
-  return fetchLatestVersion(FETCH_TIMEOUT_MS);
+  return fetchLatestVersion(FETCH_TIMEOUT_MS, { background: true });
 }
 
 export async function applyVersionHint(installed: string, deps: VersionCheckDeps): Promise<void> {
