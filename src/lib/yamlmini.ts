@@ -65,7 +65,7 @@ class Parser {
       const no = i + 1;
       const tab = raw.indexOf('\t');
       if (tab !== -1) throw new YamlSubsetError(no, tab + 1, 'tab characters are not allowed');
-      const trimmed = raw.replace(/ +$/, '');
+      const trimmed = raw.trimEnd();
       const indent = trimmed.length - trimmed.trimStart().length;
       const content = trimmed.slice(indent);
       if (indent === 0 && (content === '---' || content.startsWith('--- ') || content === '...')) {

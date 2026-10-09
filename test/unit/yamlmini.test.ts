@@ -199,4 +199,14 @@ describe('parseYamlSubset: size limit', () => {
   it('rejects input over 256 KB before parsing', () => {
     rejects(`a: ${'x'.repeat(YAML_SUBSET_MAX_BYTES)}\n`, 1, 1, /exceeds 256 KB/);
   });
+  it('parses a long run of spaces followed by a non-space character in linear time', () => {
+    const spaces = YAML_SUBSET_MAX_BYTES - 16;
+    const body = 'k:' + ' '.repeat(spaces) + 'x' + String.fromCharCode(10);
+    expect(Buffer.byteLength(body)).toBeLessThan(YAML_SUBSET_MAX_BYTES);
+    const started = performance.now();
+    const parsed = parseYamlSubset(body);
+    const elapsed = performance.now() - started;
+    expect(parsed).toEqual({ k: 'x' });
+    expect(elapsed).toBeLessThan(1000);
+  });
 });
