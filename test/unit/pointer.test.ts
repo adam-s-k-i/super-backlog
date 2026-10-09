@@ -96,4 +96,10 @@ describe('refreshPointer', () => {
     expect(refreshPointer('# Notes\r\n\r\n', TPL).content).toBe(crlf(`# Notes\n\n${TPL}`));
     expect(refreshPointer('a\r\n# Notes', TPL).content).toBe(`a\r\n# Notes${crlf(`\n\n${TPL}`)}`);
   });
+
+  it('heals a legacy pointer appended with a lone-LF separator into a CRLF file', () => {
+    const r = refreshPointer(`# Notes\r\n\n${HEADING}\nOld.\n`, TPL);
+    expect(r.action).toBe('replaced');
+    expect(r.content).not.toMatch(/(?<!\r)\n/);
+  });
 });

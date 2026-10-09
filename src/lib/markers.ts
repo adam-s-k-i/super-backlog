@@ -32,12 +32,15 @@ export function injectBlock(content: string, version: string, block: string): In
     const sep = content.length === 0 ? '' : content.endsWith('\n') ? '' : nl;
     return { content: content + sep + fresh + nl, action: 'created' };
   }
-  const existing = content.slice(span.start, span.end);
-  if (existing === fresh) return { content, action: 'unchanged' };
-  return {
-    content: content.slice(0, span.start) + fresh + content.slice(span.end),
-    action: 'replaced',
-  };
+  // Legacy LF block/terminator in a CRLF file: heal the line breaks touching the block too.
+  let before = content.slice(0, span.start);
+  let after = content.slice(span.end);
+  if (nl === '\r\n') {
+    if (before.endsWith('\n') && !before.endsWith('\r\n')) before = `${before.slice(0, -1)}\r\n`;
+    if (after.startsWith('\n')) after = `\r${after}`;
+  }
+  const next = before + fresh + after;
+  return next === content ? { content, action: 'unchanged' } : { content: next, action: 'replaced' };
 }
 
 export function stripOwned(content: string): { content: string; removed: boolean } {

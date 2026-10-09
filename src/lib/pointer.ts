@@ -50,8 +50,11 @@ export function refreshPointer(current: string, template: string): PointerRefres
   const cr = nl === '\r\n' ? '\r' : '';
   const atEof = section.end === lines.length;
   const replacement = [...body.split('\n').map((line) => `${line}${cr}`), atEof ? '' : cr];
+  const head = lines.slice(0, section.start);
+  // Legacy: the blank separator lines above the heading were appended with a bare LF.
+  if (cr) for (let i = head.length - 1; i >= 0 && head[i] === ''; i--) head[i] = cr;
   return {
     action: 'replaced',
-    content: [...lines.slice(0, section.start), ...replacement, ...lines.slice(section.end)].join('\n'),
+    content: [...head, ...replacement, ...lines.slice(section.end)].join('\n'),
   };
 }

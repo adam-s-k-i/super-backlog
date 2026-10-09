@@ -141,6 +141,24 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
       const p = join(dir, name);
       writeFileSync(p, readFileSync(p, 'utf8').replace(/\r?\n/g, '\r\n'));
     }
+    // re-create the shape the pre-fix code wrote into CRLF files: LF block + LF terminator, lone-LF pointer separator
+    const agentsPath = join(dir, 'AGENTS.md');
+    writeFileSync(
+      agentsPath,
+      // user content above the block keeps the file CRLF (the scaffolded AGENTS.md holds only the block)
+      '# Project agents\r\n\r\n' +
+        readFileSync(agentsPath, 'utf8').replace(
+          /<!-- SUPER-BACKLOG:[\s\S]*?<!-- SUPER-BACKLOG END -->\r?\n/,
+          (span) => span.replace(/\r\n/g, '\n'),
+        ),
+    );
+    const claudePath = join(dir, 'CLAUDE.md');
+    writeFileSync(
+      claudePath,
+      readFileSync(claudePath, 'utf8').replace('\r\n\r\n## Workflow system', '\r\n\n## Workflow system'),
+    );
+    expect(readFileSync(agentsPath, 'utf8')).toMatch(/(?<!\r)\n/);
+    expect(readFileSync(claudePath, 'utf8')).toMatch(/(?<!\r)\n/);
 
     expect(runUpdate(dir).status).toBe(4);
 

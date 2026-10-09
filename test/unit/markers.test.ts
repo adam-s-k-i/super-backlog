@@ -85,6 +85,22 @@ describe('injectBlock with CRLF files', () => {
     expect(injectBlock(healed.content, '1.0.0', BLOCK).action).toBe('unchanged');
   });
 
+  it('heals the legacy shape (LF block and LF terminator after the end marker) once, then stays stable', () => {
+    const legacy = `# T\r\n\r\n${markerStart('1.0.0')}\n${BLOCK}\n${MARKER_END}\n\r\n## After\r\n`;
+    const healed = injectBlock(legacy, '1.0.0', BLOCK);
+    expect(healed.action).toBe('replaced');
+    expect(healed.content).not.toMatch(LONE_LF);
+    expect(healed.content.endsWith('\r\n\r\n## After\r\n')).toBe(true);
+    expect(injectBlock(healed.content, '1.0.0', BLOCK).action).toBe('unchanged');
+  });
+
+  it('heals the legacy shape at end of file', () => {
+    const legacy = `# T\r\n${markerStart('1.0.0')}\n${BLOCK}\n${MARKER_END}\n`;
+    const healed = injectBlock(legacy, '1.0.0', BLOCK);
+    expect(healed.content).toBe(crlf(`# T\n${markerStart('1.0.0')}\n${BLOCK}\n${MARKER_END}\n`));
+    expect(injectBlock(healed.content, '1.0.0', BLOCK).action).toBe('unchanged');
+  });
+
   it('normalizes a CRLF template before writing', () => {
     expect(injectBlock('# T\n', '1.0.0', crlf(BLOCK)).content).not.toContain('\r');
     expect(injectBlock('# T\r\n', '1.0.0', crlf(BLOCK)).content).not.toMatch(LONE_LF);
