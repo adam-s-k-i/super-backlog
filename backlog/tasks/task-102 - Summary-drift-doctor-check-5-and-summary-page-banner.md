@@ -1,13 +1,13 @@
 ---
 id: TASK-102
 title: 'Summary drift: doctor check 5 and summary page banner'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:38'
+updated_date: '2026-10-10 15:46'
 labels:
   - feature
-  - phase/plan
+  - phase/impl
 dependencies:
   - TASK-101
 references:

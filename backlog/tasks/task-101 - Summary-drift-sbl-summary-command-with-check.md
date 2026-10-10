@@ -4,10 +4,10 @@ title: 'Summary drift: sbl summary command with --check'
 status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:41'
+updated_date: '2026-10-10 15:46'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies:
   - TASK-100
 references:
