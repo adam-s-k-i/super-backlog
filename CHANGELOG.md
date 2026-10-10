@@ -3,6 +3,27 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.7.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.6.0...v1.7.0) (2026-10-10)
+
+
+### Features
+
+* **skills:** architecture-summary skill and doctor check 5 ([f046267](https://github.com/adam-s-k-i/super-backlog/commit/f0462674db8c4bc04c8f41669fea2c0d158f59db))
+* **summary:** architecture.yml schema and validation ([e2c2e76](https://github.com/adam-s-k-i/super-backlog/commit/e2c2e760a16b36e40364490830a8834376fdd8f1))
+* **summary:** automatic project facts from manifests and git ([600e0e6](https://github.com/adam-s-k-i/super-backlog/commit/600e0e6f7784037e7d782e2258cdca2dc51bd330))
+* **summary:** deterministic orthogonal layout engine ([8a0ea70](https://github.com/adam-s-k-i/super-backlog/commit/8a0ea70d3fcda45336f39908d3a989b6b44407e5))
+* **summary:** serve the summary page in the hub with page tabs and guide ([3a69b73](https://github.com/adam-s-k-i/super-backlog/commit/3a69b734dd33ba912d4b3b0851dd803b5ede1cec))
+* **summary:** summary page template, shared tokens and renderer ([fd76ce4](https://github.com/adam-s-k-i/super-backlog/commit/fd76ce482bbd8b8d0f7900a9090bde5be88917a4))
+* **summary:** YAML subset parser for architecture.yml ([7e3d3a3](https://github.com/adam-s-k-i/super-backlog/commit/7e3d3a328b920353daac762f14bfa60dfd9ff43f))
+
+
+### Bug Fixes
+
+* **summary:** harden yml parsing and facts against hostile input ([85b9564](https://github.com/adam-s-k-i/super-backlog/commit/85b95644bda66bca2f90d36ead069dc440da65a6))
+* **summary:** keep step badges off edge labels; spec zone margin ([fee23a2](https://github.com/adam-s-k-i/super-backlog/commit/fee23a2153b210cfcbf0820dd4eb86c5448a1e46))
+* **summary:** linear trailing-space trim in YAML subset parser ([9d2a13a](https://github.com/adam-s-k-i/super-backlog/commit/9d2a13a0199cc3e945fdd092bff974231e8b6845))
+* **summary:** straight-edge ports no longer collide with sibling ports ([8f7bc92](https://github.com/adam-s-k-i/super-backlog/commit/8f7bc924129e73c03bb8eb974ea5cb58339d6026))
+
 ## [1.6.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.5.0...v1.6.0) (2026-10-09)
 
 
