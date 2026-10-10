@@ -4,10 +4,10 @@ title: 'Summary page: hub routing, navigation and docs'
 status: To Do
 assignee: []
 created_date: '2026-10-09 21:51'
-updated_date: '2026-10-09 22:01'
+updated_date: '2026-10-10 00:26'
 labels:
   - feature
-  - phase/plan
+  - phase/verify
 milestone: m-2
 dependencies:
   - TASK-89
