@@ -102,6 +102,15 @@ describe('collectSummaryFacts: manifests', () => {
     expect(f.dependencies).toBe(3);
   });
 
+  it('still collects facts when style.css is a directory (unreadable header file)', () => {
+    put('package.json', { name: 'demo', version: '0.1.0' });
+    mkdirSync(join(cwd, 'style.css'));
+    put('plugin.php', '<?php\n/*\n * Plugin Name: Fallback Plugin\n */\n');
+    expect(readWordPressHeader(cwd)).toMatchObject({ type: 'plugin', file: 'plugin.php', name: 'Fallback Plugin' });
+    const f = collectSummaryFacts(cwd, { runCapture: noGit });
+    expect(f).toMatchObject({ name: 'demo', version: '0.1.0', manifest: 'package.json', manifests: ['package.json', 'wordpress'] });
+  });
+
   it('records a warning for a broken manifest instead of throwing', () => {
     put('package.json', '{ not json');
     const f = collectSummaryFacts(cwd, { runCapture: noGit });

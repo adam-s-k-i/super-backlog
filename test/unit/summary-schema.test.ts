@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   ARCHITECTURE_PATH,
@@ -249,11 +249,51 @@ describe('loadArchitecture', () => {
     expect(r.status === 'valid' && r.architecture.nodes[0].id).toBe('dev');
   });
 
+  it('returns invalid with a problem for 8000 levels of "- -" instead of throwing', () => {
+    mkdirSync(join(dir, 'backlog', 'docs'), { recursive: true });
+    writeFileSync(join(dir, 'backlog', 'docs', 'architecture.yml'), `${'- '.repeat(8000)}x`);
+    const r = loadArchitecture(dir);
+    expect(r.status).toBe('invalid');
+    expect(problems(r)).toEqual([{ path: 'line 1, column 65', message: expect.stringMatching(/nesting too deep/), level: 'error' }]);
+  });
+
   it('returns errors with path and message for an invalid file', () => {
     mkdirSync(join(dir, 'backlog', 'docs'), { recursive: true });
     writeFileSync(join(dir, 'backlog', 'docs', 'architecture.yml'), 'schema: 1\n');
     const r = loadArchitecture(dir);
     expect(r.status).toBe('invalid');
     expect(problems(r).map((p) => p.path)).toEqual(['pitch', 'grid', 'nodes', 'edges']);
+  });
+});
+
+describe('checkArchitectureText: hostile input never throws', () => {
+  it('returns invalid with a line/column problem for 8000 levels of "- -"', () => {
+    const r = checkArchitectureText(`${'- '.repeat(8000)}x`, 'architecture.yml');
+    expect(r).toEqual({
+      status: 'invalid',
+      path: 'architecture.yml',
+      problems: [{ path: 'line 1, column 65', message: expect.stringMatching(/nesting too deep/), level: 'error' }],
+    });
+  });
+
+  it('turns any other parser error into an error-level problem instead of rethrowing', async () => {
+    vi.resetModules();
+    vi.doMock('../../src/lib/yamlmini.js', async (importOriginal) => ({
+      ...(await importOriginal<typeof import('../../src/lib/yamlmini.js')>()),
+      parseYamlSubset: () => {
+        throw new RangeError('Maximum call stack size exceeded');
+      },
+    }));
+    try {
+      const mod = await import('../../src/dashboard/summary-schema.js');
+      expect(mod.checkArchitectureText('schema: 1\n', 'architecture.yml')).toEqual({
+        status: 'invalid',
+        path: 'architecture.yml',
+        problems: [{ path: ARCHITECTURE_PATH, message: 'cannot parse file (RangeError: Maximum call stack size exceeded)', level: 'error' }],
+      });
+    } finally {
+      vi.doUnmock('../../src/lib/yamlmini.js');
+      vi.resetModules();
+    }
   });
 });

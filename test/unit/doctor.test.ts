@@ -1,8 +1,11 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { runDoctor, type DoctorDeps } from '../../src/commands/doctor.js';
 import { layoutArchitecture } from '../../src/dashboard/summary-layout.js';
-import { checkArchitectureText } from '../../src/dashboard/summary-schema.js';
+import { checkArchitectureText, loadArchitecture } from '../../src/dashboard/summary-schema.js';
 
 const ARCH_OK = [
   'schema: 1',
@@ -191,6 +194,20 @@ describe('check 5: architecture.yml', () => {
     const d = makeDeps({ loadArchitecture: () => checkArchitectureText('schema: 1\n\tpitch: x\n', 'architecture.yml') });
     expect(runDoctor('/proj', d)).toBe(1);
     expect(d.lines.join('\n')).toMatch(/error: line 2, column 1: /);
+  });
+
+  it('fails (does not throw) on a hostile file that nests "- -" 8000 levels deep', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'sbl-doctor-'));
+    try {
+      mkdirSync(join(dir, 'backlog', 'docs'), { recursive: true });
+      writeFileSync(join(dir, 'backlog', 'docs', 'architecture.yml'), `${'- '.repeat(8000)}x`);
+      const d = makeDeps({ loadArchitecture: (c) => loadArchitecture(c) });
+      expect(runDoctor(dir, d)).toBe(1);
+      expect(d.lines.some((l) => l.includes('[fail]') && l.includes('backlog/docs/architecture.yml: 1 error(s)'))).toBe(true);
+      expect(d.lines.join('\n')).toMatch(/error: line 1, column 65: nesting too deep/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('warns on schema warnings and layout warnings', () => {

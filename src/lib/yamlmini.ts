@@ -23,7 +23,9 @@ export function readSimpleKeys(filePath: string, keys: string[]): Record<string,
  * scalars (with optional `-` chomping) and `#` comments. Rejected with line and
  * column: anchors, aliases, tags, directives, multi-documents, complex keys,
  * tabs, multi-line flow collections and nested flow collections (a flow mapping
- * may hold a flow sequence of scalars as a value, nothing deeper).
+ * may hold a flow sequence of scalars as a value, nothing deeper), the reserved
+ * keys `__proto__`, `constructor` and `prototype`, and collections nested deeper
+ * than YAML_SUBSET_MAX_DEPTH levels.
  * ------------------------------------------------------------------------- */
 
 export type YamlValue = string | number | boolean | null | YamlValue[] | { [key: string]: YamlValue };
@@ -55,10 +57,15 @@ interface SrcLine {
 
 const INT_RE = /^-?(?:0|[1-9][0-9]*)$/;
 const RESERVED_START = new Set(['&', '*', '!', '%', '@', '`']);
+/** Keys that would reach Object.prototype through a plain-object assignment. */
+const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+/** Collections (block or flow) nest at most this deep; deeper input is rejected, never recursed into. */
+export const YAML_SUBSET_MAX_DEPTH = 32;
 
 class Parser {
   private readonly lines: SrcLine[];
   private pos = 0;
+  private depth = 0;
 
   constructor(text: string) {
     this.lines = text.split('\n').map((raw, i) => {
@@ -89,6 +96,23 @@ class Parser {
     return new YamlSubsetError(line.no, line.indent + offset + 1, reason);
   }
 
+  /** Enters one collection level (block mapping, block sequence or flow collection). */
+  enter(line: SrcLine, offset: number): void {
+    this.depth += 1;
+    if (this.depth > YAML_SUBSET_MAX_DEPTH) {
+      throw this.err(line, offset, `nesting too deep (at most ${YAML_SUBSET_MAX_DEPTH} levels)`);
+    }
+  }
+
+  leave(): void {
+    this.depth -= 1;
+  }
+
+  /** Rejects keys that a plain-object assignment would route to the prototype. */
+  reservedKey(line: SrcLine, offset: number, key: string): void {
+    if (RESERVED_KEYS.has(key)) throw this.err(line, offset, `reserved key "${key}" is not allowed`);
+  }
+
   /** Next significant line, skipping blanks and comments. */
   private peek(): SrcLine | null {
     while (this.pos < this.lines.length && this.lines[this.pos].blank) this.pos += 1;
@@ -106,6 +130,7 @@ class Parser {
   }
 
   private parseSequence(indent: number): YamlValue[] {
+    this.enter(this.peek() as SrcLine, 0);
     const out: YamlValue[] = [];
     for (;;) {
       const line = this.peek();
@@ -134,10 +159,12 @@ class Parser {
       }
       out.push(this.parseInlineValue(line, rest, 2, indent));
     }
+    this.leave();
     return out;
   }
 
   private parseMapping(indent: number): { [key: string]: YamlValue } {
+    this.enter(this.peek() as SrcLine, 0);
     const out: { [key: string]: YamlValue } = {};
     for (;;) {
       const line = this.peek();
@@ -165,6 +192,7 @@ class Parser {
       }
       out[entry.key] = this.parseInlineValue(line, rest, entry.valueOffset, indent);
     }
+    this.leave();
     return out;
   }
 
@@ -183,6 +211,7 @@ class Parser {
       const after = text.slice(q.end);
       if (!/^ *:(?: |$)/.test(after)) return null;
       const colon = q.end + after.indexOf(':');
+      this.reservedKey(line, base, q.value);
       return { key: q.value, valueOffset: base + skipSpaces(text, colon + 1) };
     }
     if (first === '[' || first === '{' || first === '#') return null;
@@ -191,6 +220,7 @@ class Parser {
     const key = text.slice(0, m.index).trimEnd();
     if (key === '' || key.includes(' #')) return null;
     if (RESERVED_START.has(key[0])) throw this.err(line, base, `"${key[0]}" (anchor, alias, tag or directive) is not supported`);
+    this.reservedKey(line, base, key);
     return { key, valueOffset: base + skipSpaces(text, m.index + 1) };
   }
 
@@ -369,11 +399,13 @@ class FlowReader {
 
   /** depth 0 = top-level sequence, depth 1 = sequence nested as a flow-mapping value */
   private readSeq(depth: number): YamlValue[] {
+    this.parser.enter(this.line, this.offset + this.i);
     const out: YamlValue[] = [];
     this.i += 1; // [
     this.ws();
     if (this.text[this.i] === ']') {
       this.i += 1;
+      this.parser.leave();
       return out;
     }
     for (;;) {
@@ -389,6 +421,7 @@ class FlowReader {
       }
       if (sep === ']') {
         this.i += 1;
+        this.parser.leave();
         return out;
       }
       if (sep === undefined) this.fail(this.i, 'flow collections must close on the same line');
@@ -397,11 +430,13 @@ class FlowReader {
   }
 
   private readMap(): { [key: string]: YamlValue } {
+    this.parser.enter(this.line, this.offset + this.i);
     const out: { [key: string]: YamlValue } = {};
     this.i += 1; // {
     this.ws();
     if (this.text[this.i] === '}') {
       this.i += 1;
+      this.parser.leave();
       return out;
     }
     for (;;) {
@@ -425,6 +460,7 @@ class FlowReader {
         this.i += m.index;
       }
       if (this.text[this.i] !== ':') this.fail(this.i, 'expected ":" after key');
+      this.parser.reservedKey(this.line, this.offset + keyAt, key);
       this.i += 1;
       if (Object.prototype.hasOwnProperty.call(out, key)) this.fail(keyAt, `duplicate key "${key}"`);
       this.ws();
@@ -439,6 +475,7 @@ class FlowReader {
       }
       if (sep === '}') {
         this.i += 1;
+        this.parser.leave();
         return out;
       }
       if (sep === undefined) this.fail(this.i, 'flow collections must close on the same line');

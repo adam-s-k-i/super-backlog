@@ -139,12 +139,17 @@ function headerFacts(facts: SummaryFacts, openTasks: number): SummaryFact[] {
   ];
 }
 
+/** Own-property lookup, so a package named `constructor` or `toString` never hits Object.prototype. */
+function ownVersion(versions: Record<string, string>, name: string): string {
+  return Object.hasOwn(versions, name) ? versions[name] : '';
+}
+
 function stackItems(arch: Architecture | null, facts: SummaryFacts): SummaryStackItem[] {
   if (arch && arch.stack.length > 0) {
     return arch.stack.map((s: ArchStackEntry) => ({
       name: s.name,
       group: s.group,
-      version: s.version ?? facts.versions[s.package ?? s.name] ?? '',
+      version: s.version ?? ownVersion(facts.versions, s.package ?? s.name),
       role: s.role ?? '',
       nodes: s.nodes,
     }));

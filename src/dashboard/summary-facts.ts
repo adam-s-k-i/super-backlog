@@ -100,14 +100,24 @@ function licenseOf(v: unknown): string | null {
   return null;
 }
 
+/** First `bytes` of a file; '' when it cannot be read (EACCES, a directory, a race with deletion). */
 function readHead(path: string, bytes = 8192): string {
-  const fd = openSync(path, 'r');
+  let fd: number | null = null;
   try {
+    fd = openSync(path, 'r');
     const buf = Buffer.alloc(bytes);
     const n = readSync(fd, buf, 0, bytes, 0);
     return buf.subarray(0, n).toString('utf8');
+  } catch {
+    return '';
   } finally {
-    closeSync(fd);
+    if (fd !== null) {
+      try {
+        closeSync(fd);
+      } catch {
+        // already closed or never valid; nothing to release
+      }
+    }
   }
 }
 

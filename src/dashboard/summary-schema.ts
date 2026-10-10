@@ -665,7 +665,9 @@ export function checkArchitectureText(
     if (err instanceof YamlSubsetError) {
       return { status: 'invalid', path, problems: [{ path: `line ${err.line}, column ${err.column}`, message: err.reason, level: 'error' }] };
     }
-    throw err;
+    // Backstop: any other failure (e.g. a RangeError) is a broken file, never an exception for the caller.
+    const reason = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    return { status: 'invalid', path, problems: [{ path: ARCHITECTURE_PATH, message: `cannot parse file (${reason})`, level: 'error' }] };
   }
   const { architecture, problems } = validateArchitecture(parsed, taskIds);
   if (architecture === null) return { status: 'invalid', path, problems };

@@ -188,6 +188,42 @@ describe('parseYamlSubset: rejected constructs carry line and column', () => {
   it('rejects unsupported block scalar headers', () => rejects('a: |2\n  x\n', 1, 4, /block scalar header/));
   it('rejects a document that does not start at column 1', () => rejects('  a: 1\n', 1, 3, /column 1/));
   it('reports the same position on CRLF input', () => rejects('a: 1\r\nb: *a\r\n', 2, 4, /alias/));
+  it('rejects the reserved key __proto__ in a block mapping', () => rejects('__proto__:\n  schema: 1\n', 1, 1, /reserved key "__proto__"/));
+  it('rejects the reserved key constructor in a nested block mapping', () =>
+    rejects('commands:\n  constructor:\n    - { run: x }\n', 2, 3, /reserved key "constructor"/));
+  it('rejects the reserved key prototype when quoted', () => rejects('"prototype": 1\n', 1, 1, /reserved key "prototype"/));
+  it('rejects a reserved key in a flow mapping', () => rejects('a: { x: 1, __proto__: 2 }\n', 1, 12, /reserved key "__proto__"/));
+  it('does not let __proto__ replace the prototype of the parsed object', () => {
+    expect(() => parseYamlSubset('__proto__:\n  schema: 1\n')).toThrow(YamlSubsetError);
+    expect(parseYamlSubset('proto: 1\n')).toEqual({ proto: 1 });
+  });
+});
+
+describe('parseYamlSubset: nesting depth limit', () => {
+  const nestedSeq = (depth: number): unknown => {
+    let v: unknown = 'x';
+    for (let i = 0; i < depth; i++) v = [v];
+    return v;
+  };
+  const nestedMaps = (levels: number): string =>
+    Array.from({ length: levels }, (_, i) => `${'  '.repeat(i)}k:${i === levels - 1 ? ' v' : ''}`).join('\n') + '\n';
+
+  it('accepts 32 levels of inline "- -" sequences', () => {
+    expect(parseYamlSubset(`${'- '.repeat(32)}x\n`)).toEqual(nestedSeq(32));
+  });
+  it('rejects the 33rd level of inline "- -" sequences', () => rejects(`${'- '.repeat(33)}x\n`, 1, 65, /nesting too deep/));
+  it('rejects 8000 levels of "- -" with a YamlSubsetError instead of overflowing the stack', () =>
+    rejects(`${'- '.repeat(8000)}x`, 1, 65, /nesting too deep/));
+  it('accepts 32 levels of block mappings', () => {
+    expect(() => parseYamlSubset(nestedMaps(32))).not.toThrow();
+  });
+  it('rejects the 33rd level of block mappings', () => rejects(nestedMaps(33), 33, 65, /nesting too deep/));
+  it('counts flow collections towards the limit', () => {
+    const lines = (maps: number): string =>
+      Array.from({ length: maps }, (_, i) => `${'  '.repeat(i)}k:`).join('\n') + `\n${'  '.repeat(maps)}k: { a: [x] }\n`;
+    expect(() => parseYamlSubset(lines(29))).not.toThrow();
+    rejects(lines(30), 31, 69, /nesting too deep/);
+  });
 });
 
 describe('parseYamlSubset: size limit', () => {

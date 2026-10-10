@@ -127,6 +127,23 @@ describe('buildSummaryView', () => {
     expect(v.pitchHtml).toBe('A demo &lt;b&gt;project&lt;/b&gt;');
   });
 
+  it('looks up stack versions as own properties only (no prototype hits for constructor/toString)', () => {
+    const stack = [
+      '  - { name: constructor, group: Runtime, role: odd package name, nodes: [hub] }',
+      '  - { name: Strings, package: toString, group: Runtime, role: another, nodes: [hub] }',
+      '  - { name: Own, package: hasOwnProperty, group: Runtime, role: own key, nodes: [hub] }',
+    ].join('\n');
+    const text = FIXTURE.replace(/^stack:\r?\n(?: {2}- .*\r?\n)+/m, `stack:\n${stack}\n`);
+    expect(text).not.toBe(FIXTURE);
+    const model = validModel(text);
+    const v = buildSummaryView(DATA, { ...model, facts: { ...FACTS, versions: { ...FACTS.versions, hasOwnProperty: '1.0.0' } } });
+    expect(v.stack.map((s) => [s.name, s.version])).toEqual([
+      ['constructor', ''],
+      ['Strings', ''],
+      ['Own', '1.0.0'],
+    ]);
+  });
+
   it('collects schema, layout and facts warnings into the data source (E4)', () => {
     const model = validModel();
     model.layout = { ...model.layout!, warnings: [{ code: 'route-fallback', edge: 'a-b', message: 'no clean route' } as never] };
