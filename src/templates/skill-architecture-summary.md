@@ -50,9 +50,11 @@ releases, CI, open work). Schema and YAML subset:
 6. Run `sbl doctor`. Check 5 validates the file and prints every problem with
    its path, plus the layout warnings (`route-fallback`, `label-collision`,
    `crossing`). Fix the file and run `sbl doctor` again until check 5 reports
-   `[ok]`.
-7. Run `sbl summary`. Finish when it exits 0, or 4 only for warnings the user
-   accepts; fix every drift finding it lists and run it again.
+   `[ok]`, or only its drift line remains.
+7. Run `sbl summary`, fix every drift finding it lists and run it again.
+   Finish when it exits 0, or 4 only for warnings the user accepts. A
+   `stale-file` finding clears only once the refreshed file is committed, so
+   after a refresh it is the one finding that may remain.
 8. Present the diff of `backlog/docs/architecture.yml` for review and STOP
    until the user approves the prose. Point to the live page:
    `sbl dashboard`, then the **Summary** tab.

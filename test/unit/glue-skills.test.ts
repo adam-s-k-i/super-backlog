@@ -101,6 +101,10 @@ describe('skill-architecture-summary.md', () => {
     expect(t).toMatch(/prune `tasks` entries for Done or unknown\s+tasks/i);
     expect(t).toMatch(/finish when it exits 0, or 4 only for warnings the user\s+accepts/i);
   });
+  it('explains that stale-file drift clears once the file is committed', () => {
+    expect(t).toMatch(/until check 5 reports\s+`\[ok\]`, or only its drift line remains/i);
+    expect(t).toMatch(/`stale-file` finding clears only once the refreshed file is\s+committed/i);
+  });
   it('links the schema reference', () => {
     expect(t).toContain('https://adam-s-k-i.github.io/super-backlog/guide/project-summary');
   });

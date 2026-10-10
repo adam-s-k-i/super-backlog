@@ -138,6 +138,8 @@ and then lists four kinds of drift, each with its path in the file:
 | `unknown-task` | A `tasks` entry names a task the backlog no longer lists (archived, deleted or never created). |
 | `stale-file` | 20 or more commits changed the documented files since the file was last committed. |
 
+`stale-file` counts from the last commit of `backlog/docs/architecture.yml`, so it clears once the refreshed file is committed.
+
 The last line names the prompt to hand to your agent, for example
 "Run the architecture-summary skill to refresh backlog/docs/architecture.yml;
 sbl summary lists the drift findings." When the backlog CLI or git is

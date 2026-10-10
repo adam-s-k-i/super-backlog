@@ -40,12 +40,12 @@ let repo: string;
 let env: NodeJS.ProcessEnv;
 
 function git(args: string[]): void {
-  execFileSync('git', args, { cwd: repo, env, stdio: 'ignore' });
+  execFileSync('git', args, { cwd: repo, env, stdio: 'ignore', timeout: 30000 });
 }
 
 function summary(args: string[] = [], cwd = repo): { out: string; status: number } {
   try {
-    const out = execFileSync(process.execPath, [CLI, 'summary', ...args], { cwd, env, encoding: 'utf8' });
+    const out = execFileSync(process.execPath, [CLI, 'summary', ...args], { cwd, env, encoding: 'utf8', timeout: 30000 });
     return { out, status: 0 };
   } catch (err) {
     const e = err as { status?: number | null; stdout?: string | Buffer };
