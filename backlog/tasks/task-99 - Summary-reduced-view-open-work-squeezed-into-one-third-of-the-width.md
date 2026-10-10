@@ -4,10 +4,10 @@ title: 'Summary reduced view: open work squeezed into one third of the width'
 status: In Progress
 assignee: []
 created_date: '2026-10-10 10:34'
-updated_date: '2026-10-10 10:34'
+updated_date: '2026-10-10 10:37'
 labels:
   - bug
-  - phase/impl
+  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-09-project-summary-design.md
@@ -24,8 +24,14 @@ On a project without backlog/docs/architecture.yml (reduced view, no Highlights 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 With two sections the profile row uses two tracks, open work wider than tech stack (about 1.6fr / 1fr); with three sections the existing three-track layout is unchanged
-- [ ] #2 Responsive breakpoints still collapse to one column at <=640px
-- [ ] #3 A test covers the two-section case
-- [ ] #4 npm test passes
+- [x] #1 With two sections the profile row uses two tracks, open work wider than tech stack (about 1.6fr / 1fr); with three sections the existing three-track layout is unchanged
+- [x] #2 Responsive breakpoints still collapse to one column at <=640px
+- [x] #3 A test covers the two-section case
+- [x] #4 npm test passes
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Profile row uses two tracks (1.6fr/1fr) when there are no highlights; renderAround toggles .around.two. Verified in a browser: 736px/460px at 1800px viewport, single column at 600px. npm test 792 passed, lint clean.
+<!-- SECTION:FINAL_SUMMARY:END -->
