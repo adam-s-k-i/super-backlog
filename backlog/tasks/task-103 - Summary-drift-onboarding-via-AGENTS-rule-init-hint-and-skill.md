@@ -4,10 +4,10 @@ title: 'Summary drift: onboarding via AGENTS rule, init hint and skill'
 status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:53'
+updated_date: '2026-10-10 15:56'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies:
   - TASK-101
 references:
