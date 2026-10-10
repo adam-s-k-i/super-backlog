@@ -56,6 +56,7 @@ export interface LayoutEdge {
   slot: number;
   score: number;
   label: { x: number; y: number; anchor: 'start' | 'middle' | 'end' };
+  /** step badge centre: off every placed label box (see `badgeFor`) */
   badge: { x: number; y: number };
 }
 
@@ -148,20 +149,65 @@ export function slotBox(slot: LabelSlot, tw: number): { box: Box; x: number; y: 
   }
 }
 
-/** Step badge position: on the line just before the label, moved past it near the segment start. */
-export function badgeFor(seg: Segment, slot: LabelSlot, tw: number): { x: number; y: number } {
-  const lo = seg.horizontal ? Math.min(seg.x1, seg.x2) : Math.min(seg.y1, seg.y2);
-  const hi = seg.horizontal ? Math.max(seg.x1, seg.x2) : Math.max(seg.y1, seg.y2);
-  if (seg.horizontal) {
-    let bx = slot.px - tw / 2 - 14;
-    if (bx < lo + 12) bx = slot.px + tw / 2 + 14;
-    if (bx > hi - 12) bx = slot.px;
-    return { x: round(bx), y: round(slot.py) };
+/** Radius of the step badge circle drawn on an edge. */
+export const BADGE_R = 9.5;
+/** closest distance of the badge centre to either end of its segment */
+const BADGE_END = 12;
+/** clearance between the badge circle and its own label */
+const BADGE_GAP = 4;
+/** scan step along the segment when both spots next to the label are taken */
+const BADGE_STEP = 6;
+
+/**
+ * Step badge position. Mirrored verbatim by the client in summary.html (drift-guarded by a test).
+ * Candidates in order, each tested against every placed label box (`labels`) and the edge's own:
+ * on the line just before the label (seen from the segment start), just after it, then every
+ * BADGE_STEP px from start to end; if all of those touch a label, the same positions shifted
+ * sideways away from the own label so the circle still touches the line. Deterministic.
+ */
+export function badgeFor(seg: Segment, slot: LabelSlot, tw: number, labels: readonly Box[] = []): { x: number; y: number } {
+  const own = slotBox(slot, tw).box;
+  const ux = Math.sign(seg.x2 - seg.x1);
+  const uy = Math.sign(seg.y2 - seg.y1);
+  const a0 = seg.horizontal ? (own.x0 - seg.x1) * ux : (own.y0 - seg.y1) * uy;
+  const a1 = seg.horizontal ? (own.x1 - seg.x1) * ux : (own.y1 - seg.y1) * uy;
+  const near = Math.min(a0, a1);
+  const far = Math.max(a0, a1);
+  let lo = BADGE_END;
+  let hi = seg.length - BADGE_END;
+  if (lo > hi) lo = hi = seg.length / 2;
+  const clamp = (d: number): number => Math.min(hi, Math.max(lo, d));
+  const along: number[] = [];
+  const add = (d: number): void => {
+    const c = clamp(d);
+    if (!along.includes(c)) along.push(c);
+  };
+  add(near - BADGE_R - BADGE_GAP);
+  add(far + BADGE_R + BADGE_GAP);
+  for (let d = lo; d <= hi; d += BADGE_STEP) add(d);
+  let ox = 0;
+  let oy = 0;
+  if (slot.side === 'above') oy = own.y1 + BADGE_R + 1 - slot.py;
+  else if (slot.side === 'below') oy = own.y0 - BADGE_R - 1 - slot.py;
+  else if (slot.side === 'right') ox = own.x0 - BADGE_R - 1 - slot.px;
+  else ox = own.x1 + BADGE_R + 1 - slot.px;
+  const at = (d: number, off: boolean): { x: number; y: number } => ({
+    x: round(seg.x1 + ux * d + (off ? ox : 0)),
+    y: round(seg.y1 + uy * d + (off ? oy : 0)),
+  });
+  const free = (p: { x: number; y: number }): boolean => {
+    const c: Box = { x0: p.x - BADGE_R, y0: p.y - BADGE_R, x1: p.x + BADGE_R, y1: p.y + BADGE_R };
+    if (hit(c, own)) return false;
+    for (const b of labels) if (hit(c, b)) return false;
+    return true;
+  };
+  for (const off of [false, true]) {
+    for (const d of along) {
+      const p = at(d, off);
+      if (free(p)) return p;
+    }
   }
-  let by = slot.py - 18;
-  if (by < lo + 12) by = slot.py + 18;
-  if (by > hi - 12) by = slot.py;
-  return { x: round(slot.px), y: round(by) };
+  return at(along[0], true);
 }
 
 const SLOT_POSITIONS = [0.5, 0.38, 0.62, 0.26, 0.74] as const;
@@ -507,14 +553,14 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
       slot: l.slot,
       score: l.score,
       label: { x: round(chosen.x), y: round(chosen.y), anchor: chosen.anchor },
-      badge: badgeFor(r.seg, l.candidates[l.slot], l.tw),
+      badge: badgeFor(r.seg, l.candidates[l.slot], l.tw, placed),
     };
   });
 
   const zones: LayoutZone[] = input.zones.map((z) => {
     const x = colX(z.cols[0]) - 12;
     const y = rowY(z.rows[0]) - 26;
-    return { label: z.label, x, y, w: colX(z.cols[1]) + LAYOUT.w + 12 - x, h: rowY(z.rows[1]) + LAYOUT.h + 10 - y };
+    return { label: z.label, x, y, w: colX(z.cols[1]) + LAYOUT.w + 12 - x, h: rowY(z.rows[1]) + LAYOUT.h + 12 - y };
   });
 
   const ordered = nodes

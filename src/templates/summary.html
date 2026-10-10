@@ -424,7 +424,12 @@ __SBL_TOKENS_CSS__
     });
   }
 
-  /* Label re-scoring with measured widths; mirrors slotBox/badgeFor/scoreBox in summary-layout.ts */
+  /* Label re-scoring with measured widths; mirrors slotBox/badgeFor/scoreBox in summary-layout.ts.
+     The block between the sbl:badge-mirror markers is self-contained and drift-guarded by a unit test. */
+  /* sbl:badge-mirror:start */
+  var BADGE_R = 9.5, BADGE_END = 12, BADGE_GAP = 4, BADGE_STEP = 6;
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function hit(a, b) { return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0; }
   function slotBox(c, tw) {
     var px = c.px, py = c.py;
     if (c.side === 'above') return { x: px, y: py - 7, anchor: 'middle', box: { x0: px - tw / 2, y0: py - 20, x1: px + tw / 2, y1: py - 3 } };
@@ -432,21 +437,47 @@ __SBL_TOKENS_CSS__
     if (c.side === 'right') return { x: px + 8, y: py + 4.5, anchor: 'start', box: { x0: px + 4, y0: py - 10.5, x1: px + 8 + tw, y1: py + 10.5 } };
     return { x: px - 8, y: py + 4.5, anchor: 'end', box: { x0: px - 8 - tw, y0: py - 10.5, x1: px - 4, y1: py + 10.5 } };
   }
-  function badgeFor(sg, c, tw) {
-    var lo = sg.horizontal ? Math.min(sg.x1, sg.x2) : Math.min(sg.y1, sg.y2);
-    var hi = sg.horizontal ? Math.max(sg.x1, sg.x2) : Math.max(sg.y1, sg.y2);
-    if (sg.horizontal) {
-      var bx = c.px - tw / 2 - 14;
-      if (bx < lo + 12) bx = c.px + tw / 2 + 14;
-      if (bx > hi - 12) bx = c.px;
-      return { x: bx, y: c.py };
+  function badgeFor(sg, c, tw, labels) {
+    labels = labels || [];
+    var own = slotBox(c, tw).box;
+    var ux = Math.sign(sg.x2 - sg.x1), uy = Math.sign(sg.y2 - sg.y1);
+    var a0 = sg.horizontal ? (own.x0 - sg.x1) * ux : (own.y0 - sg.y1) * uy;
+    var a1 = sg.horizontal ? (own.x1 - sg.x1) * ux : (own.y1 - sg.y1) * uy;
+    var near = Math.min(a0, a1), far = Math.max(a0, a1);
+    var lo = BADGE_END, hi = sg.length - BADGE_END;
+    if (lo > hi) { lo = sg.length / 2; hi = lo; }
+    var along = [];
+    function add(d) {
+      var v = Math.min(hi, Math.max(lo, d));
+      if (along.indexOf(v) < 0) along.push(v);
     }
-    var by = c.py - 18;
-    if (by < lo + 12) by = c.py + 18;
-    if (by > hi - 12) by = c.py;
-    return { x: c.px, y: by };
+    add(near - BADGE_R - BADGE_GAP);
+    add(far + BADGE_R + BADGE_GAP);
+    for (var d = lo; d <= hi; d += BADGE_STEP) add(d);
+    var ox = 0, oy = 0;
+    if (c.side === 'above') oy = own.y1 + BADGE_R + 1 - c.py;
+    else if (c.side === 'below') oy = own.y0 - BADGE_R - 1 - c.py;
+    else if (c.side === 'right') ox = own.x0 - BADGE_R - 1 - c.px;
+    else ox = own.x1 + BADGE_R + 1 - c.px;
+    function at(dd, off) {
+      return { x: round2(sg.x1 + ux * dd + (off ? ox : 0)), y: round2(sg.y1 + uy * dd + (off ? oy : 0)) };
+    }
+    function free(p) {
+      var q = { x0: p.x - BADGE_R, y0: p.y - BADGE_R, x1: p.x + BADGE_R, y1: p.y + BADGE_R };
+      if (hit(q, own)) return false;
+      for (var k = 0; k < labels.length; k++) if (hit(q, labels[k])) return false;
+      return true;
+    }
+    var offs = [false, true];
+    for (var o = 0; o < offs.length; o++) {
+      for (var i = 0; i < along.length; i++) {
+        var p = at(along[i], offs[o]);
+        if (free(p)) return p;
+      }
+    }
+    return at(along[0], true);
   }
-  function hit(a, b) { return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0; }
+  /* sbl:badge-mirror:end */
   function segHit(sg, b) {
     return sg.horizontal
       ? sg.y1 >= b.y0 && sg.y1 <= b.y1 && Math.min(sg.x1, sg.x2) < b.x1 && Math.max(sg.x1, sg.x2) > b.x0
@@ -463,7 +494,7 @@ __SBL_TOKENS_CSS__
   function rescoreLabels() {
     var nodeBoxes = G.nodes.map(function (n) { return { x0: n.x - 1, y0: n.y - 1, x1: n.x + n.w + 1, y1: n.y + n.h + 1 }; });
     var segs = {}; G.edges.forEach(function (e) { segs[e.id] = segmentsOf(e.points); });
-    var placed = [];
+    var placed = [], done = [];
     var order = G.edges.slice().sort(function (a, b) { return b.segment.length - a.segment.length || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); });
     order.forEach(function (e) {
       var g = $('.edge[data-id="' + CSS.escape(e.id) + '"]', svg); if (!g) return;
@@ -482,8 +513,12 @@ __SBL_TOKENS_CSS__
       var chosen = slotBox(e.candidates[best], tw);
       placed.push(chosen.box);
       txt.setAttribute('x', chosen.x); txt.setAttribute('y', chosen.y); txt.setAttribute('text-anchor', chosen.anchor);
-      var bp = badgeFor(e.segment, e.candidates[best], tw);
-      var c = $('.step circle', g), bt = $('.step text', g);
+      done.push({ e: e, g: g, slot: e.candidates[best], tw: tw });
+    });
+    // badges only once every label sits at its final place, like the server
+    done.forEach(function (d) {
+      var bp = badgeFor(d.e.segment, d.slot, d.tw, placed);
+      var c = $('.step circle', d.g), bt = $('.step text', d.g);
       c.setAttribute('cx', bp.x); c.setAttribute('cy', bp.y); bt.setAttribute('x', bp.x); bt.setAttribute('y', bp.y + 4);
     });
   }
