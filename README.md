@@ -41,7 +41,7 @@ That's it. Everything else below is detail.
 | `sbl dashboard` | Live Project Dashboard on `http://localhost:6428` (alias: `sbl db`). |
 | `sbl phase TASK-1` | Show where a task stands: `phase/spec → plan → impl → verify`. |
 | `sbl phase TASK-1 plan` | Advance the phase after its gate is passed (`done` clears the label). |
-| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, and phase-label hygiene. |
+| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, `architecture.yml` and the `critical-areas.md` project profile. |
 | `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it (`--check` for CI). |
 | `sbl update` | Self-update the CLI, then refresh every injected file. |
 | `sbl models enable` | Optional model router: cheap models for simple agents, your main model for hard work. |
@@ -63,7 +63,7 @@ Tasks carry their pipeline phase as a label (`phase/spec → plan → impl → v
 | --- | --- |
 | `backlog/` | Your Backlog.md data (created by `backlog init --defaults`) |
 | `AGENTS.md` / `CLAUDE.md` | Workflow block with pipeline, gates, phase rules, and the model-routing rule for subagents |
-| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report`, `architecture-summary` |
+| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report`, `architecture-summary`, `project-profile` |
 | `opencode.json` | Superpowers plugin entry |
 | `package.json` scripts | `tasks`, `board`, `browser`, `dashboard` |
 | `.git/hooks/pre-commit` | Integrity guard — opt-in via `--guard` |
@@ -89,7 +89,7 @@ Next to the dashboard, every project gets a summary page with an architecture di
 
 ## Model router (opt-in)
 
-`sbl init --models` routes simple agents to cheaper tiers while keeping your main model for complex work. Toggle with `sbl models enable|disable`, inspect with `sbl models show`, discover tiers with `sbl models discover`. [Design doc](docs/superpowers/specs/2026-08-26-sbl-model-router-design.md).
+`sbl init --models` routes simple agents to cheaper tiers while keeping your main model for complex work. Toggle with `sbl models enable|disable`, inspect with `sbl models show`, discover tiers with `sbl models discover`. Independent of the block's always-on delegation rule, see [Harness support](https://adam-s-k-i.github.io/super-backlog/guide/harness-support).
 
 ## Uninstall guarantee
 

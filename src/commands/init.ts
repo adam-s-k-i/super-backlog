@@ -12,6 +12,7 @@ import {
 import { runPreflight, type PreflightDeps, type PreflightResult } from '../lib/preflight.js';
 import { runDoctor } from './doctor.js';
 import { ARCHITECTURE_PATH } from '../dashboard/summary-schema.js';
+import { CRITICAL_AREAS_PATH } from '../lib/critical-areas.js';
 import { KIT_VERSION } from '../lib/version.js';
 import { executeActions, InvalidJsonError, RefusalError, UpstreamError } from '../init/execute.js';
 import { planInit, type Action, type InitOptions, type InitState } from '../init/planner.js';
@@ -34,6 +35,10 @@ const INIT_PREFLIGHT_UNITS = ['node-version', 'execution-policy', 'npm-command']
 /** spec 2026-10-10: printed after a real init while the summary page has no curated file. */
 export const INIT_SUMMARY_HINT =
   'next step: ask your agent to run the architecture-summary skill (writes backlog/docs/architecture.yml for the summary page)';
+
+/** spec 2026-10-10: printed before the summary hint while the project has no critical-areas profile. */
+export const INIT_PROFILE_HINT =
+  'next step: ask your agent to run the project-profile skill (writes backlog/docs/critical-areas.md, the areas that always run on the top tier)';
 
 const HARNESS_VALUES = ['opencode', 'claude'] as const;
 type Harness = (typeof HARNESS_VALUES)[number];
@@ -194,6 +199,7 @@ export async function runInit(cwd: string, args: ParsedArgs, deps: InitDeps = {}
     if (unverified) {
       console.log('warning: post-install verification reported warnings (see doctor output above)');
     }
+    if (!existsSync(join(cwd, ...CRITICAL_AREAS_PATH.split('/')))) console.log(INIT_PROFILE_HINT);
     if (!existsSync(join(cwd, ...ARCHITECTURE_PATH.split('/')))) console.log(INIT_SUMMARY_HINT);
     return warnings.length > 0 || unverified ? 4 : 0;
   } catch (err) {

@@ -62,7 +62,7 @@ function ageGlue(dir: string): void {
   );
   const agentsPath = join(dir, 'AGENTS.md');
   const aged = readFileSync(agentsPath, 'utf8')
-    .replace(/### Model routing for subagents[\s\S]*?(?=Project-specific human gates)/, '')
+    .replace(/### Model tiers and delegation[\s\S]*?(?=Project-specific human gates)/, '')
     .replace(/^6\. Delegate by tier.*\r?\n/m, '');
   writeFileSync(agentsPath, aged);
 }
@@ -114,18 +114,18 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
   it('refreshes a stale CLAUDE.md pointer and AGENTS.md block, then stays stable', () => {
     freshScaffold();
     ageGlue(dir);
-    expect(readFileSync(join(dir, 'AGENTS.md'), 'utf8')).not.toContain('Model routing for subagents');
+    expect(readFileSync(join(dir, 'AGENTS.md'), 'utf8')).not.toContain('Model tiers and delegation');
 
     expect(runUpdate(dir).status).toBe(4);
 
     const claude = readFileSync(join(dir, 'CLAUDE.md'), 'utf8');
-    expect(claude).toContain('"Model routing for subagents"');
+    expect(claude).toContain('"Model tiers and delegation"');
     expect(claude).toContain('keep me above');
     expect(claude).toContain('## Local rules');
     expect(claude).toContain('keep me below');
     expect(claude.match(/^## Workflow system \(managed by super-backlog\)/gm)).toHaveLength(1);
     const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
-    expect(agents).toContain('### Model routing for subagents');
+    expect(agents).toContain('### Model tiers and delegation');
     expect(agents).toMatch(/^6\. Delegate by tier/m);
 
     // second run: nothing left to change
@@ -164,8 +164,8 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
 
     const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');
     const claude = readFileSync(join(dir, 'CLAUDE.md'), 'utf8');
-    expect(agents).toContain('### Model routing for subagents');
-    expect(claude).toContain('"Model routing for subagents"');
+    expect(agents).toContain('### Model tiers and delegation');
+    expect(claude).toContain('"Model tiers and delegation"');
     expect(agents).not.toMatch(/(?<!\r)\n/);
     expect(claude).not.toMatch(/(?<!\r)\n/);
 

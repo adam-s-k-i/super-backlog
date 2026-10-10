@@ -1,6 +1,6 @@
 // test/e2e/version-check.e2e.test.ts
 import { spawnSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
@@ -19,8 +19,11 @@ interface ChildResult {
 }
 
 const dirs: string[] = [];
-afterEach(() => {
-  for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
+// Background mode deliberately leaves the fake npm (cmd.exe -> node) starting up
+// after the child exits; on Windows its open files block an immediate delete
+// (EBUSY/EPERM). Only the async rm retries those: Node's native rmSync gives up.
+afterEach(async () => {
+  for (const d of dirs.splice(0)) await rm(d, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 });
 
 function runChild(body: string, delayMs: number): ChildResult {

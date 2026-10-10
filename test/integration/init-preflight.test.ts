@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { INIT_SUMMARY_HINT, runInit, type ParsedArgs } from '../../src/commands/init.js';
+import { INIT_PROFILE_HINT, INIT_SUMMARY_HINT, runInit, type ParsedArgs } from '../../src/commands/init.js';
 import type { PreflightDeps, PreflightResult, UnitReport } from '../../src/lib/preflight.js';
 
 function args(values: Record<string, unknown> = {}): ParsedArgs {
@@ -189,24 +189,48 @@ describe('sbl init preflight integration', () => {
     }
   });
 
-  it('ends with the architecture-summary hint while architecture.yml is missing', async () => {
+  it('ends with the profile hint then the summary hint while both files are missing', async () => {
     const cwd = tempCwd('hint');
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
       await runInit(cwd, args(), { preflight: () => okResult(), doctor: () => 0 });
+      expect(INIT_PROFILE_HINT).toBe(
+        'next step: ask your agent to run the project-profile skill (writes backlog/docs/critical-areas.md, the areas that always run on the top tier)',
+      );
       expect(INIT_SUMMARY_HINT).toBe(
         'next step: ask your agent to run the architecture-summary skill (writes backlog/docs/architecture.yml for the summary page)',
       );
       const lines = spy.mock.calls.map((c) => String(c[0]));
-      expect(lines[lines.length - 1]).toBe(INIT_SUMMARY_HINT);
-      expect(lines.findIndex((l) => l.startsWith('super-backlog init complete'))).toBeLessThan(lines.indexOf(INIT_SUMMARY_HINT));
+      expect(lines.slice(-2)).toEqual([INIT_PROFILE_HINT, INIT_SUMMARY_HINT]);
+      expect(lines.findIndex((l) => l.startsWith('super-backlog init complete'))).toBeLessThan(lines.indexOf(INIT_PROFILE_HINT));
     } finally {
       spy.mockRestore();
       rmSync(cwd, { recursive: true, force: true });
     }
   });
 
-  it('prints no hint when architecture.yml exists', async () => {
+  it('prints no profile hint when critical-areas.md exists', async () => {
+    const cwd = tempCwd('hint-profile-present');
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await runInit(cwd, args(), {
+        preflight: () => okResult(),
+        doctor: (c) => {
+          mkdirSync(join(c, 'backlog', 'docs'), { recursive: true });
+          writeFileSync(join(c, 'backlog', 'docs', 'critical-areas.md'), '# Critical areas\n\nStatus: today\n');
+          return 0;
+        },
+      });
+      const lines = spy.mock.calls.map((c) => String(c[0]));
+      expect(lines).not.toContain(INIT_PROFILE_HINT);
+      expect(lines).toContain(INIT_SUMMARY_HINT);
+    } finally {
+      spy.mockRestore();
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('prints no summary hint when architecture.yml exists', async () => {
     const cwd = tempCwd('hint-present');
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
@@ -232,6 +256,7 @@ describe('sbl init preflight integration', () => {
     try {
       await runInit(cwd, args({ 'dry-run': true }), { preflight: () => okResult(), doctor: () => 0 });
       expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_SUMMARY_HINT);
+      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_PROFILE_HINT);
     } finally {
       spy.mockRestore();
       rmSync(cwd, { recursive: true, force: true });
