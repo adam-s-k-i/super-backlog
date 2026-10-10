@@ -43,10 +43,23 @@ notice that explains how to add the file.
 
 ## Create the architecture file
 
-Write `backlog/docs/architecture.yml` by hand, starting from the minimal file
-under [File format](#file-format). Keep `sbl dashboard` open while you edit: the
-page reloads on every save, and an invalid file shows a notice with every
-problem and its path in place of the diagram.
+Let your agent write it. `sbl init` and `sbl update` install the
+`architecture-summary` skill for Claude Code and OpenCode. Ask for "an
+architecture summary of this project"; the skill reads manifests, layout and
+tests, writes `backlog/docs/architecture.yml`, runs `sbl doctor` until the file
+is clean and stops for your review.
+
+To check the file yourself:
+
+```bash
+sbl doctor
+```
+
+Check 5 validates `backlog/docs/architecture.yml`. It is skipped when the file
+does not exist, fails with every problem and its path when the file is invalid,
+and warns when the file is valid but the diagram cannot be drawn cleanly
+(an edge without a straight or single-corner route, an overlapping label, or a
+crossing).
 
 ## File format
 

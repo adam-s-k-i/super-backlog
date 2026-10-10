@@ -1,6 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
 import { runDoctor, type DoctorDeps } from '../../src/commands/doctor.js';
+import { layoutArchitecture } from '../../src/dashboard/summary-layout.js';
+import { checkArchitectureText } from '../../src/dashboard/summary-schema.js';
+
+const ARCH_OK = [
+  'schema: 1',
+  'pitch: A **small** demo.',
+  'grid: { cols: 3, rows: 2 }',
+  'nodes:',
+  '  - { id: a, label: Alpha, kind: core, cell: [0, 0] }',
+  '  - { id: b, label: Beta, kind: output, cell: [2, 0] }',
+  '  - { id: c, label: Gamma, kind: external, cell: [2, 1] }',
+  'edges:',
+  '  - { from: a, to: b, label: calls }',
+  '  - { from: b, to: c, label: writes }',
+  '',
+].join('\n');
 
 interface DepsWithLines extends DoctorDeps {
   lines: string[];
@@ -15,6 +31,7 @@ function makeDeps(overrides: Partial<DepsWithLines> = {}): DepsWithLines {
     executor: () => ({ status: 0, stdout: 'RemoteSigned', stderr: '' }),
     resolveBacklog: () => 'C:\\proj\\node_modules\\.bin\\backlog.cmd',
     readTaskLabels: () => [],
+    loadArchitecture: () => checkArchitectureText(ARCH_OK, 'architecture.yml'),
     log: (line: string) => lines.push(line),
     ...overrides,
   };
@@ -143,5 +160,52 @@ describe('check 4: phase label hygiene', () => {
     const d = phaseDeps(null);
     expect(runDoctor('/proj', d)).toBe(0);
     expect(d.lines.some((l) => l.includes('[skip]') && l.includes('phase label hygiene'))).toBe(true);
+  });
+});
+
+describe('check 5: architecture.yml', () => {
+  it('passes on a clean file and reports its size', () => {
+    const d = makeDeps();
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines.some((l) => l.includes('[ok]') && l.includes('backlog/docs/architecture.yml valid (3 nodes, 2 edges, layout clean)'))).toBe(true);
+  });
+
+  it('is skipped when the file is absent', () => {
+    const d = makeDeps({ loadArchitecture: () => ({ status: 'missing', path: '/proj/backlog/docs/architecture.yml' }) });
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines.some((l) => l.includes('[skip]') && l.includes('backlog/docs/architecture.yml not present'))).toBe(true);
+  });
+
+  it('fails and lists every problem with its path', () => {
+    const broken = ARCH_OK.replace('kind: output', 'kind: robot').replace('cell: [2, 1]', 'cell: [9, 9]');
+    const d = makeDeps({ loadArchitecture: () => checkArchitectureText(broken, 'architecture.yml') });
+    expect(runDoctor('/proj', d)).toBe(1);
+    const out = d.lines.join('\n');
+    expect(d.lines.some((l) => l.includes('[fail]') && l.includes('backlog/docs/architecture.yml: 2 error(s)'))).toBe(true);
+    expect(out).toContain('error: nodes[1].kind:');
+    expect(out).toContain('error: nodes[2].cell:');
+    expect(out).toContain('fix: edit the file or run the architecture-summary skill');
+  });
+
+  it('reports a parse error with line and column', () => {
+    const d = makeDeps({ loadArchitecture: () => checkArchitectureText('schema: 1\n\tpitch: x\n', 'architecture.yml') });
+    expect(runDoctor('/proj', d)).toBe(1);
+    expect(d.lines.join('\n')).toMatch(/error: line 2, column 1: /);
+  });
+
+  it('warns on schema warnings and layout warnings', () => {
+    const withUnknownKey = `${ARCH_OK}colour: red\n`;
+    const d = makeDeps({
+      loadArchitecture: () => checkArchitectureText(withUnknownKey, 'architecture.yml'),
+      layoutArchitecture: (input) => ({
+        ...layoutArchitecture(input),
+        warnings: [{ code: 'route-fallback', edge: 'a>b', message: 'no straight or single-corner route from a to b; move one of the cells' }],
+      }),
+    });
+    expect(runDoctor('/proj', d)).toBe(4);
+    const out = d.lines.join('\n');
+    expect(d.lines.some((l) => l.includes('[warn]') && l.includes('valid with 2 warning(s)'))).toBe(true);
+    expect(out).toContain('warning: colour:');
+    expect(out).toContain('layout route-fallback a>b: no straight or single-corner route from a to b');
   });
 });

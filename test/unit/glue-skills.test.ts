@@ -63,13 +63,38 @@ describe('installed backlog-status-report skills', () => {
 });
 
 describe('all glue skills exist', () => {
-  it('spec-to-backlog plus the two new skills are present', () => {
+  it('all four glue skill templates are present', () => {
     for (const f of [
       'skill-spec-to-backlog.md',
       'skill-backlog-status-report.md',
       'skill-task-review-gate.md',
+      'skill-architecture-summary.md',
     ]) {
       expect(existsSync(join(tplDir, f))).toBe(true);
     }
+  });
+});
+
+describe('skill-architecture-summary.md', () => {
+  const t = read('skill-architecture-summary.md');
+  it('has frontmatter with name and description', () => {
+    expect(t.startsWith('---')).toBe(true);
+    expect(t).toMatch(/^name: architecture-summary$/m);
+    expect(t).toMatch(/^description: .+/m);
+  });
+  it('writes the curated file and loops on sbl doctor until check 5 is clean', () => {
+    expect(t).toContain('backlog/docs/architecture.yml');
+    expect(t).toContain('sbl doctor');
+    expect(t).toMatch(/run `sbl doctor` again until check 5/i);
+  });
+  it('keeps curated prose and stops for review', () => {
+    expect(t).toMatch(/keep curated prose/i);
+    expect(t).toMatch(/STOP/);
+  });
+  it('never invents files or commands', () => {
+    expect(t).toMatch(/never invent files, commands/i);
+  });
+  it('links the schema reference', () => {
+    expect(t).toContain('https://adam-s-k-i.github.io/super-backlog/guide/project-summary');
   });
 });

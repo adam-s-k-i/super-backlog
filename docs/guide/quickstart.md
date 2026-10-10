@@ -55,7 +55,7 @@ Every initialized project also gets a binding model-routing rule in its `AGENTS.
 | `sbl phase TASK-1` | Show where the task stands in the pipeline (`phase/spec` → `plan` → `impl` → `verify`). |
 | `sbl phase TASK-1 plan` | Advance the phase after the gate is passed (`done` clears the label). |
 | `sbl update` | First self-updates a globally installed CLI to the latest npm version and re-runs itself (opt out with `--no-self` or `SBL_SKIP_UPDATE_CHECK`), then refreshes all injected files and prints harness/plugin versions. |
-| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, and phase-label hygiene. |
+| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, and the summary page's `architecture.yml`. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
 | `sbl uninstall --with-backlog` | Remove everything, including task data. |
 

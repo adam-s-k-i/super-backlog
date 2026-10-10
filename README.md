@@ -62,7 +62,7 @@ Tasks carry their pipeline phase as a label (`phase/spec → plan → impl → v
 | --- | --- |
 | `backlog/` | Your Backlog.md data (created by `backlog init --defaults`) |
 | `AGENTS.md` / `CLAUDE.md` | Workflow block with pipeline, gates, phase rules, and the model-routing rule for subagents |
-| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report` |
+| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report`, `architecture-summary` |
 | `opencode.json` | Superpowers plugin entry |
 | `package.json` scripts | `tasks`, `board`, `browser`, `dashboard` |
 | `.git/hooks/pre-commit` | Integrity guard — opt-in via `--guard` |

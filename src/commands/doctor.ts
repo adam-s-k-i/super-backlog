@@ -1,6 +1,8 @@
 // src/commands/doctor.ts
 import process from 'node:process';
 
+import { ARCHITECTURE_PATH, loadArchitecture, type ArchitectureLoadResult } from '../dashboard/summary-schema.js';
+import { layoutArchitecture } from '../dashboard/summary-layout.js';
 import { extractPhaseLabels, PHASES } from '../lib/phase.js';
 import {
   getEffectiveExecutionPolicy,
@@ -21,6 +23,10 @@ export interface DoctorDeps {
   executor?: Executor;
   resolveBacklog?: (cwd: string) => string | null;
   readTaskLabels?: (cwd: string) => TaskLabelRow[] | null;
+  /** Seam for check 5; defaults to reading backlog/docs/architecture.yml. */
+  loadArchitecture?: (cwd: string) => ArchitectureLoadResult;
+  /** Seam for check 5; defaults to the summary page's layout engine. */
+  layoutArchitecture?: typeof layoutArchitecture;
   log?: (line: string) => void;
 }
 
@@ -157,6 +163,28 @@ export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
     if (problems === 0 && legacy === 0) {
       emit('ok', `phase label hygiene clean (${taskRows.length} tasks)`);
     }
+  }
+
+  // check 5: curated architecture file of the summary page. Task ids are not
+  // passed: mappings to archived tasks are expected drift, not a doctor warning.
+  const arch = (deps.loadArchitecture ?? ((c: string) => loadArchitecture(c)))(cwd);
+  if (arch.status === 'missing') {
+    emit('skip', `${ARCHITECTURE_PATH} not present (summary page shows the reduced view)`);
+  } else if (arch.status === 'invalid') {
+    const errors = arch.problems.filter((p) => p.level === 'error').length;
+    emit('fail', `${ARCHITECTURE_PATH}: ${errors} error(s)`, [
+      ...arch.problems.map((p) => `${p.level}: ${p.path}: ${p.message}`),
+      'fix: edit the file or run the architecture-summary skill, then sbl doctor again',
+    ]);
+  } else {
+    const layout = (deps.layoutArchitecture ?? layoutArchitecture)(arch.architecture);
+    const warnings = [
+      ...arch.problems.map((p) => `warning: ${p.path}: ${p.message}`),
+      ...layout.warnings.map((w) => `layout ${w.code} ${w.edge}: ${w.message}`),
+    ];
+    const size = `${arch.architecture.nodes.length} nodes, ${arch.architecture.edges.length} edges`;
+    if (warnings.length === 0) emit('ok', `${ARCHITECTURE_PATH} valid (${size}, layout clean)`);
+    else emit('warn', `${ARCHITECTURE_PATH} valid with ${warnings.length} warning(s) (${size})`, warnings);
   }
 
   log(`doctor summary: ${okCount} ok, ${warnCount} warn, ${skipCount} skip, ${failCount} fail`);
