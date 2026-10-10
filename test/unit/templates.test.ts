@@ -32,24 +32,38 @@ describe('workflow-block.md', () => {
     expect(t).toContain('sbl phase');
     expect(t).toMatch(/only via `sbl phase <id> <phase>`/);
   });
-  it('carries the harness-neutral model routing rule', () => {
-    expect(t).toContain('### Model routing for subagents');
-    expect(t).toMatch(/regardless of which model the current session runs on/);
-    for (const tier of ['**Light**', '**Standard**', '**Top**']) {
+  it('carries the four-tier delegation rule', () => {
+    expect(t).toContain('### Model tiers and delegation');
+    expect(t).not.toContain('Model routing for subagents');
+    expect(t).toMatch(/regardless of the session model/);
+    for (const tier of ['**Light**', '**Standard**', '**Strong**', '**Top**']) {
       expect(t).toContain(tier);
     }
+    expect(t).toMatch(/When unsure between two tiers, take the higher one\./);
     expect(t).toMatch(/Set the model explicitly on every dispatch/);
-    expect(t).toMatch(/^6\. Delegate by tier/m);
-    expect(t).toContain('Claude Code:');
+    expect(t).toMatch(/Delegate only when it pays off/);
+    expect(t).toMatch(/do not retry on the same tier/);
+    expect(t).toMatch(/"Independent\s+check"/);
+    expect(t).toContain('`backlog/docs/critical-areas.md`');
+    expect(t).toContain('6. Delegate by tier — every subtask goes to the cheapest model that solves it reliably (see "Model tiers and delegation" below).');
+    expect(t).toContain('- Claude Code: the Agent tool\'s `model` parameter — light `haiku`, standard');
+    expect(t).toContain('`sonnet`, strong `opus`, top = the strongest available model (e.g. Fable).');
     expect(t).toContain('OpenCode:');
     expect(t).toContain('Other harnesses:');
+  });
+  it('binds rule 8: respect the project profile, only with consent', () => {
+    expect(t).toContain(
+      '8. Respect the project profile — read `backlog/docs/critical-areas.md` at session start; its entries override the tier rule. If the file is missing, offer once, before the first non-trivial task, to run the project-profile skill. Never run it without the user\'s consent.',
+    );
+    expect(t.indexOf('8. Respect the project profile')).toBeGreaterThan(t.indexOf('7. Keep the project summary current'));
+    expect(t.indexOf('8. Respect the project profile')).toBeLessThan(t.indexOf('### Model tiers and delegation'));
   });
   it('binds rule 7: keep the project summary current, only with consent', () => {
     expect(t).toContain(
       '7. Keep the project summary current — at session start, if `backlog/docs/architecture.yml` is missing, offer once to run the architecture-summary skill. At the end of the pipeline, after a merge, run `sbl summary --check`; if it reports drift, offer a refresh. Never run the skill without the user\'s consent.',
     );
     expect(t.indexOf('7. Keep the project summary current')).toBeGreaterThan(t.indexOf('6. Delegate by tier'));
-    expect(t.indexOf('7. Keep the project summary current')).toBeLessThan(t.indexOf('### Model routing for subagents'));
+    expect(t.indexOf('7. Keep the project summary current')).toBeLessThan(t.indexOf('8. Respect the project profile'));
   });
   it('keeps the project-gates note as the closing line', () => {
     expect(t.trimEnd().endsWith('Add project-specific human gates below the block.')).toBe(true);
@@ -83,8 +97,9 @@ describe('claude-pointer.md', () => {
   it('points at the AGENTS.md block', () => {
     expect(p).toMatch(/AGENTS\.md/);
   });
-  it('points at the model routing section and the explicit model parameter', () => {
-    expect(p).toContain('"Model routing for subagents"');
+  it('points at the delegation section, the profile and the explicit model parameter', () => {
+    expect(p).toContain('"Model tiers and delegation"');
+    expect(p).toContain('`backlog/docs/critical-areas.md`');
     expect(p).toContain("Agent tool's `model` explicitly");
   });
   it('is a single section (refresh ends the section at the next heading)', () => {
