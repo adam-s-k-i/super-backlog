@@ -3,7 +3,7 @@ name: spec-to-backlog
 description: Convert an approved design/implementation plan (from brainstorming/writing-plans) into reviewed Backlog.md tasks with acceptance criteria, milestones and dependencies. Use after a design is approved, when the user asks to decompose work into tasks, or before starting planned work in this project.
 ---
 
-<!-- managed-by: super-backlog 1.5.0 -->
+<!-- managed-by: super-backlog 1.6.0 -->
 # Spec → Backlog: turn plan units into tracked tasks
 
 Bridge between Superpowers (brainstorming, writing-plans) and Backlog.md.

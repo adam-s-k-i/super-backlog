@@ -161,7 +161,7 @@ function applyClaudePointer(cwd: string): boolean {
   return true;
 }
 
-const GLUE_SKILLS = ['spec-to-backlog', 'backlog-status-report', 'task-review-gate'] as const;
+const GLUE_SKILLS = ['spec-to-backlog', 'backlog-status-report', 'task-review-gate', 'architecture-summary'] as const;
 
 function applyCopySkills(cwd: string, version: string): boolean {
   for (const skill of GLUE_SKILLS) {

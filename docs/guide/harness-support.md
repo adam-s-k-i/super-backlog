@@ -9,7 +9,7 @@ super-backlog v1 supports two agent harnesses (design decision D1): **OpenCode**
 ## OpenCode — native
 
 - `opencode.json` gets a merged plugin entry: `"plugin": ["superpowers@git+https://github.com/obra/superpowers.git"]`. Existing keys and other plugin entries are untouched; the entry is only added if the exact kit spec string is absent.
-- The glue skills (spec-to-backlog, backlog-status-report, task-review-gate) are installed as files at `.opencode/skill/<skill>/SKILL.md`.
+- The glue skills (spec-to-backlog, backlog-status-report, task-review-gate, architecture-summary) are installed as files at `.opencode/skill/<skill>/SKILL.md`.
 
 ## Claude Code — file-based skills + marketplace
 

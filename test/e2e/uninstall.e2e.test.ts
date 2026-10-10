@@ -49,6 +49,8 @@ describe('sbl uninstall (SBL_SKIP_INSTALL)', () => {
 
     expect(existsSync(join(dir, '.opencode', 'skill', 'spec-to-backlog'))).toBe(false);
     expect(existsSync(join(dir, '.claude', 'skills', 'spec-to-backlog'))).toBe(false);
+    expect(existsSync(join(dir, '.opencode', 'skill', 'architecture-summary'))).toBe(false);
+    expect(existsSync(join(dir, '.claude', 'skills', 'architecture-summary'))).toBe(false);
     expect(existsSync(join(dir, '.claude', 'skills', 'foreign', 'SKILL.md'))).toBe(true);
 
     const after = JSON.parse(readFileSync(pkgPath, 'utf8')) as {

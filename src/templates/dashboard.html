@@ -9,74 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-  :root {
-    --bg:#0a0e16;
-    --bg-glow-1: rgba(92,200,255,.06);
-    --bg-glow-2: rgba(62,207,142,.04);
-    --surface:#111826;
-    --surface-2:#0d1320;
-    --line:#1e293c;
-    --line-strong:#2c3b57;
-    --text:#e8edf6;
-    --muted:#8fa0ba;
-    --dim:#72839f;
-    --accent:#5cc8ff;
-    --accent-dim:#234257;
-    --ok:#3ecf8e;
-    --ok-bg:#12291e;
-    --warn:#ffb454;
-    --warn-bg:#33260f;
-    --danger:#ff7a7a;
-    --danger-bg:#331718;
-    --sans:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
-    --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
-    --ok-line:#2b5642;
-    --accent-bg:#10202e;
-    --accent-line:#274a63;
-    --warn-line:#5c4520;
-    --danger-line:#5c2c2c;
-    --backdrop:rgba(4,7,12,.65);
-    --tip-bg:rgba(13,19,32,.97);
-    --shadow-dialog:0 24px 80px rgba(0,0,0,.55);
-    --shadow-tip:0 10px 28px rgba(0,0,0,.5);
-    --glow-accent:rgba(92,200,255,.6);
-    --glow-warn:rgba(255,180,84,.25);
-    --glow-warn-soft:rgba(255,180,84,.3);
-    --focus-ring:rgba(92,200,255,.15);
-  }
-  :root[data-theme="light"] {
-    --bg:#f3f6fb;
-    --bg-glow-1: rgba(11,116,181,.05);
-    --bg-glow-2: rgba(23,122,78,.04);
-    --surface:#ffffff;
-    --surface-2:#e9eef7;
-    --line:#d7dfeb;
-    --line-strong:#b6c3d8;
-    --text:#17202f;
-    --muted:#4c5d77;
-    --dim:#5a6881;
-    --accent:#0a6ca8;
-    --accent-dim:#bcdcf0;
-    --ok:#16764b;
-    --ok-bg:#dff3e8;
-    --warn:#8a5a00;
-    --warn-bg:#fbecd2;
-    --danger:#b83a3a;
-    --danger-bg:#fbe3e3;
-    --ok-line:#9fd4b8;
-    --accent-bg:#e2f0f9;
-    --accent-line:#a8cfe6;
-    --warn-line:#e3c68e;
-    --danger-line:#eab5b5;
-    --backdrop:rgba(23,32,47,.45);
-    --tip-bg:rgba(255,255,255,.98);
-    --shadow-dialog:0 24px 80px rgba(23,32,47,.25);
-    --shadow-tip:0 10px 28px rgba(23,32,47,.18);
-    --glow-accent:rgba(11,116,181,.35);
-    --glow-warn:rgba(138,90,0,.2);
-    --glow-warn-soft:rgba(138,90,0,.25);
-    --focus-ring:rgba(11,116,181,.18);
-  }
+__SBL_TOKENS_CSS__
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }
   body {
@@ -121,6 +54,10 @@
   }
   nav a:hover { color: var(--text); background: var(--surface); border-color: var(--line); }
   nav a .n { color: var(--accent); font-family: var(--mono); font-size: .78rem; margin-right: 8px; }
+  nav.page-tabs { display: flex; gap: 4px; margin: 2px 0 14px; }
+  nav.page-tabs[hidden] { display: none; }
+  nav.page-tabs a { padding: 4px 10px; font-size: .82rem; min-height: 24px; }
+  nav.page-tabs a[aria-current="page"] { color: var(--text); background: var(--surface-3); border-color: var(--line); }
   .legend { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
   .legend h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 10px; }
   .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -517,6 +454,11 @@
   <div class="brand"><span class="brand-glyph">●</span><b>__PROJECT_NAME__</b>
     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch color theme">◐</button>
   </div>
+  <nav class="page-tabs" id="page-tabs" aria-label="Project pages" hidden>
+    <a href="./" aria-current="page">Dashboard</a>
+    <a href="summary/">Summary</a>
+  </nav>
+  <script>if (/^\/p\/[^/]+\/(index\.html)?$/.test(location.pathname)) document.getElementById('page-tabs').hidden = false;</script>
   <div class="kicker">SUPERPOWERS × BACKLOG.MD</div>
   <div class="side-version" id="side-version"><span>v__KIT_VERSION__</span></div>
   <nav aria-label="Dashboard sections">

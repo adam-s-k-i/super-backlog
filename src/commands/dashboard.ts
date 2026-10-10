@@ -7,6 +7,7 @@ import process from 'node:process';
 import { collectDashboardData } from '../dashboard/data.js';
 import { startHubServer, type HubHandle } from '../dashboard/hub.js';
 import { renderDashboard } from '../dashboard/render.js';
+import { writeSummaryPage } from '../dashboard/summary-render.js';
 import { DASHBOARD_PORT } from '../dashboard/server.js';
 import { atomicWrite } from '../lib/atomic.js';
 import { defaultBuildFingerprint } from '../lib/build-fingerprint.js';
@@ -34,6 +35,7 @@ const STOP_POLL_INTERVAL_MS = 100;
 async function regenerateInto(outPath: string, cwd: string): Promise<void> {
   const data = collectDashboardData(cwd, { kitVersion: KIT_VERSION });
   atomicWrite(outPath, renderDashboard(data));
+  writeSummaryPage(cwd, data, outPath);
 }
 
 function defaultOpenBrowser(url: string): void {

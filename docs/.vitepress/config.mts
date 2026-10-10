@@ -23,6 +23,7 @@ export default defineConfig({
           { text: 'Quick start', link: '/guide/quickstart' },
           { text: 'Architecture', link: '/guide/architecture' },
           { text: 'Pipeline phases', link: '/guide/pipeline-phases' },
+          { text: 'Project summary', link: '/guide/project-summary' },
           { text: 'Harness support', link: '/guide/harness-support' },
           { text: 'Guard hook', link: '/guide/guard' },
           { text: 'Operations', link: '/guide/operations' },

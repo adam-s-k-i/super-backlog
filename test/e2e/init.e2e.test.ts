@@ -56,6 +56,8 @@ describe('sbl init (SBL_SKIP_INSTALL)', () => {
     expect(agents).toMatch(/SUPER-BACKLOG:\d+\.\d+\.\d+ START/);
     expect(existsSync(join(dir, '.opencode', 'skill', 'spec-to-backlog', 'SKILL.md'))).toBe(true);
     expect(existsSync(join(dir, '.claude', 'skills', 'spec-to-backlog', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(dir, '.opencode', 'skill', 'architecture-summary', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(dir, '.claude', 'skills', 'architecture-summary', 'SKILL.md'))).toBe(true);
     const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
     expect(pkg.scripts.board).toBe('backlog board');
     expect(pkg.devDependencies['backlog.md']).toBe('latest');

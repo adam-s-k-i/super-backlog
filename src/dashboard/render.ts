@@ -26,17 +26,18 @@ export const PIPELINE_PHASES: readonly PipelinePhase[] = [
   { n: 9, name: 'Merge & archive', gate: 'Merge the branch, then close/archive the task via the backlog CLI', command: 'backlog task archive <id>' },
 ];
 
-function readTemplate(): string {
+/** Reads a file from src/templates (dev) or dist/templates (runtime). */
+export function readTemplate(name = 'dashboard.html'): string {
   const here = dirname(fileURLToPath(import.meta.url)); // src/dashboard at dev time, dist/dashboard at runtime
   const candidates = [
-    join(here, '..', 'templates', 'dashboard.html'),
-    join(here, 'templates', 'dashboard.html'),
+    join(here, '..', 'templates', name),
+    join(here, 'templates', name),
   ];
   for (const c of candidates) if (existsSync(c)) return readFileSync(c, 'utf8');
-  throw new Error('template not found: dashboard.html');
+  throw new Error(`template not found: ${name}`);
 }
 
-function esc(s: string): string {
+export function esc(s: string): string {
   return s.replace(/[&<>"']/g, (c) => {
     switch (c) {
       case '&': return '&amp;';
@@ -70,13 +71,14 @@ function statusPillsHtml(statuses: readonly DashboardStatusCount[]): string {
     .join('\n      ');
 }
 
-function jsonIsland(value: unknown): string {
+export function jsonIsland(value: unknown): string {
   return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
 /** Fill the static template shell with data; all dynamic task/metric content stays in the JSON islands. */
 export function renderDashboard(data: DashboardData): string {
   return readTemplate()
+    .replaceAll('__SBL_TOKENS_CSS__', () => readTemplate('sbl-tokens.css').replace(/\r\n/g, '\n').trimEnd())
     .replaceAll('__PROJECT_NAME__', () => esc(data.project.name))
     .replaceAll('__PROJECT_DESC__', () => esc(data.project.description))
     .replaceAll('__GENERATED_AT__', () => esc(data.generatedAt))

@@ -62,7 +62,7 @@ Tasks carry their pipeline phase as a label (`phase/spec → plan → impl → v
 | --- | --- |
 | `backlog/` | Your Backlog.md data (created by `backlog init --defaults`) |
 | `AGENTS.md` / `CLAUDE.md` | Workflow block with pipeline, gates, phase rules, and the model-routing rule for subagents |
-| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report` |
+| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report`, `architecture-summary` |
 | `opencode.json` | Superpowers plugin entry |
 | `package.json` scripts | `tasks`, `board`, `browser`, `dashboard` |
 | `.git/hooks/pre-commit` | Integrity guard — opt-in via `--guard` |
@@ -78,6 +78,8 @@ sbl dashboard
 A live cockpit rendered from your backlog data: status KPIs, milestones, phase pipeline with live counts, drafts, tasks table (sortable, filterable), 26-week activity heatmap, decisions & docs. Watches `backlog/`, reloads connected tabs automatically, runs on port `6428`.
 
 ![Project Dashboard](docs/assets/dashboard.png)
+
+Next to the dashboard, every project gets a summary page with an architecture diagram, tech stack, commands and open work: [docs/guide/project-summary.md](docs/guide/project-summary.md).
 
 ## Requirements
 
