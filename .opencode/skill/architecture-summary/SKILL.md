@@ -3,7 +3,7 @@ name: architecture-summary
 description: Create or refresh backlog/docs/architecture.yml, the curated source of the project summary page (architecture diagram, flows, highlights, tech stack, commands). Use when the user asks for a project summary, an architecture overview or diagram, or after structural changes to the codebase.
 ---
 
-<!-- managed-by: super-backlog 1.6.0 -->
+<!-- managed-by: super-backlog 1.7.0 -->
 # Architecture Summary: curate the project summary page
 
 Writes `backlog/docs/architecture.yml`. The dashboard hub renders it at
@@ -16,15 +16,20 @@ releases, CI, open work). Schema and YAML subset:
 - The user asks for a project summary, an architecture overview or a diagram.
 - The summary page shows "No architecture file yet".
 - After structural changes: new modules, removed components, renamed commands.
+- `sbl summary` reports drift.
 
 ## Procedure
 
 1. Read the facts first: manifests (`package.json`, `composer.json`, WordPress
    headers in `style.css` or the main plugin file), the top-level directory
    layout, the entry points, and the test layout.
-2. If `backlog/docs/architecture.yml` exists, read it. Keep curated prose
-   (`pitch`, `purpose`, `why`, highlight texts) unless the code contradicts it;
-   change only what is outdated or missing.
+2. If `backlog/docs/architecture.yml` exists, run `sbl summary` first and
+   read the file. Fix every finding it lists: remove or correct paths that no
+   longer exist (`missing-path`), prune `tasks` entries for Done or unknown
+   tasks (`done-task`, `unknown-task`), and refresh the nodes whose code
+   changed (`stale-file`). Keep curated prose (`pitch`, `purpose`, `why`,
+   highlight texts) unless the code contradicts it; change only what is
+   outdated or missing.
 3. Propose the content:
    - `pitch`: one or two sentences, `**bold**` is the only markup.
    - 6 to 14 `nodes` with `kind`, a short `label`, an optional `sub`,
@@ -47,7 +52,9 @@ releases, CI, open work). Schema and YAML subset:
    its path, plus the layout warnings (`route-fallback`, `label-collision`,
    `crossing`). Fix the file and run `sbl doctor` again until check 5 reports
    `[ok]`.
-7. Present the diff of `backlog/docs/architecture.yml` for review and STOP
+7. Run `sbl summary`. Finish when it exits 0, or 4 only for warnings the user
+   accepts; fix every drift finding it lists and run it again.
+8. Present the diff of `backlog/docs/architecture.yml` for review and STOP
    until the user approves the prose. Point to the live page:
    `sbl dashboard`, then the **Summary** tab.
 

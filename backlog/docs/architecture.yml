@@ -31,11 +31,12 @@ nodes:
     sub: bin.ts · commands/
     kind: core
     cell: [1, 2]
-    purpose: Parses arguments and dispatches seven commands (init, uninstall, update, dashboard, models, phase, doctor). Maps every outcome to an exit code and checks for a newer release.
+    purpose: Parses arguments and dispatches eight commands (init, uninstall, update, dashboard, models, phase, doctor, summary). Maps every outcome to an exit code and checks for a newer release.
     why: One global command for every project. Five exit codes keep CI and agents unambiguous.
-    files: [src/bin.ts, src/cli.ts, src/commands/, src/commands/doctor.ts, src/lib/preflight.ts]
+    files: [src/bin.ts, src/cli.ts, src/commands/, src/commands/doctor.ts, src/commands/summary.ts, src/lib/preflight.ts]
     commands:
       - { run: sbl doctor, note: check the environment }
+      - { run: sbl summary, note: check the summary for drift }
       - { run: sbl update, note: refresh kit-managed files }
   - id: planner
     label: Init planner
@@ -102,7 +103,7 @@ nodes:
     cell: [1, 5]
     purpose: Renders the project summary at /p/slug/summary/. It joins facts computed from manifests, git and the backlog with the curated backlog/docs/architecture.yml, and draws the diagram on a server-side layout.
     why: Computed facts never go stale, and the hand-written part stays small, checked and reviewable.
-    files: [src/dashboard/summary-facts.ts, src/dashboard/summary-schema.ts, src/dashboard/summary-layout.ts, src/dashboard/summary-render.ts, src/lib/yamlmini.ts, src/templates/summary.html, backlog/docs/architecture.yml]
+    files: [src/dashboard/summary-facts.ts, src/dashboard/summary-schema.ts, src/dashboard/summary-layout.ts, src/dashboard/summary-render.ts, src/dashboard/summary-drift.ts, src/lib/yamlmini.ts, src/templates/summary.html, backlog/docs/architecture.yml]
   - id: project
     label: Project files
     sub: AGENTS.md · skills
@@ -176,6 +177,7 @@ commands:
   Workflow:
     - { run: sbl phase TASK-1, note: show a task phase }
     - { run: sbl doctor, note: check the environment }
+    - { run: sbl summary, note: check the summary for drift }
   Development:
     - { run: npm test, note: build + Vitest }
     - { run: npm run lint, note: markdownlint + cspell }
