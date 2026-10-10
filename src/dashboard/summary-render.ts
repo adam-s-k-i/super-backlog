@@ -7,6 +7,14 @@ import type { DashboardData } from './data.js';
 import { isDone } from './metrics.js';
 import { esc, jsonIsland, readTemplate } from './render.js';
 import { collectSummaryFacts, type FactsDeps, type SummaryFacts } from './summary-facts.js';
+import {
+  detectDrift,
+  driftCount,
+  DRIFT_CODES,
+  summaryAgentPrompt,
+  type DriftCode,
+  type DriftDeps,
+} from './summary-drift.js';
 import { layoutArchitecture, type LayoutResult } from './summary-layout.js';
 import {
   ARCHITECTURE_PATH,
@@ -27,11 +35,21 @@ export interface SummaryModel {
   layout: LayoutResult | null;
   /** E3: message of the error that stopped the full render */
   renderError: string | null;
+  /** spec 2026-10-10: drift of a valid file for the banner; null when clean, not valid or not checkable */
+  drift: SummaryDrift | null;
+}
+
+export interface SummaryDrift {
+  count: number;
+  /** distinct finding codes in signal order */
+  codes: DriftCode[];
+  prompt: string;
 }
 
 export interface SummaryDeps extends FactsDeps {
   loadArchitecture?: typeof loadArchitecture;
   layoutArchitecture?: typeof layoutArchitecture;
+  detectDrift?: typeof detectDrift;
 }
 
 export interface SummaryFact {
@@ -124,7 +142,28 @@ export function buildSummaryModel(cwd: string, data: DashboardData, deps: Summar
   const facts = collectSummaryFacts(cwd, deps);
   const load = (deps.loadArchitecture ?? loadArchitecture)(cwd, { taskIds: data.tasks.map((t) => t.id) });
   const layout = load.status === 'valid' ? (deps.layoutArchitecture ?? layoutArchitecture)(load.architecture) : null;
-  return { facts, load, layout, renderError: null };
+  const drift = load.status === 'valid' ? summaryDrift(cwd, data, deps) : null;
+  return { facts, load, layout, renderError: null, drift };
+}
+
+/**
+ * Drift for the banner (spec 2026-10-10). Loads the file a second time without
+ * task ids, because the page load drops unknown ids and would hide unknown-task
+ * findings. Never throws: the banner is optional.
+ */
+function summaryDrift(cwd: string, data: DashboardData, deps: SummaryDeps): SummaryDrift | null {
+  try {
+    const raw = (deps.loadArchitecture ?? loadArchitecture)(cwd);
+    if (raw.status !== 'valid') return null;
+    const tasks = data.source === 'backlog-json' ? data.tasks.map((t) => ({ id: t.id, status: t.status })) : null;
+    const driftDeps: DriftDeps = deps.runCapture ? { runCapture: deps.runCapture } : {};
+    const { findings } = (deps.detectDrift ?? detectDrift)(cwd, raw.architecture, { tasks, deps: driftDeps });
+    if (findings.length === 0) return null;
+    const codes = DRIFT_CODES.filter((code) => findings.some((f) => f.code === code));
+    return { count: findings.length, codes, prompt: summaryAgentPrompt('drift') };
+  } catch {
+    return null;
+  }
 }
 
 function headerFacts(facts: SummaryFacts, openTasks: number): SummaryFact[] {
@@ -228,7 +267,27 @@ export function buildSummaryView(data: DashboardData, model: SummaryModel): Summ
   };
 }
 
-/** Server-rendered notice between header and canvas (D6, E2, E3); empty for a valid file. */
+const DRIFT_LABELS: Record<DriftCode, string> = {
+  'missing-path': 'missing paths',
+  'done-task': 'Done tasks',
+  'unknown-task': 'unknown tasks',
+  'stale-file': 'stale file',
+};
+
+/** Same icon as the client-side COPY_ICON in summary.html; the delegated click handler copies data-copy. */
+const COPY_ICON =
+  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' +
+  '<rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/>' +
+  '<path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>';
+
+function copyPromptButton(prompt: string): string {
+  return (
+    `<button class="copy" type="button" data-copy="${esc(prompt)}" ` +
+    `aria-label="Copy the prompt for your agent" title="Copy the prompt for your agent">${COPY_ICON}</button>`
+  );
+}
+
+/** Server-rendered notice between header and canvas (D6, E2, E3, drift banner); empty for a clean valid file. */
 export function noticeHtml(model: SummaryModel): string {
   if (model.renderError !== null) {
     return (
@@ -240,7 +299,8 @@ export function noticeHtml(model: SummaryModel): string {
   if (load.status === 'missing') {
     return (
       '<div class="notice"><p>No architecture file yet. Run the <code>architecture-summary</code> skill in your agent ' +
-      `or create <code>${ARCHITECTURE_PATH}</code> (schema: <a href="${SUMMARY_DOCS_URL}">docs</a>).</p></div>`
+      `or create <code>${ARCHITECTURE_PATH}</code> (schema: <a href="${SUMMARY_DOCS_URL}">docs</a>).` +
+      `${copyPromptButton(summaryAgentPrompt('missing'))}</p></div>`
     );
   }
   if (load.status === 'invalid') {
@@ -255,6 +315,11 @@ export function noticeHtml(model: SummaryModel): string {
       (more > 0 ? `<p>… and ${more} more</p>` : '') +
       '</div>'
     );
+  }
+  if (model.drift !== null) {
+    const { count, codes, prompt } = model.drift;
+    const text = `${driftCount(count)} (${codes.map((c) => DRIFT_LABELS[c]).join(', ')}) – the diagram may be out of date`;
+    return `<div class="notice notice-drift" role="status"><p>${esc(text)}${copyPromptButton(prompt)}</p></div>`;
   }
   return '';
 }
@@ -296,7 +361,13 @@ export function writeSummaryPage(cwd: string, data: DashboardData, dashboardFile
       } catch {
         facts = emptyFacts();
       }
-      html = renderSummary(data, { facts, load: { status: 'missing', path: ARCHITECTURE_PATH }, layout: null, renderError: message });
+      html = renderSummary(data, {
+        facts,
+        load: { status: 'missing', path: ARCHITECTURE_PATH },
+        layout: null,
+        renderError: message,
+        drift: null,
+      });
     } catch {
       html = minimalPage(data, message);
     }

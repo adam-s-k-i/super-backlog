@@ -2,7 +2,8 @@
 import process from 'node:process';
 
 import { ARCHITECTURE_PATH, loadArchitecture, type ArchitectureLoadResult } from '../dashboard/summary-schema.js';
-import { layoutArchitecture } from '../dashboard/summary-layout.js';
+import { detectDrift, driftCount } from '../dashboard/summary-drift.js';
+import { layoutArchitecture, type LayoutResult } from '../dashboard/summary-layout.js';
 import { extractPhaseLabels, PHASES } from '../lib/phase.js';
 import {
   getEffectiveExecutionPolicy,
@@ -25,6 +26,8 @@ export interface DoctorDeps {
   loadArchitecture?: (cwd: string) => ArchitectureLoadResult;
   /** Seam for check 5; defaults to the summary page's layout engine. */
   layoutArchitecture?: typeof layoutArchitecture;
+  /** Seam for check 5; defaults to the shared drift module. */
+  detectDrift?: typeof detectDrift;
   log?: (line: string) => void;
 }
 
@@ -134,7 +137,7 @@ export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
   }
 
   // check 5: curated architecture file of the summary page. Task ids are not
-  // passed: mappings to archived tasks are expected drift, not a doctor warning.
+  // passed: the schema would drop unknown ids before drift reports them.
   const arch = (deps.loadArchitecture ?? ((c: string) => loadArchitecture(c)))(cwd);
   if (arch.status === 'missing') {
     emit('skip', `${ARCHITECTURE_PATH} not present (summary page shows the reduced view)`);
@@ -145,14 +148,37 @@ export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
       'fix: edit the file or run the architecture-summary skill, then sbl doctor again',
     ]);
   } else {
-    const layout = (deps.layoutArchitecture ?? layoutArchitecture)(arch.architecture);
-    const warnings = [
-      ...arch.problems.map((p) => `warning: ${p.path}: ${p.message}`),
-      ...layout.warnings.map((w) => `layout ${w.code} ${w.edge}: ${w.message}`),
-    ];
-    const size = `${arch.architecture.nodes.length} nodes, ${arch.architecture.edges.length} edges`;
-    if (warnings.length === 0) emit('ok', `${ARCHITECTURE_PATH} valid (${size}, layout clean)`);
-    else emit('warn', `${ARCHITECTURE_PATH} valid with ${warnings.length} warning(s) (${size})`, warnings);
+    let layout: LayoutResult | null = null;
+    try {
+      layout = (deps.layoutArchitecture ?? layoutArchitecture)(arch.architecture);
+    } catch (err) {
+      emit('fail', `${ARCHITECTURE_PATH} layout failed (${err instanceof Error ? err.message : String(err)})`);
+    }
+    if (layout !== null) {
+      const warnings = [
+        ...arch.problems.map((p) => `warning: ${p.path}: ${p.message}`),
+        ...layout.warnings.map((w) => `layout ${w.code} ${w.edge}: ${w.message}`),
+      ];
+      const size = `${arch.architecture.nodes.length} nodes, ${arch.architecture.edges.length} edges`;
+      let findings = 0;
+      let driftError: string | null = null;
+      try {
+        findings = (deps.detectDrift ?? detectDrift)(cwd, arch.architecture, { tasks: taskRows }).findings.length;
+      } catch (err) {
+        driftError = err instanceof Error ? err.message : String(err);
+      }
+      if (warnings.length > 0) {
+        emit('warn', `${ARCHITECTURE_PATH} valid with ${warnings.length} warning(s) (${size})`, warnings);
+      }
+      if (driftError !== null) {
+        emit('warn', `architecture.yml drift check failed (${driftError})`);
+      } else if (findings > 0) {
+        emit('warn', `architecture.yml valid, ${driftCount(findings)} – run sbl summary for details`);
+      }
+      if (warnings.length === 0 && driftError === null && findings === 0) {
+        emit('ok', `${ARCHITECTURE_PATH} valid (${size}, layout clean)`);
+      }
+    }
   }
 
   log(`doctor summary: ${okCount} ok, ${warnCount} warn, ${skipCount} skip, ${failCount} fail`);

@@ -35,6 +35,7 @@ function makeDeps(overrides: Partial<DepsWithLines> = {}): DepsWithLines {
     resolveBacklog: () => 'C:\\proj\\node_modules\\.bin\\backlog.cmd',
     readTaskLabels: () => [],
     loadArchitecture: () => checkArchitectureText(ARCH_OK, 'architecture.yml'),
+    detectDrift: () => ({ findings: [], notes: [] }),
     log: (line: string) => lines.push(line),
     ...overrides,
   };
@@ -224,5 +225,91 @@ describe('check 5: architecture.yml', () => {
     expect(d.lines.some((l) => l.includes('[warn]') && l.includes('valid with 2 warning(s)'))).toBe(true);
     expect(out).toContain('warning: colour:');
     expect(out).toContain('layout route-fallback a>b: no straight or single-corner route from a to b');
+  });
+
+  it('replaces the ok line with one drift warning that points to sbl summary', () => {
+    const d = makeDeps({
+      detectDrift: () => ({
+        findings: [
+          { code: 'missing-path', path: 'nodes.a.files', message: 'src/a.ts does not exist' },
+          { code: 'done-task', path: 'tasks.TASK-1', message: 'TASK-1 is Done' },
+        ],
+        notes: [],
+      }),
+    });
+    expect(runDoctor('/proj', d)).toBe(4);
+    expect(d.lines).toContain('[warn] architecture.yml valid, 2 drift findings – run sbl summary for details');
+    expect(d.lines.some((l) => l.includes('layout clean'))).toBe(false);
+    expect(d.lines.join('\n')).not.toContain('src/a.ts does not exist');
+  });
+
+  it('feeds the check-4 task rows into detectDrift', () => {
+    const rows = [{ id: 'TASK-1', status: 'Done', labels: [] }];
+    let seen: unknown;
+    const d = makeDeps({
+      readTaskLabels: () => rows,
+      detectDrift: (_cwd, _arch, opts) => {
+        seen = opts.tasks;
+        return { findings: [], notes: [] };
+      },
+    });
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(seen).toBe(rows);
+  });
+
+  it('passes null tasks when the task list is unreadable', () => {
+    let seen: unknown = 'unset';
+    const d = makeDeps({
+      readTaskLabels: () => null,
+      detectDrift: (_cwd, _arch, opts) => {
+        seen = opts.tasks;
+        return { findings: [], notes: [] };
+      },
+    });
+    runDoctor('/proj', d);
+    expect(seen).toBeNull();
+  });
+
+  it('prints both the schema-warning line and the drift line', () => {
+    const d = makeDeps({
+      loadArchitecture: () => checkArchitectureText(`${ARCH_OK}colour: red\n`, 'architecture.yml'),
+      detectDrift: () => ({ findings: [{ code: 'done-task', path: 'tasks.TASK-1', message: 'TASK-1 is Done' }], notes: [] }),
+    });
+    expect(runDoctor('/proj', d)).toBe(4);
+    expect(d.lines.some((l) => l.includes('[warn]') && l.includes('valid with 1 warning(s)'))).toBe(true);
+    expect(d.lines).toContain('[warn] architecture.yml valid, 1 drift finding – run sbl summary for details');
+  });
+
+  it('turns a throwing drift check into a warning', () => {
+    const d = makeDeps({
+      detectDrift: () => {
+        throw new Error('boom');
+      },
+    });
+    expect(runDoctor('/proj', d)).toBe(4);
+    expect(d.lines).toContain('[warn] architecture.yml drift check failed (boom)');
+  });
+
+  it('turns a throwing layout into a failure instead of crashing', () => {
+    const d = makeDeps({
+      layoutArchitecture: () => {
+        throw new Error('layout exploded');
+      },
+    });
+    expect(runDoctor('/proj', d)).toBe(1);
+    expect(d.lines).toContain('[fail] backlog/docs/architecture.yml layout failed (layout exploded)');
+  });
+
+  it('does not run the drift check for a missing file', () => {
+    let ran = false;
+    const d = makeDeps({
+      loadArchitecture: () => ({ status: 'missing', path: '/proj/backlog/docs/architecture.yml' }),
+      detectDrift: () => {
+        ran = true;
+        return { findings: [], notes: [] };
+      },
+    });
+    runDoctor('/proj', d);
+    expect(ran).toBe(false);
   });
 });

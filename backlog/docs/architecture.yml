@@ -179,12 +179,3 @@ commands:
   Development:
     - { run: npm test, note: build + Vitest }
     - { run: npm run lint, note: markdownlint + cspell }
-tasks:
-  TASK-85: summary
-  TASK-86: summary
-  TASK-87: summary
-  TASK-88: summary
-  TASK-89: summary
-  TASK-90: hub
-  TASK-91: cli
-  TASK-92: summary

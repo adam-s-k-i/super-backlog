@@ -8,8 +8,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { DashboardData, DashboardTask } from '../../src/dashboard/data.js';
 import { renderDashboard } from '../../src/dashboard/render.js';
 import type { SummaryFacts } from '../../src/dashboard/summary-facts.js';
+import { SUMMARY_PROMPTS } from '../../src/dashboard/summary-drift.js';
 import { layoutArchitecture } from '../../src/dashboard/summary-layout.js';
 import {
+  buildSummaryModel,
   buildSummaryView,
   emptyFacts,
   formatCount,
@@ -75,10 +77,10 @@ const FACTS: SummaryFacts = {
 function validModel(text = FIXTURE): SummaryModel {
   const load = checkArchitectureText(text, ARCHITECTURE_PATH);
   if (load.status !== 'valid') throw new Error(`fixture invalid: ${JSON.stringify(load)}`);
-  return { facts: FACTS, load, layout: layoutArchitecture(load.architecture), renderError: null };
+  return { facts: FACTS, load, layout: layoutArchitecture(load.architecture), renderError: null, drift: null };
 }
 const missing: ArchitectureLoadResult = { status: 'missing', path: ARCHITECTURE_PATH };
-const reducedModel: SummaryModel = { facts: FACTS, load: missing, layout: null, renderError: null };
+const reducedModel: SummaryModel = { facts: FACTS, load: missing, layout: null, renderError: null, drift: null };
 
 function island(html: string): unknown {
   const m = /<script type="application\/json" id="sbl-summary">([\s\S]*?)<\/script>/.exec(html);
@@ -201,7 +203,7 @@ describe('noticeHtml', () => {
   it('renders the notice into the page for an invalid file and keeps the reduced view', () => {
     const load = checkArchitectureText('schema: 2\n', ARCHITECTURE_PATH);
     expect(load.status).toBe('invalid');
-    const html = renderSummary(DATA, { facts: FACTS, load, layout: null, renderError: null });
+    const html = renderSummary(DATA, { facts: FACTS, load, layout: null, renderError: null, drift: null });
     expect(html).toContain('class="notice notice-error" role="alert"');
     expect((island(html) as { architecture: unknown }).architecture).toBeNull();
   });
@@ -209,6 +211,45 @@ describe('noticeHtml', () => {
   it('shows the render error (E3)', () => {
     const n = noticeHtml({ ...reducedModel, renderError: 'boom <x>' });
     expect(n).toContain('Summary could not be rendered (<code>boom &lt;x&gt;</code>)');
+  });
+
+  it('adds a copy button with the missing prompt to the missing-file notice', () => {
+    const n = noticeHtml(reducedModel);
+    expect(n).toContain(`<button class="copy" type="button" data-copy="${SUMMARY_PROMPTS.missing}"`);
+    expect(n).toContain('aria-label="Copy the prompt for your agent"');
+  });
+
+  it('shows the drift banner with count, labels and a copy button for a valid file', () => {
+    const n = noticeHtml({
+      ...validModel(),
+      drift: { count: 3, codes: ['missing-path', 'done-task'], prompt: SUMMARY_PROMPTS.drift },
+    });
+    expect(n).toContain('<div class="notice notice-drift" role="status">');
+    expect(n).toContain('3 drift findings (missing paths, Done tasks) – the diagram may be out of date');
+    expect(n).toContain(`data-copy="${SUMMARY_PROMPTS.drift}"`);
+  });
+
+  it('labels every drift code and uses the singular for one finding', () => {
+    const n = noticeHtml({
+      ...validModel(),
+      drift: { count: 1, codes: ['unknown-task', 'stale-file'], prompt: SUMMARY_PROMPTS.drift },
+    });
+    expect(n).toContain('1 drift finding (unknown tasks, stale file)');
+  });
+
+  it('escapes the prompt in the copy attribute', () => {
+    const n = noticeHtml({ ...validModel(), drift: { count: 1, codes: ['done-task'], prompt: 'say "hi" <now> & \'go\'' } });
+    expect(n).toContain('data-copy="say &quot;hi&quot; &lt;now&gt; &amp; &#39;go&#39;"');
+  });
+
+  it('renders the banner into the page with the subtle notice style', () => {
+    const html = renderSummary(DATA, {
+      ...validModel(),
+      drift: { count: 2, codes: ['done-task'], prompt: SUMMARY_PROMPTS.drift },
+    });
+    expect(html).toContain('class="notice notice-drift" role="status"');
+    expect(html).toMatch(/\.notice-drift \{[^}]*var\(--surface-2\)/);
+    expect(html).toContain('.notice p .copy {');
   });
 });
 
@@ -344,5 +385,88 @@ describe('writeSummaryPage', () => {
     const target = join(cwd, 'blocker', 'dash.html');
     expect(() => writeSummaryPage(cwd, DATA, target, { runCapture: noGit })).not.toThrow();
     expect(existsSync(summaryFileFor(target))).toBe(false);
+  });
+});
+
+describe('buildSummaryModel drift (spec 2026-10-10)', () => {
+  let cwd: string;
+  beforeEach(() => {
+    cwd = mkdtempSync(join(tmpdir(), 'sbl-summary-drift-'));
+  });
+  afterEach(() => {
+    rmSync(cwd, { recursive: true, force: true });
+  });
+  const noGit = (): RunResult => ({ status: 127, stdout: '', stderr: 'spawn git ENOENT' });
+  const valid = checkArchitectureText(FIXTURE, ARCHITECTURE_PATH);
+
+  it('loads with task ids for the page and without for drift, and summarizes the findings', () => {
+    const calls: unknown[] = [];
+    let seenTasks: unknown;
+    const model = buildSummaryModel(cwd, DATA, {
+      runCapture: noGit,
+      loadArchitecture: (_c, opts) => {
+        calls.push(opts?.taskIds);
+        return valid;
+      },
+      detectDrift: (_c, _a, opts) => {
+        seenTasks = opts.tasks;
+        return {
+          findings: [
+            { code: 'missing-path', path: 'nodes.cli.files', message: 'x does not exist' },
+            { code: 'done-task', path: 'tasks.T-1', message: 'T-1 is Done' },
+          ],
+          notes: [],
+        };
+      },
+    });
+    expect(calls).toEqual([TASKS.map((t) => t.id), undefined]);
+    expect(seenTasks).toEqual(TASKS.map((t) => ({ id: t.id, status: t.status })));
+    expect(model.drift).toEqual({ count: 2, codes: ['missing-path', 'done-task'], prompt: SUMMARY_PROMPTS.drift });
+  });
+
+  it('is null without findings', () => {
+    const model = buildSummaryModel(cwd, DATA, {
+      runCapture: noGit,
+      loadArchitecture: () => valid,
+      detectDrift: () => ({ findings: [], notes: ['task signals skipped: backlog CLI unavailable'] }),
+    });
+    expect(model.drift).toBeNull();
+  });
+
+  it('passes null tasks when the dashboard data fell back', () => {
+    let seenTasks: unknown = 'unset';
+    buildSummaryModel(cwd, { ...DATA, source: 'fallback-empty' }, {
+      runCapture: noGit,
+      loadArchitecture: () => valid,
+      detectDrift: (_c, _a, opts) => {
+        seenTasks = opts.tasks;
+        return { findings: [], notes: [] };
+      },
+    });
+    expect(seenTasks).toBeNull();
+  });
+
+  it('skips drift for a missing file', () => {
+    let ran = false;
+    const model = buildSummaryModel(cwd, DATA, {
+      runCapture: noGit,
+      detectDrift: () => {
+        ran = true;
+        return { findings: [], notes: [] };
+      },
+    });
+    expect(ran).toBe(false);
+    expect(model.drift).toBeNull();
+  });
+
+  it('never throws when the drift check throws', () => {
+    const model = buildSummaryModel(cwd, DATA, {
+      runCapture: noGit,
+      loadArchitecture: () => valid,
+      detectDrift: () => {
+        throw new Error('boom');
+      },
+    });
+    expect(model.drift).toBeNull();
   });
 });
