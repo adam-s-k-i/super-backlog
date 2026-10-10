@@ -39,7 +39,7 @@ node ./node_modules/super-backlog/dist/bin.js init
 
 Add `--models` to also enable the optional [model router](#model-router-opt-in).
 
-Every initialized project also gets a binding model-routing rule in its `AGENTS.md` block: agents delegate less demanding work to subagents on cheaper models, picked by complexity. This rule is independent of the opt-in router.
+Every initialized project also gets a binding delegation rule in its `AGENTS.md` block: every subtask goes to the cheapest of four model tiers that solves it reliably, and the project's `backlog/docs/critical-areas.md` names what always stays on the top tier. After a real init, `sbl` prints a next step to ask your agent for that profile (and for the summary page's `architecture.yml`) while the files are missing. This rule is independent of the opt-in router.
 
 ## Daily commands
 
@@ -55,7 +55,7 @@ Every initialized project also gets a binding model-routing rule in its `AGENTS.
 | `sbl phase TASK-1` | Show where the task stands in the pipeline (`phase/spec` → `plan` → `impl` → `verify`). |
 | `sbl phase TASK-1 plan` | Advance the phase after the gate is passed (`done` clears the label). |
 | `sbl update` | First self-updates a globally installed CLI to the latest npm version and re-runs itself (opt out with `--no-self` or `SBL_SKIP_UPDATE_CHECK`), then refreshes all injected files and prints harness/plugin versions. |
-| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, and the summary page's `architecture.yml`. |
+| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, the summary page's `architecture.yml`, and the `critical-areas.md` project profile. |
 | `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it; `--check` for CI. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
 | `sbl uninstall --with-backlog` | Remove everything, including task data. |
