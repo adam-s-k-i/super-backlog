@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.7.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.7.0...v1.7.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **summary:** use two columns when the profile row has no highlights ([b0cf017](https://github.com/adam-s-k-i/super-backlog/commit/b0cf017428af70bc3a1ac94a57ad51561fc725d4))
+
 ## [1.7.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.6.0...v1.7.0) (2026-10-10)
 
 
