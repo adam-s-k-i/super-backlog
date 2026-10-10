@@ -35,7 +35,7 @@ describe('README doc-rot guard', () => {
   });
 
   it('cheat sheet keeps the core sbl commands', () => {
-    for (const cmd of ['sbl init', 'sbl dashboard', 'sbl phase TASK-1 plan', 'sbl doctor', 'sbl update', 'sbl uninstall']) {
+    for (const cmd of ['sbl init', 'sbl dashboard', 'sbl phase TASK-1 plan', 'sbl doctor', 'sbl summary', 'sbl update', 'sbl uninstall']) {
       expect(readme).toContain(cmd);
     }
   });

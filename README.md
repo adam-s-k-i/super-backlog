@@ -42,6 +42,7 @@ That's it. Everything else below is detail.
 | `sbl phase TASK-1` | Show where a task stands: `phase/spec → plan → impl → verify`. |
 | `sbl phase TASK-1 plan` | Advance the phase after its gate is passed (`done` clears the label). |
 | `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, and phase-label hygiene. |
+| `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it (`--check` for CI). |
 | `sbl update` | Self-update the CLI, then refresh every injected file. |
 | `sbl models enable` | Optional model router: cheap models for simple agents, your main model for hard work. |
 | `sbl uninstall` | Remove everything super-backlog owns — your `backlog/` data stays. |

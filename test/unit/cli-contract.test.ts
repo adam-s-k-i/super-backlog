@@ -33,6 +33,12 @@ describe('HELP', () => {
     expect(HELP).not.toContain('--serve');
     expect(HELP).not.toContain('Backlog browser');
   });
+
+  it('lists sbl summary and its --check flag', () => {
+    expect(HELP).toMatch(/^\s+summary\s+Check backlog\/docs\/architecture\.yml for drift/m);
+    expect(HELP).toContain('summary options:');
+    expect(HELP).toMatch(/^\s+--check\s+Report only/m);
+  });
 });
 
 describe('runCli', () => {

@@ -9,13 +9,11 @@ import {
   isBlockingExecutionPolicy,
   type Executor,
 } from '../lib/powershell.js';
-import { resolveBacklogBin, runCapture } from '../lib/run.js';
+import { resolveBacklogBin } from '../lib/run.js';
+import { readTaskList, type TaskListRow } from '../lib/task-list.js';
 
-export interface TaskLabelRow {
-  id: string;
-  status: string;
-  labels: string[];
-}
+/** Kept for existing imports; the reader lives in src/lib/task-list.ts. */
+export type TaskLabelRow = TaskListRow;
 
 export interface DoctorDeps {
   platform?: string;
@@ -39,41 +37,11 @@ const MARK: Record<Status, string> = {
   fail: '[fail]',
 };
 
-function defaultReadTaskLabels(
-  cwd: string,
-  resolveBacklog: (cwd: string) => string | null,
-): TaskLabelRow[] | null {
-  const bin = resolveBacklog(cwd);
-  if (!bin) return null;
-  const res = runCapture(bin, ['task', 'list', '--json'], cwd);
-  if (res.status !== 0) return null;
-  try {
-    const parsed = JSON.parse(res.stdout) as { tasks?: unknown };
-    if (!Array.isArray(parsed.tasks)) return null;
-    const rows: TaskLabelRow[] = [];
-    for (const t of parsed.tasks) {
-      if (typeof t !== 'object' || t === null) continue;
-      const id = (t as { id?: unknown }).id;
-      const status = (t as { status?: unknown }).status;
-      const labels = (t as { labels?: unknown }).labels;
-      if (typeof id !== 'string' || typeof status !== 'string') continue;
-      rows.push({
-        id,
-        status,
-        labels: Array.isArray(labels) ? labels.filter((l): l is string => typeof l === 'string') : [],
-      });
-    }
-    return rows;
-  } catch {
-    return null;
-  }
-}
-
 export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
   const platform = deps.platform ?? process.platform;
   const nodeVersion = deps.nodeVersion ?? process.versions.node;
   const resolveBacklog = deps.resolveBacklog ?? resolveBacklogBin;
-  const readTaskLabels = deps.readTaskLabels ?? ((c: string) => defaultReadTaskLabels(c, resolveBacklog));
+  const readTaskLabels = deps.readTaskLabels ?? ((c: string) => readTaskList(c, { resolveBacklog }));
   const log = deps.log ?? ((line: string) => console.log(line));
 
   let okCount = 0;

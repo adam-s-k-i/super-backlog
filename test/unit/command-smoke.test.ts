@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { runInit } from '../../src/commands/init.js';
 import { runDoctor } from '../../src/commands/doctor.js';
 import { runModels } from '../../src/commands/models.js';
+import { runSummary } from '../../src/commands/summary.js';
 import { runUpdate } from '../../src/commands/update.js';
 
 const dirs: string[] = [];
@@ -43,5 +44,12 @@ describe('command smoke', () => {
     dirs.push(cwd);
     const code = await runUpdate(cwd, { values: {}, positionals: [] });
     expect(typeof code).toBe('number');
+  });
+
+  it('summary exits 1 outside a project', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'sbl-smoke-'));
+    dirs.push(cwd);
+    const code = runSummary(cwd, { values: {}, positionals: [] }, { error: () => {} });
+    expect(code).toBe(1);
   });
 });
