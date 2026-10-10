@@ -3,12 +3,12 @@ id: TASK-110
 title: >-
   Dogfood: refresh managed glue, write this repo's critical-areas profile,
   architecture.yml
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-10 21:38'
+updated_date: '2026-10-10 22:22'
 labels:
   - chore
-  - phase/spec
 dependencies:
   - TASK-106
   - TASK-107

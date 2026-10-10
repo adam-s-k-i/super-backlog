@@ -1,12 +1,12 @@
 ---
 id: TASK-108
 title: 'Project profile: project-profile skill template and sbl init hint'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-10 21:38'
+updated_date: '2026-10-10 22:22'
 labels:
   - feature
-  - phase/spec
 dependencies:
   - TASK-107
 references:

@@ -1,12 +1,12 @@
 ---
 id: TASK-109
 title: 'Docs: project profile guide, four-tier delegation section, quickstart, README'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-10 21:38'
+updated_date: '2026-10-10 22:22'
 labels:
   - feature
-  - phase/spec
 dependencies:
   - TASK-106
   - TASK-107

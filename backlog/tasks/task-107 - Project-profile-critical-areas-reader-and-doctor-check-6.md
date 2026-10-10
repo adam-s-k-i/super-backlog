@@ -1,12 +1,12 @@
 ---
 id: TASK-107
 title: 'Project profile: critical-areas reader and doctor check 6'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-10 21:38'
+updated_date: '2026-10-10 22:21'
 labels:
   - feature
-  - phase/spec
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-10-model-tiers-and-project-profile.md

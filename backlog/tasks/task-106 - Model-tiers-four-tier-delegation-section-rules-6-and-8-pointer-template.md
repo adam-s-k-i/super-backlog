@@ -1,12 +1,12 @@
 ---
 id: TASK-106
 title: 'Model tiers: four-tier delegation section, rules 6 and 8, pointer template'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-10 21:37'
+updated_date: '2026-10-10 22:21'
 labels:
   - feature
-  - phase/spec
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-10-model-tiers-and-project-profile.md
