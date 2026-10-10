@@ -1,13 +1,12 @@
 ---
 id: TASK-105
 title: 'Flaky e2e: background fetchLatestVersion test under full-suite load'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-10 17:27'
-updated_date: '2026-10-10 17:49'
+updated_date: '2026-10-10 18:42'
 labels:
   - bug
-  - phase/verify
 dependencies: []
 references:
   - test/e2e/version-check.e2e.test.ts
