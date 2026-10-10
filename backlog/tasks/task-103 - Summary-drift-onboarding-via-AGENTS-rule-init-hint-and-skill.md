@@ -1,13 +1,13 @@
 ---
 id: TASK-103
 title: 'Summary drift: onboarding via AGENTS rule, init hint and skill'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:38'
+updated_date: '2026-10-10 15:53'
 labels:
   - feature
-  - phase/plan
+  - phase/impl
 dependencies:
   - TASK-101
 references:
