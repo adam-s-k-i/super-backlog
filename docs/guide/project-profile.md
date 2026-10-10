@@ -36,7 +36,7 @@ May go to lower tiers: UI copy, test fixtures, docs, formatting, lookups
   everything gets escalated.
 - `provisional` at the end of the Status line means the profile was drafted
   below the top tier or from a description only and should be revised on the
-  top tier. It is the only part of the file that `sbl` reads.
+  top tier. The Status line is the only part of the file that `sbl` reads.
 
 ## Creating it
 

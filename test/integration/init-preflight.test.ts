@@ -230,7 +230,7 @@ describe('sbl init preflight integration', () => {
     }
   });
 
-  it('prints no hint when architecture.yml exists', async () => {
+  it('prints no summary hint when architecture.yml exists', async () => {
     const cwd = tempCwd('hint-present');
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {

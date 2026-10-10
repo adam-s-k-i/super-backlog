@@ -34,10 +34,12 @@ const OWNED_SKILL_DIRS = [
   '.opencode/skill/backlog-status-report',
   '.opencode/skill/task-review-gate',
   '.opencode/skill/architecture-summary',
+  '.opencode/skill/project-profile',
   '.claude/skills/spec-to-backlog',
   '.claude/skills/backlog-status-report',
   '.claude/skills/task-review-gate',
   '.claude/skills/architecture-summary',
+  '.claude/skills/project-profile',
 ];
 
 // ownership probe: the kit's generated dashboard carries both markers
