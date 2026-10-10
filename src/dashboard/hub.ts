@@ -8,6 +8,7 @@ import process from 'node:process';
 import { createBrowserManager, type BrowserManagerDeps } from './backlog-browser.js';
 import { collectDashboardData } from './data.js';
 import { renderDashboard } from './render.js';
+import { summaryFileFor, writeSummaryPage } from './summary-render.js';
 import {
   createDebouncedReloader,
   createReloadBroker,
@@ -139,7 +140,7 @@ function sendText(res: ServerResponse, status: number, body: string): void {
   res.end(body);
 }
 
-function serveFile(file: string, res: ServerResponse): void {
+function serveFile(file: string, res: ServerResponse, notFound = 'dashboard not generated yet'): void {
   readFile(file)
     .then((bytes) => {
       res.writeHead(200, {
@@ -149,13 +150,14 @@ function serveFile(file: string, res: ServerResponse): void {
       res.end(bytes);
     })
     .catch(() => {
-      sendText(res, 404, 'dashboard not generated yet');
+      sendText(res, 404, notFound);
     });
 }
 
 function generateDashboard(cwd: string, file: string): void {
   const data = collectDashboardData(cwd, { kitVersion: KIT_VERSION });
   atomicWrite(file, renderDashboard(data));
+  writeSummaryPage(cwd, data, file);
 }
 
 export async function startHubServer(opts: {
@@ -402,6 +404,17 @@ export async function startHubServer(opts: {
 
     if (method === 'GET' && (rest === '/' || rest === '/index.html')) {
       serveFile(entry.file, res);
+      return;
+    }
+
+    if (rest === '/summary') {
+      res.writeHead(302, { location: `/p/${slug}/summary/` });
+      res.end();
+      return;
+    }
+
+    if (method === 'GET' && (rest === '/summary/' || rest === '/summary/index.html')) {
+      serveFile(summaryFileFor(entry.file), res, 'summary not generated yet');
       return;
     }
 

@@ -142,6 +142,10 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   }
   nav a:hover { color: var(--text); background: var(--surface); border-color: var(--line); }
   nav a .n { color: var(--accent); font-family: var(--mono); font-size: .78rem; margin-right: 8px; }
+  nav.page-tabs { display: flex; gap: 4px; margin: 2px 0 14px; }
+  nav.page-tabs[hidden] { display: none; }
+  nav.page-tabs a { padding: 4px 10px; font-size: .82rem; min-height: 24px; }
+  nav.page-tabs a[aria-current="page"] { color: var(--text); background: var(--surface-3); border-color: var(--line); }
   .legend { margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--line); }
   .legend h4 { color: var(--dim); font-size: .7rem; letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 10px; }
   .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -538,6 +542,11 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
   <div class="brand"><span class="brand-glyph">●</span><b>demo-project</b>
     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch color theme">◐</button>
   </div>
+  <nav class="page-tabs" id="page-tabs" aria-label="Project pages" hidden>
+    <a href="./" aria-current="page">Dashboard</a>
+    <a href="summary/">Summary</a>
+  </nav>
+  <script>if (/^\\/p\\/[^/]+\\/(index\\.html)?$/.test(location.pathname)) document.getElementById('page-tabs').hidden = false;</script>
   <div class="kicker">SUPERPOWERS × BACKLOG.MD</div>
   <div class="side-version" id="side-version"><span>v0.1.0</span></div>
   <nav aria-label="Dashboard sections">

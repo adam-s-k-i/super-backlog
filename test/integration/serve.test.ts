@@ -9,6 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { collectDashboardData } from '../../src/dashboard/data.js';
 import { renderDashboard } from '../../src/dashboard/render.js';
 import { startServeServer } from '../../src/dashboard/server.js';
+import { summaryFileFor, writeSummaryPage } from '../../src/dashboard/summary-render.js';
 
 let dirs: string[] = [];
 const handles: Array<{ close(): Promise<void> }> = [];
@@ -247,5 +248,155 @@ describe('startServeServer', () => {
     await new Promise((r) => setTimeout(r, 400));
     expect(received.join('')).not.toContain('event: reload');
     req.destroy();
+  });
+});
+
+const SUMMARY_PATH = `${PROJECT_PATH}summary/`;
+
+const ARCH_YML = [
+  'schema: 1',
+  'pitch: A **small** demo.',
+  'grid: { cols: 2, rows: 2 }',
+  'nodes:',
+  '  - { id: core, label: Watcher Core, kind: core, cell: [0, 0] }',
+  '  - { id: out, label: Report Sink, kind: output, cell: [1, 0] }',
+  'edges:',
+  '  - { from: core, to: out, label: writes }',
+  '',
+].join('\n');
+
+/** Dashboard plus summary page, exactly like the hub's own regenerate chain. */
+async function writeProjectPages(dir: string): Promise<void> {
+  const data = await collectDashboardData(dir, { kitVersion: 'test' });
+  const file = join(dir, 'dashboard.html');
+  writeFileSync(file, renderDashboard(data));
+  writeSummaryPage(dir, data, file);
+}
+
+function writeArchitecture(dir: string, text: string): void {
+  mkdirSync(join(dir, 'backlog', 'docs'), { recursive: true });
+  writeFileSync(join(dir, 'backlog', 'docs', 'architecture.yml'), text);
+}
+
+function fetchRaw(port: number, path: string): Promise<{ status: number; location: string; body: string }> {
+  return new Promise((resolvePromise, rejectPromise) => {
+    const req = request({ host: '127.0.0.1', port, path, method: 'GET' }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk: string) => {
+        body += chunk;
+      });
+      res.on('end', () =>
+        resolvePromise({ status: res.statusCode ?? 0, location: String(res.headers.location ?? ''), body }),
+      );
+    });
+    req.on('error', rejectPromise);
+    req.end();
+  });
+}
+
+describe('summary page route', () => {
+  it('serves the generated summary page with its marker', async () => {
+    const dir = freshProject();
+    await writeProjectPages(dir);
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    const res = await fetchRaw(handle.port, SUMMARY_PATH);
+    expect(res.status).toBe(200);
+    expect(res.body).toContain('<meta name="sbl-page" content="summary">');
+    expect(res.body).toContain('No architecture file yet');
+    const viaIndex = await fetchRaw(handle.port, `${SUMMARY_PATH}index.html`);
+    expect(viaIndex.status).toBe(200);
+  });
+
+  it('redirects /summary to /summary/', async () => {
+    const dir = freshProject();
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    const res = await fetchRaw(handle.port, `${PROJECT_PATH}summary`);
+    expect(res.status).toBe(302);
+    expect(res.location).toBe(SUMMARY_PATH);
+  });
+
+  it('answers 404 with a plain text body while the summary is not generated', async () => {
+    const dir = freshProject();
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    const res = await fetchRaw(handle.port, SUMMARY_PATH);
+    expect(res.status).toBe(404);
+    expect(res.body).toBe('summary not generated yet');
+  });
+
+  it('shows architecture nodes after architecture.yml is written and pages regenerate', async () => {
+    const dir = freshProject();
+    await writeProjectPages(dir);
+    const regenerate = async (): Promise<void> => {
+      await writeProjectPages(dir);
+    };
+    const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
+    handles.push(handle);
+
+    expect((await fetchRaw(handle.port, SUMMARY_PATH)).body).not.toContain('Watcher Core');
+    writeArchitecture(dir, ARCH_YML);
+    await regenerate();
+    const res = await fetchRaw(handle.port, SUMMARY_PATH);
+    expect(res.status).toBe(200);
+    expect(res.body).toContain('Watcher Core');
+  });
+
+  watcherIt('regenerates and broadcasts a reload when architecture.yml changes', async () => {
+    const dir = freshProject();
+    await writeProjectPages(dir);
+    const regenerate = vi.fn(async () => {
+      await writeProjectPages(dir);
+    });
+    const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
+    handles.push(handle);
+
+    const received: string[] = [];
+    const req = request({ host: '127.0.0.1', port: handle.port, path: `${PROJECT_PATH}api/events`, method: 'GET' }, (res) => {
+      res.setEncoding('utf8');
+      res.on('data', (c: string) => received.push(c));
+    });
+    req.on('error', () => {});
+    req.end();
+    expect(await until(2000, () => received.join('').includes(':'))).toBe(true);
+
+    writeArchitecture(dir, ARCH_YML);
+
+    expect(await until(3000, () => received.join('').includes('event: reload'))).toBe(true);
+    const res = await fetchRaw(handle.port, SUMMARY_PATH);
+    expect(res.body).toContain('Watcher Core');
+    req.destroy();
+  });
+
+  it('serves an invalid architecture.yml as 200 with a notice', async () => {
+    const dir = freshProject();
+    writeArchitecture(dir, 'schema: 2\n');
+    await writeProjectPages(dir);
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    const res = await fetchRaw(handle.port, SUMMARY_PATH);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatch(/class="notice[^"]*"/);
+    expect(res.body).toContain('backlog/docs/architecture.yml');
+  });
+
+  it('keeps the dashboard intact when the summary chain fails', async () => {
+    const dir = freshProject();
+    // a directory where the summary file should go makes the summary write fail
+    mkdirSync(summaryFileFor(join(dir, 'dashboard.html')), { recursive: true });
+    await expect(writeProjectPages(dir)).resolves.toBeUndefined();
+    const handle = await startServeServer(dir, { port: 0, openBrowser: false });
+    handles.push(handle);
+
+    const dash = await fetchRaw(handle.port, PROJECT_PATH);
+    expect(dash.status).toBe(200);
+    expect(dash.body.startsWith('<!doctype html>')).toBe(true);
+    expect((await fetchRaw(handle.port, SUMMARY_PATH)).status).toBe(404);
   });
 });

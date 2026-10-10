@@ -240,6 +240,13 @@ describe('v2 structure', () => {
     expect(sec).toContain('<h2>Drafts</h2>');
     expect(sec).toContain('id="drafts-list"');
   });
+
+  it('offers Dashboard/Summary page tabs that only appear when served by the hub', () => {
+    const nav = /<nav class="page-tabs" id="page-tabs" aria-label="Project pages" hidden>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
+    expect(nav).toContain('<a href="./" aria-current="page">Dashboard</a>');
+    expect(nav).toContain('<a href="summary/">Summary</a>');
+    expect(html).toContain(String.raw`if (/^\/p\/[^/]+\/(index\.html)?$/.test(location.pathname)) document.getElementById('page-tabs').hidden = false;`);
+  });
 });
 
 describe('renderDashboard data islands', () => {

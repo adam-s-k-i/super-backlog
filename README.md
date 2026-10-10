@@ -79,6 +79,8 @@ A live cockpit rendered from your backlog data: status KPIs, milestones, phase p
 
 ![Project Dashboard](docs/assets/dashboard.png)
 
+Next to the dashboard, every project gets a summary page with an architecture diagram, tech stack, commands and open work: [docs/guide/project-summary.md](docs/guide/project-summary.md).
+
 ## Requirements
 
 - Node >= 20 and a package manager (npm, pnpm, or bun)

@@ -139,6 +139,21 @@ describe('startHubServer', () => {
     expect(page.status).toBe(200);
   });
 
+  it('generates the summary page on POST register and serves it at /p/<slug>/summary/', async () => {
+    const { cwd } = fixture('sbl-hub-sum-', 'sum-demo');
+    dirs.push(cwd);
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    const res = await req(hub.port, '/api/hub/register', 'POST', JSON.stringify({ cwd, token: 't' }));
+    expect(res.status).toBe(200);
+    const page = await req(hub.port, '/p/sum-demo/summary/');
+    expect(page.status).toBe(200);
+    expect(page.body).toContain('<meta name="sbl-page" content="summary">');
+    const redirect = await req(hub.port, '/p/sum-demo/summary');
+    expect(redirect.status).toBe(302);
+    expect(redirect.location).toBe('/p/sum-demo/summary/');
+  });
+
   it('does not send project A reload events to project B SSE clients', async () => {
     const a = fixture('sbl-hub-iso-a-', 'Alpha');
     const b = fixture('sbl-hub-iso-b-', 'Bravo');

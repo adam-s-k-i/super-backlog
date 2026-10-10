@@ -100,6 +100,8 @@ sbl dashboard --port 8080 --no-open
 
 There is no static `dashboard.html` written to your project.
 
+Each project also gets a [project summary page](./project-summary) at `/p/<slug>/summary/`: architecture diagram, tech stack, commands and open work at a glance.
+
 ### Backlog button
 
 The Board &amp; Quick Actions section has a single **Backlog** button. Clicking
