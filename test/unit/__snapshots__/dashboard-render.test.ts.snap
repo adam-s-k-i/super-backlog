@@ -46,6 +46,15 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     --glow-warn:rgba(255,180,84,.25);
     --glow-warn-soft:rgba(255,180,84,.3);
     --focus-ring:rgba(92,200,255,.15);
+    --surface-3:#161f31;
+    --violet:#b69cff;
+    --violet-bg:#1d1833;
+    --violet-line:#3d3366;
+    --rose:#ff7a9c;
+    --rose-bg:#2f1621;
+    --rose-line:#5a2a3b;
+    --on-accent:#04131d;
+    --on-color:#07101a;
   }
   :root[data-theme="light"] {
     --bg:#f3f6fb;
@@ -79,6 +88,15 @@ exports[`renderDashboard v2 structure > matches the approved snapshot 1`] = `
     --glow-warn:rgba(138,90,0,.2);
     --glow-warn-soft:rgba(138,90,0,.25);
     --focus-ring:rgba(11,116,181,.18);
+    --surface-3:#dfe6f2;
+    --violet:#5b3fc4;
+    --violet-bg:#ece6ff;
+    --violet-line:#c7b8f5;
+    --rose:#b8325a;
+    --rose-bg:#fde4ec;
+    --rose-line:#f0b3c6;
+    --on-accent:#ffffff;
+    --on-color:#ffffff;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { scroll-behavior: smooth; }

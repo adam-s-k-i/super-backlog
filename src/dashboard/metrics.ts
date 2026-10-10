@@ -22,7 +22,7 @@ export interface DashboardKpis {
   streakDays: number;
 }
 
-function isDone(status: string): boolean {
+export function isDone(status: string): boolean {
   const s = status.toLowerCase();
   return s === 'done' || s === 'complete' || s === 'completed';
 }
