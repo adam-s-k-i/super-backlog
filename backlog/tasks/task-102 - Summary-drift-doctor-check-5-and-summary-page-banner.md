@@ -1,13 +1,12 @@
 ---
 id: TASK-102
 title: 'Summary drift: doctor check 5 and summary page banner'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:53'
+updated_date: '2026-10-10 16:05'
 labels:
   - feature
-  - phase/verify
 dependencies:
   - TASK-101
 references:
@@ -25,10 +24,16 @@ Plan Task 3. Doctor check 5 reports drift as one warn line; the summary page sho
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Doctor check 5 prints '[warn] architecture.yml valid, N drift findings – run sbl summary for details' on drift; a throw in layout or drift detection becomes a problem line instead of a crash
-- [ ] #2 buildSummaryModel sets model.drift ({ count, codes, prompt } or null); drift detection reuses the hub's already-loaded task list and any throw yields drift null
-- [ ] #3 noticeHtml renders the drift banner with a copy button carrying the drift prompt; the missing-file notice has a copy button with the missing prompt; prompt text is HTML-escaped; only existing tokens are used
-- [ ] #4 test/e2e/doctor.e2e.test.ts passes whether or not the repo has drift (exit 4 accepted only when the drift line is the sole warning)
-- [ ] #5 The dogfood backlog/docs/architecture.yml no longer maps the Done tasks TASK-85..92
-- [ ] #6 Doctor and summary-render tests cover the new behaviour; npm test and npm run lint pass
+- [x] #1 Doctor check 5 prints '[warn] architecture.yml valid, N drift findings – run sbl summary for details' on drift; a throw in layout or drift detection becomes a problem line instead of a crash
+- [x] #2 buildSummaryModel sets model.drift ({ count, codes, prompt } or null); drift detection reuses the hub's already-loaded task list and any throw yields drift null
+- [x] #3 noticeHtml renders the drift banner with a copy button carrying the drift prompt; the missing-file notice has a copy button with the missing prompt; prompt text is HTML-escaped; only existing tokens are used
+- [x] #4 test/e2e/doctor.e2e.test.ts passes whether or not the repo has drift (exit 4 accepted only when the drift line is the sole warning)
+- [x] #5 The dogfood backlog/docs/architecture.yml no longer maps the Done tasks TASK-85..92
+- [x] #6 Doctor and summary-render tests cover the new behaviour; npm test and npm run lint pass
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Doctor check 5 prints one drift warn line and turns layout/drift throws into problem lines. buildSummaryModel sets model.drift from the hub's loaded tasks (null on any throw); the summary page shows a drift banner and the missing-file notice, both with copy-prompt buttons using existing tokens. Doctor E2E tolerates live drift; dogfood file pruned of TASK-85..92.
+<!-- SECTION:FINAL_SUMMARY:END -->

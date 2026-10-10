@@ -1,13 +1,12 @@
 ---
 id: TASK-100
 title: 'Summary drift: detectDrift module and shared agent prompts'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:41'
+updated_date: '2026-10-10 16:05'
 labels:
   - feature
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-10-summary-drift-design.md
@@ -24,10 +23,16 @@ Plan Task 1. New src/dashboard/summary-drift.ts with detectDrift(cwd, architectu
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 detectDrift reports missing-path (trailing / requires a directory), done-task (isDone from metrics.ts), unknown-task and stale-file exactly as the spec's signal table defines
-- [ ] #2 STALE_COMMIT_THRESHOLD = 20 is exported; 19 commits yield no finding, 20 yield one; the stale check uses at most two git calls
-- [ ] #3 Skipped signals (tasks null, no git, not a repository, no history) produce a note; a throwing dep becomes a note and the other signals still run; detectDrift never throws
-- [ ] #4 Findings are ordered by signal, then by path
-- [ ] #5 summaryAgentPrompt returns the three prompt strings verbatim from the spec
-- [ ] #6 test/unit/summary-drift.test.ts covers every case above; npm test and npm run lint pass
+- [x] #1 detectDrift reports missing-path (trailing / requires a directory), done-task (isDone from metrics.ts), unknown-task and stale-file exactly as the spec's signal table defines
+- [x] #2 STALE_COMMIT_THRESHOLD = 20 is exported; 19 commits yield no finding, 20 yield one; the stale check uses at most two git calls
+- [x] #3 Skipped signals (tasks null, no git, not a repository, no history) produce a note; a throwing dep becomes a note and the other signals still run; detectDrift never throws
+- [x] #4 Findings are ordered by signal, then by path
+- [x] #5 summaryAgentPrompt returns the three prompt strings verbatim from the spec
+- [x] #6 test/unit/summary-drift.test.ts covers every case above; npm test and npm run lint pass
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Added src/dashboard/summary-drift.ts: detectDrift reports missing-path, done-task, unknown-task and stale-file (threshold 20, two git calls), never throws (skipped or failing signals become notes), orders findings by signal then path; summaryAgentPrompt returns the three spec prompts. Covered by test/unit/summary-drift.test.ts.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -4,10 +4,10 @@ title: 'Summary drift: dogfood the repo''s architecture.yml and close TASK-98'
 status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:56'
+updated_date: '2026-10-10 16:05'
 labels:
   - chore
-  - phase/impl
+  - phase/verify
 dependencies:
   - TASK-102
   - TASK-103
@@ -26,9 +26,9 @@ Plan Task 5. Bring this repo's own backlog/docs/architecture.yml up to date with
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 The cli node in backlog/docs/architecture.yml describes eight commands including summary and documents the new files
-- [ ] #2 Managed glue (AGENTS.md block, installed skills) is refreshed through sbl update, not by hand
-- [ ] #3 node dist/bin.js summary exits 0 at the repo root
+- [x] #1 The cli node in backlog/docs/architecture.yml describes eight commands including summary and documents the new files
+- [x] #2 Managed glue (AGENTS.md block, installed skills) is refreshed through sbl update, not by hand
+- [x] #3 node dist/bin.js summary exits 0 at the repo root
 - [ ] #4 TASK-98 is closed as superseded with a final summary pointing to the spec (via the backlog CLI after user approval)
-- [ ] #5 npm test and npm run lint pass
+- [x] #5 npm test and npm run lint pass
 <!-- AC:END -->
