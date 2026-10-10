@@ -1,0 +1,190 @@
+schema: 1
+pitch: >
+  CLI kit that wires **Backlog.md** and **Superpowers** into any project: a binding
+  agent pipeline with gates, glue skills, a live dashboard with a project summary
+  page, and a verified uninstall.
+grid: { cols: 5, rows: 6 }
+zones:
+  - { label: Entry, cols: [0, 0], rows: [2, 4] }
+  - { label: Kit (sbl), cols: [1, 3], rows: [1, 5] }
+  - { label: Target project / external, cols: [4, 4], rows: [0, 4] }
+nodes:
+  - id: dev
+    label: Human & agent
+    sub: shell · Claude Code
+    kind: actor
+    cell: [0, 2]
+    purpose: Starts every flow. A person and an agent use the same sbl commands and read the same AGENTS.md workflow block.
+    why: One entry for both. What the agent may do is written down in the repo, not in a chat.
+    files: [AGENTS.md, CLAUDE.md]
+    commands:
+      - { run: sbl init, note: wire a project }
+  - id: browser
+    label: Browser
+    sub: localhost:6428
+    kind: actor
+    cell: [0, 4]
+    purpose: Shows the dashboard, the summary page and the embedded Backlog browser. Keeps one live connection and reloads when the backlog changes.
+    why: The browser is the only UI, so there is nothing extra to install.
+  - id: cli
+    label: sbl CLI
+    sub: bin.ts · commands/
+    kind: core
+    cell: [1, 2]
+    purpose: Parses arguments and dispatches seven commands (init, uninstall, update, dashboard, models, phase, doctor). Maps every outcome to an exit code and checks for a newer release.
+    why: One global command for every project. Five exit codes keep CI and agents unambiguous.
+    files: [src/bin.ts, src/cli.ts, src/commands/, src/commands/doctor.ts, src/lib/preflight.ts]
+    commands:
+      - { run: sbl doctor, note: check the environment }
+      - { run: sbl update, note: refresh kit-managed files }
+  - id: planner
+    label: Init planner
+    sub: init/planner.ts
+    kind: core
+    cell: [2, 1]
+    purpose: Turns the detected project state plus the chosen options into a list of actions. It has no side effects.
+    why: Actions are plain data, so planning is easy to unit-test and --dry-run costs nothing.
+    files: [src/init/planner.ts]
+    commands:
+      - { run: sbl init --dry-run, note: plan only }
+  - id: executor
+    label: Executor
+    sub: init/execute.ts
+    kind: core
+    cell: [3, 1]
+    purpose: Applies each action with an atomic write. File content comes from templates stamped with the kit version.
+    why: Degraded situations turn into warnings or refusals, never into a silent overwrite.
+    files: [src/init/execute.ts, src/lib/atomic.ts, src/templates/]
+  - id: ownership
+    label: Ownership & uninstall
+    sub: lib/ownership.ts
+    kind: core
+    cell: [2, 2]
+    purpose: Decides for every artifact whether the kit wrote it, and removes only what it can prove. Reports each decision line by line.
+    why: Anything ambiguous is reported as kept and never changed.
+    files: [src/lib/ownership.ts, src/commands/uninstall.ts]
+    commands:
+      - { run: sbl uninstall, note: remove kit-owned files }
+  - id: phase
+    label: Phase labels
+    sub: lib/phase.ts
+    kind: core
+    cell: [2, 3]
+    purpose: Reads and sets the pipeline phase of a task (spec, plan, impl, verify) as a task label. sbl doctor checks that the labels stay clean.
+    why: A label instead of a separate file means every session resumes at the last gate.
+    files: [src/lib/phase.ts, src/commands/phase.ts]
+    commands:
+      - { run: sbl phase TASK-1, note: show a task phase }
+  - id: router
+    label: Model router
+    sub: src/models/ · opt-in
+    kind: optional
+    cell: [3, 3]
+    purpose: Maps cheaper model tiers to simple subagents so hard work stays on the main model. Installed only with --models.
+    why: Opt-in keeps the default install untouched.
+    files: [src/models/]
+    commands:
+      - { run: sbl models show, note: print the router config }
+  - id: hub
+    label: Dashboard hub
+    sub: dashboard/ · :6428
+    kind: output
+    cell: [1, 4]
+    purpose: One local port for many projects. Reads tasks through the Backlog CLI, renders static HTML and pushes a reload event when files under backlog/ change.
+    why: No frontend build, no framework and no database.
+    files: [src/dashboard/hub.ts, src/dashboard/server.ts, src/dashboard/data.ts, src/dashboard/render.ts, src/templates/dashboard.html]
+    commands:
+      - { run: sbl dashboard, note: start the hub }
+  - id: summary
+    label: Summary page
+    sub: summary-*.ts · yml
+    kind: output
+    cell: [1, 5]
+    purpose: Renders the project summary at /p/slug/summary/. It joins facts computed from manifests, git and the backlog with the curated backlog/docs/architecture.yml, and draws the diagram on a server-side layout.
+    why: Computed facts never go stale, and the hand-written part stays small, checked and reviewable.
+    files: [src/dashboard/summary-facts.ts, src/dashboard/summary-schema.ts, src/dashboard/summary-layout.ts, src/dashboard/summary-render.ts, src/lib/yamlmini.ts, src/templates/summary.html, backlog/docs/architecture.yml]
+  - id: project
+    label: Project files
+    sub: AGENTS.md · skills
+    kind: output
+    cell: [4, 1]
+    purpose: Everything the kit writes into the target project, such as the AGENTS.md workflow block, the glue skills and the CLAUDE.md pointer. Each file carries proof of ownership.
+    why: One workflow block serves all harnesses, and CLAUDE.md holds only a pointer.
+    files: [AGENTS.md, CLAUDE.md, .claude/skills/, .opencode/skill/, opencode.json]
+  - id: npm
+    label: npm registry
+    sub: super-backlog
+    kind: external
+    cell: [4, 0]
+    purpose: Distributes the package and answers the version check that sbl update runs before refreshing files.
+    why: release-please prepares each release, and a tagged release is published with npm provenance.
+    files: [.github/workflows/release.yml, .github/workflows/publish.yml, .github/release-please-config.json]
+  - id: backlog
+    label: Backlog.md CLI
+    sub: backlog/ · tasks
+    kind: external
+    cell: [4, 4]
+    purpose: Owns tasks, milestones and decisions as Markdown files. The kit talks to it only through its CLI.
+    why: No fork and no vendored copy. It is a devDependency, so every install gets the current version.
+  - id: superpowers
+    label: Superpowers
+    sub: methodology skills
+    kind: external
+    cell: [4, 3]
+    purpose: Supplies the agent methodology (brainstorm, plan, TDD, review) through its plugin entry, never as a copy.
+    why: The kit owns only the glue between the two tools.
+edges:
+  - { from: dev, to: cli, label: sbl … }
+  - { from: cli, to: npm, label: version check, text: sbl update checks the package version before it refreshes files. }
+  - { from: cli, to: planner, label: plans }
+  - { from: planner, to: executor, label: "Action[]", text: The action list is the only interface between planning and writing. }
+  - { from: executor, to: project, label: writes }
+  - { from: project, to: superpowers, label: plugin entry }
+  - { from: cli, to: ownership, label: uninstall }
+  - { from: ownership, to: project, label: removes }
+  - { from: ownership, to: router, label: cleans up }
+  - { from: cli, to: phase, label: phase }
+  - { from: phase, to: backlog, label: task edit }
+  - { from: cli, to: hub, label: dashboard }
+  - { from: hub, to: backlog, label: task list --json }
+  - { from: hub, to: browser, label: HTML + reload }
+  - { from: hub, to: summary, label: renders }
+flows:
+  - { id: init, label: sbl init, command: sbl init, steps: [dev>cli, cli>planner, planner>executor, executor>project, project>superpowers] }
+  - { id: update, label: sbl update, command: sbl update, color: warn, steps: [dev>cli, cli>npm, cli>planner, planner>executor, executor>project] }
+  - { id: dashboard, label: sbl dashboard, command: sbl dashboard, color: ok, steps: [dev>cli, cli>hub, hub>backlog, hub>summary, hub>browser] }
+  - { id: uninstall, label: sbl uninstall, command: sbl uninstall, color: rose, steps: [dev>cli, cli>ownership, ownership>project, ownership>router] }
+highlights:
+  - { node: planner, title: Plan then act, text: "A pure planner, an atomic executor and --dry-run for free." }
+  - { node: ownership, title: Verified uninstall, text: "Removes only what it can prove it wrote, using a marker, a fingerprint or an exact default value." }
+  - { node: phase, title: Resume at the last gate, text: "The pipeline phase lives on the task as a label, so any session picks up where work stopped." }
+  - { node: hub, title: Live without a build, text: "Static HTML, a reload event on every backlog change, many projects on one port." }
+  - { node: summary, title: Facts plus curation, text: "Versions, size and open work are computed; only the architecture story is written by hand and checked by sbl doctor." }
+  - { node: router, title: Opt-in cheaper models, text: Simple subagents can run on cheaper tiers while the main model keeps the hard work. }
+stack:
+  - { name: TypeScript, package: typescript, group: Runtime, role: "language, tsc build to dist/", nodes: [cli, planner, executor, hub, summary] }
+  - { name: cross-spawn, package: cross-spawn, group: Runtime, role: the only runtime dependency, nodes: [cli, backlog] }
+  - { name: Vitest, package: vitest, group: Quality, role: "unit, integration and e2e tests", nodes: [planner, executor, hub, summary] }
+  - { name: markdownlint-cli2, package: markdownlint-cli2, group: Quality, role: Markdown style gate, nodes: [project] }
+  - { name: cspell, package: cspell, group: Quality, role: spell check for Markdown, nodes: [project] }
+  - { name: VitePress, package: vitepress, group: Docs, role: documentation site on GitHub Pages, nodes: [project] }
+  - { name: backlog.md, package: backlog.md, group: Integration, role: "devDependency, task data", nodes: [backlog, hub, phase] }
+commands:
+  Quick start:
+    - { run: sbl init, note: wire a project }
+    - { run: sbl dashboard, note: "dashboard on :6428" }
+  Workflow:
+    - { run: sbl phase TASK-1, note: show a task phase }
+    - { run: sbl doctor, note: check the environment }
+  Development:
+    - { run: npm test, note: build + Vitest }
+    - { run: npm run lint, note: markdownlint + cspell }
+tasks:
+  TASK-85: summary
+  TASK-86: summary
+  TASK-87: summary
+  TASK-88: summary
+  TASK-89: summary
+  TASK-90: hub
+  TASK-91: cli
+  TASK-92: summary

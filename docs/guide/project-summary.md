@@ -21,6 +21,8 @@ back to the **Dashboard** and to the full-page **Backlog** browser. Both pages
 share the theme toggle and reload automatically when anything under `backlog/`
 changes, including the architecture file.
 
+![Project summary page](../assets/project-summary.png)
+
 ## What the page shows
 
 The page combines two sources and says which block came from where (the
