@@ -254,6 +254,26 @@ describe('renderSummary template', () => {
     expect(html).toContain("role: 'group'");
     expect(html).toContain("role: 'button'");
   });
+
+  describe('profile row column layout (TASK-99)', () => {
+    const style = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? '';
+
+    it('uses two tracks for .around.two on wide screens', () => {
+      expect(style).toMatch(/\.around\.two\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1\.6fr\)\s+minmax\(0,\s*1fr\);/);
+    });
+
+    it('keeps two equal columns at 980px for both variants', () => {
+      expect(style).toMatch(/@media \(max-width:980px\)\s*\{[^}]*\.around,\s*\.around\.two\s*\{\s*grid-template-columns:\s*1fr 1fr;/);
+    });
+
+    it('collapses both variants to one column at 640px', () => {
+      expect(style).toMatch(/@media \(max-width:640px\)\s*\{[^}]*\.around,\s*\.around\.two\s*\{\s*grid-template-columns:\s*1fr;/);
+    });
+
+    it('renderAround toggles the two class on missing highlights', () => {
+      expect(html).toContain("around.classList.toggle('two', !(A && A.highlights.length));");
+    });
+  });
 });
 
 describe('sbl-tokens.css', () => {

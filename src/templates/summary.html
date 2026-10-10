@@ -175,8 +175,9 @@ __SBL_TOKENS_CSS__
   /* ---------- Profile row (V4) ---------- */
   .around { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr); gap:26px 36px; margin-top:30px; }
   .around.reduced { margin-top:6px; }
-  @media (max-width:980px) { .around { grid-template-columns:1fr 1fr; } }
-  @media (max-width:640px) { .around { grid-template-columns:1fr; gap:24px; } }
+  .around.two { grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); }
+  @media (max-width:980px) { .around, .around.two { grid-template-columns:1fr 1fr; } }
+  @media (max-width:640px) { .around, .around.two { grid-template-columns:1fr; gap:24px; } }
   .sec { min-width:0; }
   .sec h2 { font-size:15px; margin-bottom:10px; display:flex; align-items:baseline; gap:8px; }
   .sec h2 small { font-size:12.5px; font-weight:400; color:var(--muted); }
@@ -678,6 +679,7 @@ __SBL_TOKENS_CSS__
     var around = $('#around');
     around.innerHTML = html;
     if (!svg) around.classList.add('reduced');
+    around.classList.toggle('two', !(A && A.highlights.length));
   }
   function renderSource() {
     function list(items, cls) { return '<ul' + (cls ? ' class="' + cls + '"' : '') + '>' + items.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'; }
