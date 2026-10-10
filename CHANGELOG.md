@@ -3,6 +3,21 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.8.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.7.1...v1.8.0) (2026-10-10)
+
+
+### Features
+
+* **cli:** add sbl summary with drift report ([38c385f](https://github.com/adam-s-k-i/super-backlog/commit/38c385fb09f13af4afb98bf268e0042212f9d96b))
+* **onboarding:** prompt for the architecture summary and keep it current ([60c4485](https://github.com/adam-s-k-i/super-backlog/commit/60c44855a37047c7bf7dea20e79456aa0b838979))
+* **summary:** detect drift in architecture.yml ([4a5d348](https://github.com/adam-s-k-i/super-backlog/commit/4a5d34810234149254073f6ce7740a8c629bdb02))
+* **summary:** surface drift in doctor and on the summary page ([c88140d](https://github.com/adam-s-k-i/super-backlog/commit/c88140d34c5dc9eef7ad18b4ba36c482388e5a01))
+
+
+### Bug Fixes
+
+* **skill:** explain that stale-file drift clears on commit ([b210517](https://github.com/adam-s-k-i/super-backlog/commit/b2105171037f81f3856bf3bfad8e45a801a1cf16))
+
 ## [1.7.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.7.0...v1.7.1) (2026-10-10)
 
 
