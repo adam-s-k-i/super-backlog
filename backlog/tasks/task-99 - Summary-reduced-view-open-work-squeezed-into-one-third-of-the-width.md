@@ -1,13 +1,12 @@
 ---
 id: TASK-99
 title: 'Summary reduced view: open work squeezed into one third of the width'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-10 10:34'
-updated_date: '2026-10-10 10:37'
+updated_date: '2026-10-10 13:14'
 labels:
   - bug
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-09-project-summary-design.md
