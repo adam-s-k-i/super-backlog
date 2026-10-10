@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.9.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.8.0...v1.9.0) (2026-10-10)
+
+
+### Features
+
+* model tiers, delegation rule and project profile ([#86](https://github.com/adam-s-k-i/super-backlog/issues/86)) ([3c22b05](https://github.com/adam-s-k-i/super-backlog/commit/3c22b0510d8194812e8d5f7e27b335c4d6ddb28a))
+
 ## [1.8.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.7.1...v1.8.0) (2026-10-10)
 
 
