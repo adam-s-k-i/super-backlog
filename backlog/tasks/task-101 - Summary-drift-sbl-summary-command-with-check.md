@@ -1,13 +1,13 @@
 ---
 id: TASK-101
 title: 'Summary drift: sbl summary command with --check'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:38'
+updated_date: '2026-10-10 15:41'
 labels:
   - feature
-  - phase/plan
+  - phase/impl
 dependencies:
   - TASK-100
 references:

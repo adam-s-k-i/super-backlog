@@ -4,10 +4,10 @@ title: 'Summary drift: detectDrift module and shared agent prompts'
 status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 15:38'
+updated_date: '2026-10-10 15:41'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-10-summary-drift-design.md
