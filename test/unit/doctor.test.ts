@@ -36,6 +36,7 @@ function makeDeps(overrides: Partial<DepsWithLines> = {}): DepsWithLines {
     readTaskLabels: () => [],
     loadArchitecture: () => checkArchitectureText(ARCH_OK, 'architecture.yml'),
     detectDrift: () => ({ findings: [], notes: [] }),
+    readCriticalAreas: () => ({ status: 'present', provisional: false, stamp: '2026-10-10, created with Fable 5.1' }),
     log: (line: string) => lines.push(line),
     ...overrides,
   };
@@ -311,5 +312,37 @@ describe('check 5: architecture.yml', () => {
     });
     runDoctor('/proj', d);
     expect(ran).toBe(false);
+  });
+});
+
+describe('check 6: critical-areas.md', () => {
+  it('passes on a profile with a stamp', () => {
+    const d = makeDeps();
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines).toContain('[ok]   backlog/docs/critical-areas.md present (2026-10-10, created with Fable 5.1)');
+  });
+
+  it('is skipped when the file is absent and keeps exit 0', () => {
+    const d = makeDeps({ readCriticalAreas: () => ({ status: 'missing' }) });
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines).toContain('[skip] backlog/docs/critical-areas.md not present (ask your agent to run the project-profile skill)');
+  });
+
+  it('warns and exits 4 on a provisional profile', () => {
+    const d = makeDeps({ readCriticalAreas: () => ({ status: 'present', provisional: true, stamp: '2026-10-10, created with Sonnet, provisional' }) });
+    expect(runDoctor('/proj', d)).toBe(4);
+    expect(d.lines).toContain('[warn] backlog/docs/critical-areas.md is provisional – revise it on the top tier (project-profile skill)');
+  });
+
+  it('warns and exits 4 without a Status line', () => {
+    const d = makeDeps({ readCriticalAreas: () => ({ status: 'present', provisional: false, stamp: null }) });
+    expect(runDoctor('/proj', d)).toBe(4);
+    expect(d.lines).toContain('[warn] backlog/docs/critical-areas.md has no Status line – run the project-profile skill');
+  });
+
+  it('turns a throwing reader into a warning', () => {
+    const d = makeDeps({ readCriticalAreas: () => { throw new Error('boom'); } });
+    expect(runDoctor('/proj', d)).toBe(4);
+    expect(d.lines).toContain('[warn] backlog/docs/critical-areas.md check failed (boom)');
   });
 });
