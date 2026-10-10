@@ -359,13 +359,60 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
     addPort(ed.s, ed.sSide, ed, 's', ed.t);
     addPort(ed.t, ed.tSide, ed, 't', ed.s);
   }
+  // Straight edges must sit at the same offset on both of their sides, so they are placed first.
+  // Sides joined by straight edges form a group; the group's straight edges share one block of
+  // port-spaced offsets centred on the mean of the centres each side would choose on its own
+  // (snapped to half a port step), and every side stacks its bending ports around that block.
+  const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+  const sideKey = (node: WorkNode, side: Side): string => `${node.id}:${side}`;
+  const parent = new Map<string, string>([...sides.keys()].map((k) => [k, k]));
+  const find = (k: string): string => {
+    let r = k;
+    while (parent.get(r) !== r) r = parent.get(r) as string;
+    return r;
+  };
+  for (const ed of work) {
+    if (!straight(ed)) continue;
+    const a = find(sideKey(ed.s, ed.sSide));
+    const b = find(sideKey(ed.t, ed.tSide));
+    if (a !== b) parent.set(cmp(a, b) < 0 ? b : a, cmp(a, b) < 0 ? a : b);
+  }
+  const groups = new Map<string, { sides: Port[][]; edges: WorkEdge[] }>();
+  for (const [k, list] of sides) {
+    const r = find(k);
+    const g = groups.get(r) ?? { sides: [], edges: [] };
+    g.sides.push(list);
+    groups.set(r, g);
+  }
+  for (const ed of work) if (straight(ed)) groups.get(find(sideKey(ed.s, ed.sSide)))?.edges.push(ed);
+  const half = LAYOUT.port / 2;
+  const straightOff = new Map<WorkEdge, number>();
+  for (const g of groups.values()) {
+    if (g.edges.length === 0) continue;
+    // a side spread symmetrically puts the centre of its straight block at (bending before - bending after) * half
+    const wants = g.sides.map((l) => (l.filter((p) => p.key < 0).length - l.filter((p) => p.key > 0).length) * half);
+    const centre = Math.round(wants.reduce((s, w) => s + w, 0) / wants.length / half) * half + 0;
+    const block = g.edges.slice().sort((a, b) => cmp(a.id, b.id) || a.index - b.index);
+    block.forEach((ed, i) => straightOff.set(ed, centre + (i - (block.length - 1) / 2) * LAYOUT.port));
+  }
+
   for (const [k, list] of sides) {
     const sep = k.lastIndexOf(':');
     const node = byId.get(k.slice(0, sep)) as WorkNode;
     const side = k.slice(sep + 1) as Side;
-    list.sort((a, b) => a.key - b.key || (a.tie < b.tie ? -1 : a.tie > b.tie ? 1 : 0));
+    list.sort((a, b) => a.key - b.key || cmp(a.tie, b.tie));
+    const fixed = list.flatMap((p) => straightOff.get(p.ed) ?? []);
+    const before = list.filter((p) => p.key < 0);
+    const after = list.filter((p) => p.key > 0);
+    const offset = (pt: Port, i: number): number => {
+      if (fixed.length === 0) return (i - (list.length - 1) / 2) * LAYOUT.port;
+      const own = straightOff.get(pt.ed);
+      if (own !== undefined) return own;
+      if (pt.key < 0) return Math.min(...fixed) - (before.length - before.indexOf(pt)) * LAYOUT.port;
+      return Math.max(...fixed) + (after.indexOf(pt) + 1) * LAYOUT.port;
+    };
     list.forEach((pt, i) => {
-      const off = (i - (list.length - 1) / 2) * LAYOUT.port;
+      const off = offset(pt, i);
       let x: number;
       let y: number;
       if (side === 'T') [x, y] = [node.cx + off, node.y];
@@ -376,10 +423,7 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
       else [pt.ed.tx, pt.ed.ty] = [x, y];
     });
   }
-  for (const ed of work) {
-    if (ed.kind === 'H') ed.ty = ed.sy;
-    if (ed.kind === 'V') ed.tx = ed.sx;
-  }
+  // both ends of a straight edge got the same offset and their nodes share a row (H) or column (V)
 
   // polylines
   const routed = work.map((ed) => {

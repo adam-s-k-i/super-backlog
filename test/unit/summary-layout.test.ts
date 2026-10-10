@@ -6,12 +6,14 @@ import { describe, expect, it } from 'vitest';
 
 import { checkArchitectureText, type Architecture } from '../../src/dashboard/summary-schema.js';
 import {
+  colX,
   estimateLabelWidth,
   layoutArchitecture,
   pathD,
   scoreBox,
   slotBox,
   slotsFor,
+  type LayoutEdge,
   type LayoutInput,
 } from '../../src/dashboard/summary-layout.js';
 
@@ -121,11 +123,52 @@ describe('layoutArchitecture: ports', () => {
     expect(g.crossings).toBe(0);
   });
 
+  const edge = (g: ReturnType<typeof layoutArchitecture>, id: string): LayoutEdge => {
+    const e = g.edges.find((x) => x.id === id);
+    if (!e) throw new Error(`no edge ${id}`);
+    return e;
+  };
+  const orthogonal = (pts: readonly (readonly number[])[]): boolean =>
+    pts.every((p, i) => i === 0 || p[0] === pts[i - 1][0] || p[1] === pts[i - 1][1]);
+
   it('keeps straight edges straight when the target side has several ports', () => {
-    const g = layoutArchitecture(graph(2, 2, [['a', 0, 0], ['b', 1, 0], ['c', 0, 1]], [['a', 'b'], ['c', 'b']]));
-    const ab = g.edges[0];
-    expect(ab.kind).toBe('H');
+    // b's left side receives the straight a>b and the VH c>b (corner [1,0] is free); a's right side has one port
+    const g = layoutArchitecture(graph(3, 2, [['a', 0, 0], ['b', 2, 0], ['c', 1, 1]], [['a', 'b'], ['c', 'b']]));
+    const ab = edge(g, 'a>b');
+    const cb = edge(g, 'c>b');
+    expect([ab.kind, cb.kind]).toEqual(['H', 'VH']);
+    const bLeft = colX(2);
+    expect(ab.points.at(-1)?.[0]).toBe(bLeft);
+    expect(cb.points.at(-1)?.[0]).toBe(bLeft);
     expect(ab.points[0][1]).toBe(ab.points[1][1]);
+    // c>b comes from below, so it sits below a>b, one full port step away
+    expect((cb.points.at(-1)?.[1] ?? 0) - (ab.points.at(-1)?.[1] ?? 0)).toBeGreaterThanOrEqual(18);
+    expect(g.crossings).toBe(0);
+  });
+
+  it('never puts a straight edge onto a sibling port when both of its sides are busy', () => {
+    // regression: a's right side holds a>b and a>e, b's left side holds a>b and d>b
+    const g = layoutArchitecture(
+      graph(3, 3, [['a', 0, 1], ['b', 2, 1], ['d', 1, 0], ['e', 1, 2], ['x', 0, 2]], [['a', 'b'], ['a', 'e'], ['d', 'b']]),
+    );
+    const ab = edge(g, 'a>b');
+    const db = edge(g, 'd>b');
+    expect([ab.kind, edge(g, 'a>e').kind, db.kind]).toEqual(['H', 'HV', 'VH']);
+    for (const e of g.edges) expect(orthogonal(e.points)).toBe(true);
+    expect(ab.points[0][1]).toBe(ab.points[1][1]);
+    const bLeft = colX(2);
+    expect(ab.points.at(-1)?.[0]).toBe(bLeft);
+    expect(db.points.at(-1)?.[0]).toBe(bLeft);
+    expect(Math.abs((ab.points.at(-1)?.[1] ?? 0) - (db.points.at(-1)?.[1] ?? 0))).toBeGreaterThanOrEqual(18);
+    // every port stays on its node's side
+    const b = g.nodes.find((n) => n.id === 'b') as { y: number; h: number };
+    for (const e of [ab, db]) {
+      const y = e.points.at(-1)?.[1] ?? 0;
+      expect(y).toBeGreaterThan(b.y);
+      expect(y).toBeLessThan(b.y + b.h);
+    }
+    expect(g.crossings).toBe(0);
+    expect(g.warnings).toEqual([]);
   });
 });
 
@@ -156,9 +199,19 @@ describe('labels', () => {
   });
 
   it('moves a label off a node in a real layout', () => {
-    // edge a>b runs left to right two cells long, node c sits directly above the middle of the line
-    const g = layoutArchitecture(graph(3, 2, [['a', 0, 1], ['b', 2, 1], ['c', 1, 0]], [['a', 'b']]));
-    expect(g.edges[0].kind).toBe('H'); // the straight line passes the free cell [1,1]
+    // a>b runs down column 1 through the free cell [1,1]; node n sits right of the line's middle,
+    // and the label is long enough that the first candidate (middle, right) reaches into n
+    const input = graph(3, 3, [['a', 1, 0], ['b', 1, 2], ['n', 2, 1]], [['a', 'b']]);
+    const label = 'publishes the release notes to the changelog';
+    const g = layoutArchitecture({ ...input, edges: [{ ...input.edges[0], label }] });
+    const e = g.edges[0];
+    expect(e.kind).toBe('V');
+    const n = g.nodes.find((x) => x.id === 'n') as { x: number; y: number; w: number; h: number };
+    const first = slotBox(e.candidates[0], estimateLabelWidth(label)).box;
+    expect([e.candidates[0].t, e.candidates[0].side]).toEqual([0.5, 'right']);
+    expect(first.x1 > n.x && first.x0 < n.x + n.w && first.y1 > n.y && first.y0 < n.y + n.h).toBe(true);
+    expect(e.slot).not.toBe(0);
+    expect(e.score).toBe(0);
     expect(g.collisions).toBe(0);
   });
 
