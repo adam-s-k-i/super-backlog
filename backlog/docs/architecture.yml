@@ -56,7 +56,7 @@ nodes:
     why: Degraded situations turn into warnings or refusals, never into a silent overwrite.
     files: [src/init/execute.ts, src/lib/atomic.ts, src/templates/]
   - id: ownership
-    label: Ownership & uninstall
+    label: Ownership
     sub: lib/ownership.ts
     kind: core
     cell: [2, 2]

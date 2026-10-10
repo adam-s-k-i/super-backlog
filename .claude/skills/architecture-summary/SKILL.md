@@ -27,8 +27,11 @@ releases, CI, open work). Schema and YAML subset:
    change only what is outdated or missing.
 3. Propose the content:
    - `pitch`: one or two sentences, `**bold**` is the only markup.
-   - 6 to 14 `nodes` with `kind`, a short `label` (at most 28 characters),
-     `purpose`, `why`, real `files` and real `commands`.
+   - 6 to 14 `nodes` with `kind`, a short `label`, an optional `sub`,
+     `purpose`, `why`, real `files` and real `commands`. Keep `label` at 18
+     characters or fewer and `sub` at 20 or fewer so they fit the node box;
+     28 and 32 are only the hard schema limits, and longer text is clipped
+     with an ellipsis.
    - `zones` that group nodes by layer; zones may not overlap.
    - `edges` that read "from → label → to" (the source uses, calls or writes
      the target).

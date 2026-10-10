@@ -19,7 +19,10 @@ Use the **Summary** tab under the project name in the dashboard sidebar, or open
 `http://localhost:6428/p/<slug>/summary/` directly. The summary page has tabs
 back to the **Dashboard** and to the full-page **Backlog** browser. Both pages
 share the theme toggle and reload automatically when anything under `backlog/`
-changes, including the architecture file.
+changes, including the architecture file. On Windows under Node 24 live reload
+is disabled due to a libuv bug, as for the dashboard (see
+[Troubleshooting](troubleshooting.md#windows--node-24-sbl-dashboard-disables-live-reload));
+refresh the browser tab manually.
 
 ![Project summary page](../assets/project-summary.png)
 
@@ -86,10 +89,10 @@ edges:
 | `pitch` | yes | At most 400 characters. `**bold**` is the only markup. |
 | `grid` | yes | `{ cols, rows }`, 2 to 8 each. Nodes sit on grid cells. |
 | `kinds` | no | Map of kind id to `{ label, color, dashed? }`; replaces the default kinds `actor`, `core`, `output`, `optional`, `external`. At most 6. |
-| `zones` | no | `{ label, cols: [c0, c1], rows: [r0, r1] }`, inclusive cell ranges that may not overlap. |
+| `zones` | no | Up to 16 `{ label, cols: [c0, c1], rows: [r0, r1] }`, inclusive cell ranges that may not overlap. |
 | `nodes` | yes | At least 2, at most 40: `id`, `label` (28 characters), `kind`, `cell: [col, row]`, optional `sub`, `purpose`, `why`, `files`, `commands` (`{ run, note? }`). |
 | `edges` | yes | At least 1, at most 120: `{ from, to, label, text? }`. Read as "from → label → to"; the arrow points at the target. |
-| `flows` | no | Up to 12 `{ id, label, color?, command?, text?, steps }`, each step `from>to` naming an existing edge. |
+| `flows` | no | Up to 12 `{ id, label, color?, command?, text?, steps }` with up to 12 steps each, every step `from>to` naming an existing edge. |
 | `highlights` | no | Up to 12 `{ node, title, text }`; the list position is the badge number on the node, one badge per node. |
 | `stack` | no | Up to 40 `{ name, group, package?, version?, role?, nodes }`. Versions resolve from `package-lock.json` or `composer.lock` unless `version` is set. |
 | `commands` | no | Map of group name to `{ run, note? }` entries; at most 6 groups of 8. |
