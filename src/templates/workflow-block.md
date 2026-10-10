@@ -28,6 +28,7 @@ methodology skills that decide how the work is done.
 4. Skills take precedence over habit whenever a matching skill exists.
 5. Phase transitions only via `sbl phase <id> <phase>`, always at a gate passage — never edit phase labels by hand.
 6. Delegate by tier — less demanding work goes to subagents on cheaper models (see "Model routing for subagents" below).
+7. Keep the project summary current — at session start, if `backlog/docs/architecture.yml` is missing, offer once to run the architecture-summary skill. At the end of the pipeline, after a merge, run `sbl summary --check`; if it reports drift, offer a refresh. Never run the skill without the user's consent.
 
 ### Model routing for subagents
 

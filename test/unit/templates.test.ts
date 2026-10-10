@@ -44,6 +44,13 @@ describe('workflow-block.md', () => {
     expect(t).toContain('OpenCode:');
     expect(t).toContain('Other harnesses:');
   });
+  it('binds rule 7: keep the project summary current, only with consent', () => {
+    expect(t).toContain(
+      '7. Keep the project summary current — at session start, if `backlog/docs/architecture.yml` is missing, offer once to run the architecture-summary skill. At the end of the pipeline, after a merge, run `sbl summary --check`; if it reports drift, offer a refresh. Never run the skill without the user\'s consent.',
+    );
+    expect(t.indexOf('7. Keep the project summary current')).toBeGreaterThan(t.indexOf('6. Delegate by tier'));
+    expect(t.indexOf('7. Keep the project summary current')).toBeLessThan(t.indexOf('### Model routing for subagents'));
+  });
   it('keeps the project-gates note as the closing line', () => {
     expect(t.trimEnd().endsWith('Add project-specific human gates below the block.')).toBe(true);
   });

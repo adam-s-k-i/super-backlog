@@ -52,7 +52,8 @@ Let your agent write it. `sbl init` and `sbl update` install the
 `architecture-summary` skill for Claude Code and OpenCode. Ask for "an
 architecture summary of this project"; the skill reads manifests, layout and
 tests, writes `backlog/docs/architecture.yml`, runs `sbl doctor` until the file
-is clean and stops for your review.
+is clean and stops for your review. While the file is missing, `sbl init` ends
+with a hint to ask your agent for it.
 
 To check the file yourself:
 
@@ -65,6 +66,8 @@ does not exist, fails with every problem and its path when the file is invalid,
 and warns when the file is valid but the diagram cannot be drawn cleanly
 (an edge without a straight or single-corner route, an overlapping label, or a
 crossing).
+On a valid file, check 5 also counts the drift findings described in
+[Keeping it current](#keeping-it-current) and points to `sbl summary`.
 
 ## File format
 
@@ -117,9 +120,49 @@ Quote a value when it contains a comma inside `{ }` or `[ ]`, a colon followed
 by a space, or a `#`. Tabs, anchors, aliases, tags and multiple documents are
 rejected with the line and column of the problem.
 
+## Keeping it current
+
+`sbl summary` compares the curated file with the code and the backlog:
+
+```bash
+sbl summary
+```
+
+It validates the file like doctor check 5, lists schema and layout warnings,
+and then lists four kinds of drift, each with its path in the file:
+
+| Finding | Meaning |
+| --- | --- |
+| `missing-path` | A path in a node's `files` no longer exists. An entry that ends in `/` must be a directory. |
+| `done-task` | A `tasks` entry maps a task that is Done. |
+| `unknown-task` | A `tasks` entry names a task the backlog no longer lists (archived, deleted or never created). |
+| `stale-file` | 20 or more commits changed the documented files since the file was last committed. |
+
+The last line names the prompt to hand to your agent, for example
+"Run the architecture-summary skill to refresh backlog/docs/architecture.yml;
+sbl summary lists the drift findings." When the backlog CLI or git is
+unavailable, the affected checks are skipped and a `note:` line says why.
+
+| Situation | Exit code |
+| --- | --- |
+| Valid file, no warnings, no drift | `0` |
+| Missing file, warnings, or drift | `4` |
+| Invalid file, or not inside a project | `1` |
+
+`sbl summary --check` prints the same report without the prompt and uses the
+same exit codes, for CI and for the agent's end-of-pipeline check. The
+workflow block asks the agent to run it after a merge and to offer a refresh
+when it reports drift; the agent never runs the skill without your consent.
+
+The summary page shows the same information as a banner with the number of
+findings and a copy button for the prompt.
+
 ## When something is wrong
 
-- **No file:** the reduced view, without a warning.
+- **No file:** the reduced view plus a notice with a copy button for the
+  agent prompt that creates the file.
+- **Drift:** the full page plus a banner with the number of drift findings
+  and a copy button for the refresh prompt; `sbl summary` lists them.
 - **Invalid file:** the reduced view plus a notice that lists up to 20 problems
   as `path: message`, for example `nodes[3].cell: outside grid 5x5`. The page
   never fails to load.

@@ -94,6 +94,13 @@ describe('skill-architecture-summary.md', () => {
   it('never invents files or commands', () => {
     expect(t).toMatch(/never invent files, commands/i);
   });
+  it('runs on drift and fixes the sbl summary findings', () => {
+    expect(t).toMatch(/^- `sbl summary` reports drift\.$/m);
+    expect(t).toContain('run `sbl summary` first');
+    // the template wraps at about 80 columns, so match across line breaks
+    expect(t).toMatch(/prune `tasks` entries for Done or unknown\s+tasks/i);
+    expect(t).toMatch(/finish when it exits 0, or 4 only for warnings the user\s+accepts/i);
+  });
   it('links the schema reference', () => {
     expect(t).toContain('https://adam-s-k-i.github.io/super-backlog/guide/project-summary');
   });

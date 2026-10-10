@@ -1,10 +1,10 @@
 // test/integration/init-preflight.test.ts
 import { describe, expect, it, vi } from 'vitest';
-import { existsSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { runInit, type ParsedArgs } from '../../src/commands/init.js';
+import { INIT_SUMMARY_HINT, runInit, type ParsedArgs } from '../../src/commands/init.js';
 import type { PreflightDeps, PreflightResult, UnitReport } from '../../src/lib/preflight.js';
 
 function args(values: Record<string, unknown> = {}): ParsedArgs {
@@ -185,6 +185,55 @@ describe('sbl init preflight integration', () => {
       expect(preflightRan).toBe(0);
       expect(doctorRan).toBe(0);
     } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('ends with the architecture-summary hint while architecture.yml is missing', async () => {
+    const cwd = tempCwd('hint');
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await runInit(cwd, args(), { preflight: () => okResult(), doctor: () => 0 });
+      expect(INIT_SUMMARY_HINT).toBe(
+        'next step: ask your agent to run the architecture-summary skill (writes backlog/docs/architecture.yml for the summary page)',
+      );
+      const lines = spy.mock.calls.map((c) => String(c[0]));
+      expect(lines[lines.length - 1]).toBe(INIT_SUMMARY_HINT);
+      expect(lines.findIndex((l) => l.startsWith('super-backlog init complete'))).toBeLessThan(lines.indexOf(INIT_SUMMARY_HINT));
+    } finally {
+      spy.mockRestore();
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('prints no hint when architecture.yml exists', async () => {
+    const cwd = tempCwd('hint-present');
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await runInit(cwd, args(), {
+        preflight: () => okResult(),
+        // the doctor seam runs after the init actions and before the hint check
+        doctor: (c) => {
+          mkdirSync(join(c, 'backlog', 'docs'), { recursive: true });
+          writeFileSync(join(c, 'backlog', 'docs', 'architecture.yml'), 'schema: 1\n');
+          return 0;
+        },
+      });
+      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_SUMMARY_HINT);
+    } finally {
+      spy.mockRestore();
+      rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it('prints no hint on --dry-run', async () => {
+    const cwd = tempCwd('hint-dryrun');
+    const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await runInit(cwd, args({ 'dry-run': true }), { preflight: () => okResult(), doctor: () => 0 });
+      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_SUMMARY_HINT);
+    } finally {
+      spy.mockRestore();
       rmSync(cwd, { recursive: true, force: true });
     }
   });

@@ -56,6 +56,7 @@ Every initialized project also gets a binding model-routing rule in its `AGENTS.
 | `sbl phase TASK-1 plan` | Advance the phase after the gate is passed (`done` clears the label). |
 | `sbl update` | First self-updates a globally installed CLI to the latest npm version and re-runs itself (opt out with `--no-self` or `SBL_SKIP_UPDATE_CHECK`), then refreshes all injected files and prints harness/plugin versions. |
 | `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, and the summary page's `architecture.yml`. |
+| `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it; `--check` for CI. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
 | `sbl uninstall --with-backlog` | Remove everything, including task data. |
 
@@ -100,7 +101,7 @@ sbl dashboard --port 8080 --no-open
 
 There is no static `dashboard.html` written to your project.
 
-Each project also gets a [project summary page](./project-summary) at `/p/<slug>/summary/`: architecture diagram, tech stack, commands and open work at a glance.
+Each project also gets a [project summary page](./project-summary) at `/p/<slug>/summary/`: architecture diagram, tech stack, commands and open work at a glance. While its `backlog/docs/architecture.yml` is missing, `sbl init` ends with a hint to ask your agent for the `architecture-summary` skill.
 
 ### Backlog button
 
