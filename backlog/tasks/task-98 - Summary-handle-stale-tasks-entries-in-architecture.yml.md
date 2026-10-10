@@ -1,12 +1,12 @@
 ---
 id: TASK-98
 title: 'Summary: handle stale tasks entries in architecture.yml'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-10 10:28'
+updated_date: '2026-10-10 17:12'
 labels:
   - enhancement
-  - phase/spec
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-09-project-summary-design.md
@@ -23,8 +23,14 @@ Follow-up from the project-summary release (v1.7.0). The tasks map in backlog/do
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Behaviour is decided and documented in the guide: sbl doctor warns about tasks entries whose task is Done or archived, or the summary page ignores them
-- [ ] #2 The architecture-summary skill tells the agent to prune Done task ids when it updates architecture.yml
-- [ ] #3 The dogfood backlog/docs/architecture.yml has no stale tasks entries and sbl doctor reports it clean
-- [ ] #4 npm test passes
+- [x] #1 Behaviour is decided and documented in the guide: sbl doctor warns about tasks entries whose task is Done or archived, or the summary page ignores them
+- [x] #2 The architecture-summary skill tells the agent to prune Done task ids when it updates architecture.yml
+- [x] #3 The dogfood backlog/docs/architecture.yml has no stale tasks entries and sbl doctor reports it clean
+- [x] #4 npm test passes
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Superseded by summary drift detection (spec 2026-10-10): sbl summary, doctor check 5 and the summary page report Done and unknown tasks entries as drift, the architecture-summary skill prunes them, and the dogfood file is clean.
+<!-- SECTION:FINAL_SUMMARY:END -->

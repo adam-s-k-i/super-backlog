@@ -1,13 +1,12 @@
 ---
 id: TASK-104
 title: 'Summary drift: dogfood the repo''s architecture.yml and close TASK-98'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-10 15:07'
-updated_date: '2026-10-10 16:05'
+updated_date: '2026-10-10 17:12'
 labels:
   - chore
-  - phase/verify
 dependencies:
   - TASK-102
   - TASK-103
@@ -29,6 +28,12 @@ Plan Task 5. Bring this repo's own backlog/docs/architecture.yml up to date with
 - [x] #1 The cli node in backlog/docs/architecture.yml describes eight commands including summary and documents the new files
 - [x] #2 Managed glue (AGENTS.md block, installed skills) is refreshed through sbl update, not by hand
 - [x] #3 node dist/bin.js summary exits 0 at the repo root
-- [ ] #4 TASK-98 is closed as superseded with a final summary pointing to the spec (via the backlog CLI after user approval)
+- [x] #4 TASK-98 is closed as superseded with a final summary pointing to the spec (via the backlog CLI after user approval)
 - [x] #5 npm test and npm run lint pass
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Dogfood architecture.yml updated (cli node lists eight commands incl. summary, summary node lists summary-drift.ts); managed glue refreshed via sbl update --no-self (rule 7, skill drift loop); node dist/bin.js summary exits 0; TASK-98 closed as superseded.
+<!-- SECTION:FINAL_SUMMARY:END -->
