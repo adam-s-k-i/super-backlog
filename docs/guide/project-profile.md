@@ -1,3 +1,7 @@
+---
+type: how-to
+---
+
 # Project profile
 
 `backlog/docs/critical-areas.md` names the parts of a project where a mistake
