@@ -1,12 +1,13 @@
 ---
 id: TASK-100
 title: 'Summary drift: detectDrift module and shared agent prompts'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-10 15:07'
+updated_date: '2026-10-10 15:38'
 labels:
   - feature
-  - phase/spec
+  - phase/impl
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-10-summary-drift-design.md

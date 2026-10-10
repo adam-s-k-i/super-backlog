@@ -4,9 +4,10 @@ title: 'Summary drift: dogfood the repo''s architecture.yml and close TASK-98'
 status: To Do
 assignee: []
 created_date: '2026-10-10 15:07'
+updated_date: '2026-10-10 15:38'
 labels:
   - chore
-  - phase/spec
+  - phase/plan
 dependencies:
   - TASK-102
   - TASK-103

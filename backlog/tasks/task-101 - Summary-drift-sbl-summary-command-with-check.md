@@ -4,9 +4,10 @@ title: 'Summary drift: sbl summary command with --check'
 status: To Do
 assignee: []
 created_date: '2026-10-10 15:07'
+updated_date: '2026-10-10 15:38'
 labels:
   - feature
-  - phase/spec
+  - phase/plan
 dependencies:
   - TASK-100
 references:
