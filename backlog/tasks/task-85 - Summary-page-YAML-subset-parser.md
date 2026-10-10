@@ -1,13 +1,12 @@
 ---
 id: TASK-85
 title: 'Summary page: YAML subset parser'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-09 21:50'
-updated_date: '2026-10-09 23:46'
+updated_date: '2026-10-10 09:15'
 labels:
   - feature
-  - phase/verify
 milestone: m-2
 dependencies: []
 references:

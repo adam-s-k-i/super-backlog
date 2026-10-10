@@ -1,13 +1,12 @@
 ---
 id: TASK-92
 title: 'Summary page: dogfood architecture.yml for super-backlog'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-09 21:51'
-updated_date: '2026-10-10 07:42'
+updated_date: '2026-10-10 09:15'
 labels:
   - feature
-  - phase/verify
 milestone: m-2
 dependencies:
   - TASK-90
