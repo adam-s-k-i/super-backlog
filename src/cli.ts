@@ -14,7 +14,7 @@ import { runSummary } from './commands/summary.js';
 import { runUninstall } from './commands/uninstall.js';
 import { runUpdate } from './commands/update.js';
 import { KIT_VERSION } from './lib/version.js';
-import { applyVersionHint, defaultFetchLatest } from './lib/version-check.js';
+import { applyVersionHint, spawnVersionRefresh } from './lib/version-check.js';
 
 export const HELP = `super-backlog (sbl) - equip any project with Backlog.md + Superpowers
 
@@ -82,7 +82,7 @@ export async function runCli(argv: string[]): Promise<number> {
   await applyVersionHint(KIT_VERSION, {
     home: homedir(),
     now: () => new Date(),
-    fetchLatest: defaultFetchLatest,
+    refresh: () => spawnVersionRefresh(homedir()),
     log: (line) => console.error(line),
     env: { ...process.env, SBL_SKIP_UPDATE_CHECK: process.env.SBL_SKIP_UPDATE_CHECK },
   });
