@@ -36,12 +36,45 @@ const HOOK_REPORT: Record<HookStripResult, ReportLine> = {
 /** Router v1 registered exactly `node node_modules/super-backlog/dist/templates/cc-session-hook.js`. */
 const OWNED_HOOK_RE = /(^|\/)super-backlog\/dist\/templates\/cc-session-hook\.js$/;
 
-/** A single hook is ours when it is a command hook whose first argument is the shipped cc-session-hook.js. */
+/**
+ * Path characters that carry no shell meaning. Anything else (`; | & $( ) \` % < >`, newlines) makes a
+ * command someone else's, so uninstall never removes it. The only expansion allowed is the project dir.
+ */
+const SAFE = String.raw`[\w.~:/\\+@-]`;
+const PROJECT_DIR = String.raw`\$CLAUDE_PROJECT_DIR|\$\{CLAUDE_PROJECT_DIR\}`;
+
+/** `node` or `node.exe`, optionally with a path in front, optionally quoted as a whole. */
+const NODE = String.raw`(?:"(?:(?:${SAFE}| )*[\\/])?node(?:\.exe)?"|(?:${SAFE}*[\\/])?node(?:\.exe)?)`;
+const NODE_COMMAND_RE = new RegExp(String.raw`^[ \t]*${NODE}[ \t]*$`, 'i');
+
+/** One shell word built from unquoted, double-quoted and single-quoted parts. */
+const WORD = String.raw`(?:"(?:${SAFE}| |${PROJECT_DIR})*"|'(?:${SAFE}| |${PROJECT_DIR})*'|${SAFE}|${PROJECT_DIR})+`;
+
+/** Single-string form `node <script>`: exactly one word after the interpreter. */
+const STRING_HOOK_RE = new RegExp(String.raw`^[ \t]*${NODE}[ \t]+(${WORD})[ \t]*$`, 'i');
+
+function unquote(word: string): string {
+  return word.replace(/"([^"]*)"|'([^']*)'/g, (_, double?: string, single?: string) => double ?? single ?? '');
+}
+
+function isOwnedScript(script: string): boolean {
+  return OWNED_HOOK_RE.test(script.split('\\').join('/'));
+}
+
+/**
+ * A single hook is ours when it is a command hook that runs the shipped cc-session-hook.js with node and
+ * nothing else: either `command: "node"` with the script as the only `args` entry (what v1 wrote), or a
+ * single-string `command`.
+ */
 function isOwnedHook(hook: unknown): boolean {
   if (hook === null || typeof hook !== 'object') return false;
-  const { type, args } = hook as { type?: unknown; args?: unknown };
-  if (type !== 'command' || !Array.isArray(args) || typeof args[0] !== 'string') return false;
-  return OWNED_HOOK_RE.test(args[0].split('\\').join('/'));
+  const { type, command, args } = hook as { type?: unknown; command?: unknown; args?: unknown };
+  if (type !== 'command' || typeof command !== 'string') return false;
+  if (Array.isArray(args) && args.length > 0) {
+    return args.length === 1 && typeof args[0] === 'string' && NODE_COMMAND_RE.test(command) && isOwnedScript(args[0]);
+  }
+  const word = STRING_HOOK_RE.exec(command)?.[1];
+  return word !== undefined && isOwnedScript(unquote(word));
 }
 
 /** Marks an entry whose hooks were all ours; a literal null entry in the user file stays as it is. */

@@ -1,7 +1,15 @@
 // src/commands/models.ts
 import { KIT_VERSION } from '../lib/version.js';
 import { applyRouter } from '../models/apply.js';
-import { InvalidConfigError, isHarness, isTier, isValidModelId, loadConfig, serializeConfig } from '../models/config.js';
+import {
+  InvalidConfigError,
+  isHarness,
+  isTier,
+  isValidModelId,
+  loadConfig,
+  readConfigStrict,
+  serializeConfig,
+} from '../models/config.js';
 import { HARNESSES, TIERS } from '../models/defaults.js';
 import { discoverModels } from '../models/discovery.js';
 import { saveDiscovery, setRouterEnabled, setRouterTier } from '../models/install.js';
@@ -46,7 +54,21 @@ function runSet(cwd: string, rest: string[]): number {
   return 0;
 }
 
+/** Prints the defaults for an unreadable models.json, with the reason as a warning on stderr. */
+function runShow(cwd: string): number {
+  try {
+    readConfigStrict(cwd);
+  } catch (err) {
+    // like loadConfig, show never fails on a bad file; it only says why it shows the defaults
+    console.error(`warning: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  console.log(serializeConfig(loadConfig(cwd)).trimEnd());
+  return 0;
+}
+
 async function runDiscover(cwd: string): Promise<number> {
+  // Fail on an unreadable models.json before spending time on `opencode models`.
+  readConfigStrict(cwd);
   const result = await discoverModels(cwd);
   if (!result) {
     console.error('discovery failed (is the OpenCode CLI available?)');
@@ -73,8 +95,7 @@ async function runSubcommand(cwd: string, args: ParsedArgs): Promise<number> {
   const [sub = 'show', ...rest] = args.positionals;
   switch (sub) {
     case 'show':
-      console.log(serializeConfig(loadConfig(cwd)).trimEnd());
-      return 0;
+      return runShow(cwd);
     case 'enable':
       setRouterEnabled(cwd, true);
       console.log('model router enabled');

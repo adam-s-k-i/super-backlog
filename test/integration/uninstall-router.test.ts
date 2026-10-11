@@ -103,6 +103,74 @@ describe('uninstall model router', () => {
     expect(report).toContainEqual({ verdict: 'removed', label: '.claude/settings.json SessionStart hook' });
   });
 
+  it('recognises the sbl hook in single-string command form', () => {
+    const rel = 'node_modules/super-backlog/dist/templates/cc-session-hook.js';
+    const commands = [
+      `node ${rel}`,
+      `node.exe "C:\\proj\\${rel.split('/').join('\\')}"`,
+      `  node  '$CLAUDE_PROJECT_DIR/${rel}'  `,
+      `node "$CLAUDE_PROJECT_DIR"/${rel}`,
+      `node \${CLAUDE_PROJECT_DIR}/${rel}`,
+      `node "/home/my user/proj/${rel}"`,
+      `/usr/bin/node ${rel}`,
+      `"C:\\Program Files\\nodejs\\node.exe" "C:\\proj\\${rel.split('/').join('\\')}"`,
+    ];
+    const entries = commands.map((command) => ({ matcher: '*', hooks: [{ type: 'command', command }] }));
+    const cwd = freshDir();
+    put(cwd, '.claude/settings.json', JSON.stringify({ hooks: { SessionStart: [...entries, OWN_HOOK] } }, null, 2));
+    const report: Line[] = [];
+    uninstallModelRouter(cwd, report);
+    expect(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8')).hooks.SessionStart).toEqual([OWN_HOOK]);
+    expect(report).toContainEqual({ verdict: 'removed', label: '.claude/settings.json SessionStart hook' });
+  });
+
+  it('keeps single-string commands that only resemble the sbl hook', () => {
+    const rel = 'node_modules/super-backlog/dist/templates/cc-session-hook.js';
+    const commands = [
+      `node ${rel} --extra`,
+      `bash ${rel}`,
+      `mynode ${rel}`,
+      `node "${rel}" "${rel}"`,
+      'node scripts/my-cc-session-hook.js',
+      `node "${rel}'`,
+      rel,
+      `node x;/${rel}`,
+      `node x|/${rel}`,
+      `node a&&/${rel}`,
+      `node $(evil)/${rel}`,
+      'node `evil`/' + rel,
+      `node "$(rm -rf ~)"/${rel}`,
+      `node %EVIL%/${rel}`,
+      `$(evil)/node ${rel}`,
+      `node\n${rel}`,
+    ];
+    const entries = commands.map((command) => ({ matcher: '*', hooks: [{ type: 'command', command }] }));
+    const cwd = freshDir();
+    put(cwd, '.claude/settings.json', JSON.stringify({ hooks: { SessionStart: entries } }, null, 2));
+    const report: Line[] = [];
+    uninstallModelRouter(cwd, report);
+    expect(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8')).hooks.SessionStart).toEqual(entries);
+    expect(report).toContainEqual({ verdict: 'skipped', label: '.claude/settings.json SessionStart hook (none owned)' });
+  });
+
+  it('matches the args form only for node with exactly our script', () => {
+    const rel = 'node_modules/super-backlog/dist/templates/cc-session-hook.js';
+    const foreign = [
+      { type: 'command', command: 'bash', args: [rel] },
+      { type: 'command', command: 'node', args: [rel, '--x'] },
+    ].map((hook) => ({ matcher: '*', hooks: [hook] }));
+    const ours = [
+      { type: 'command', command: 'node.exe', args: [rel] },
+      { type: 'command', command: `node ${rel}`, args: [] },
+    ].map((hook) => ({ matcher: '*', hooks: [hook] }));
+    const cwd = freshDir();
+    put(cwd, '.claude/settings.json', JSON.stringify({ hooks: { SessionStart: [...foreign, ...ours] } }, null, 2));
+    const report: Line[] = [];
+    uninstallModelRouter(cwd, report);
+    expect(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8')).hooks.SessionStart).toEqual(foreign);
+    expect(report).toContainEqual({ verdict: 'removed', label: '.claude/settings.json SessionStart hook' });
+  });
+
   it('does not treat a similarly named user script as the sbl hook', () => {
     const cwd = freshDir();
     const lookalike = { matcher: '*', hooks: [{ type: 'command', command: 'node', args: ['scripts/my-cc-session-hook.js'] }] };

@@ -210,6 +210,14 @@ describe('cleanLegacy', () => {
     expect(JSON.parse(read(cwd, '.claude/settings.json'))).toEqual({ permissions: { allow: [] }, hooks: { SessionStart: [OWN_HOOK] } });
   });
 
+  it('removes the sbl SessionStart hook in single-string command form', () => {
+    const cwd = freshDir();
+    const stringHook = { matcher: '*', hooks: [{ type: 'command', command: 'node node_modules/super-backlog/dist/templates/cc-session-hook.js' }] };
+    put(cwd, '.claude/settings.json', JSON.stringify({ hooks: { SessionStart: [stringHook, OWN_HOOK] } }, null, 2));
+    expect(cleanLegacy(cwd, 'claude')).toEqual(['removed legacy .claude/settings.json SessionStart hook']);
+    expect(JSON.parse(read(cwd, '.claude/settings.json'))).toEqual({ hooks: { SessionStart: [OWN_HOOK] } });
+  });
+
   it('warns instead of throwing on an unparsable settings.json', () => {
     const cwd = freshDir();
     put(cwd, '.claude/settings.json', '{ broken');
