@@ -36,12 +36,26 @@ const HOOK_REPORT: Record<HookStripResult, ReportLine> = {
 /** Router v1 registered exactly `node node_modules/super-backlog/dist/templates/cc-session-hook.js`. */
 const OWNED_HOOK_RE = /(^|\/)super-backlog\/dist\/templates\/cc-session-hook\.js$/;
 
-/** A single hook is ours when it is a command hook whose first argument is the shipped cc-session-hook.js. */
+/** Single-string form `node <script>` (or node.exe, script optionally quoted), with nothing after the script. */
+const STRING_HOOK_RE = /^\s*node(?:\.exe)?\s+(?:"([^"]+)"|'([^']+)'|([^\s"']+))\s*$/i;
+
+function isOwnedScript(script: string): boolean {
+  return OWNED_HOOK_RE.test(script.split('\\').join('/'));
+}
+
+/**
+ * A single hook is ours when it is a command hook that runs the shipped cc-session-hook.js: either as the
+ * first of `args` (what v1 wrote) or as the only argument of a single-string `command`.
+ */
 function isOwnedHook(hook: unknown): boolean {
   if (hook === null || typeof hook !== 'object') return false;
-  const { type, args } = hook as { type?: unknown; args?: unknown };
-  if (type !== 'command' || !Array.isArray(args) || typeof args[0] !== 'string') return false;
-  return OWNED_HOOK_RE.test(args[0].split('\\').join('/'));
+  const { type, command, args } = hook as { type?: unknown; command?: unknown; args?: unknown };
+  if (type !== 'command') return false;
+  if (Array.isArray(args)) return typeof args[0] === 'string' && isOwnedScript(args[0]);
+  if (typeof command !== 'string') return false;
+  const match = STRING_HOOK_RE.exec(command);
+  const script = match?.[1] ?? match?.[2] ?? match?.[3];
+  return script !== undefined && isOwnedScript(script);
 }
 
 /** Marks an entry whose hooks were all ours; a literal null entry in the user file stays as it is. */

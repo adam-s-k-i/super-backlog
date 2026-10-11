@@ -103,6 +103,34 @@ describe('uninstall model router', () => {
     expect(report).toContainEqual({ verdict: 'removed', label: '.claude/settings.json SessionStart hook' });
   });
 
+  it('recognises the sbl hook in single-string command form', () => {
+    const rel = 'node_modules/super-backlog/dist/templates/cc-session-hook.js';
+    const commands = [
+      `node ${rel}`,
+      `node.exe "C:\\proj\\${rel.split('/').join('\\')}"`,
+      `  node  '$CLAUDE_PROJECT_DIR/${rel}'  `,
+    ];
+    const entries = commands.map((command) => ({ matcher: '*', hooks: [{ type: 'command', command }] }));
+    const cwd = freshDir();
+    put(cwd, '.claude/settings.json', JSON.stringify({ hooks: { SessionStart: [...entries, OWN_HOOK] } }, null, 2));
+    const report: Line[] = [];
+    uninstallModelRouter(cwd, report);
+    expect(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8')).hooks.SessionStart).toEqual([OWN_HOOK]);
+    expect(report).toContainEqual({ verdict: 'removed', label: '.claude/settings.json SessionStart hook' });
+  });
+
+  it('keeps single-string commands that only resemble the sbl hook', () => {
+    const rel = 'node_modules/super-backlog/dist/templates/cc-session-hook.js';
+    const commands = [`node ${rel} --extra`, `bash ${rel}`, 'node scripts/my-cc-session-hook.js', `node "${rel}'`, rel];
+    const entries = commands.map((command) => ({ matcher: '*', hooks: [{ type: 'command', command }] }));
+    const cwd = freshDir();
+    put(cwd, '.claude/settings.json', JSON.stringify({ hooks: { SessionStart: entries } }, null, 2));
+    const report: Line[] = [];
+    uninstallModelRouter(cwd, report);
+    expect(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8')).hooks.SessionStart).toEqual(entries);
+    expect(report).toContainEqual({ verdict: 'skipped', label: '.claude/settings.json SessionStart hook (none owned)' });
+  });
+
   it('does not treat a similarly named user script as the sbl hook', () => {
     const cwd = freshDir();
     const lookalike = { matcher: '*', hooks: [{ type: 'command', command: 'node', args: ['scripts/my-cc-session-hook.js'] }] };
