@@ -90,13 +90,13 @@ An existing agent file keeps your edits to its description and body; only its `m
 **Invalid `models.json`.** A `models.json` that is not valid JSON is never rewritten. A leading UTF-8 byte order mark, as some Windows editors write it, is accepted and does not make the file invalid. Every command reports the same message, `.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it`:
 
 - Commands that change the configuration refuse to run. `sbl models set`, `enable`, `disable` and `discover` print the message and exit with code 1. `discover` checks the file before it runs `opencode models`. In the dashboard, the toggle and the discover button show `failed ✗`; the discover button carries the message as its tooltip.
-- `sbl init --models` prints the message as a warning and finishes the rest of the installation without the router.
+- `sbl init --models` prints the message as a warning, followed by `(model router not installed)`, and finishes the rest of the installation without the router.
 - `sbl update` prints the message as a warning and treats the router as disabled: installed Claude Code agents get `model: inherit`, and OpenCode agents lose their `model` line.
 - `sbl models show` prints the message as a warning on stderr, then the default configuration.
 
 Fix the JSON or delete the file, then run the command again.
 
-**Newer `models.json` version.** A `models.json` whose `version` is higher than `2` was written by a newer super-backlog. It is handled like an invalid file and never rewritten or downgraded; the message is `.super-backlog/models.json has version <n>, which this super-backlog does not support - left unchanged; upgrade super-backlog or delete it`.
+**Newer `models.json` version.** A `models.json` whose `version` is higher than `2` was written by a newer super-backlog. It is never rewritten or downgraded, and the commands report `.super-backlog/models.json has version <n>, which this super-backlog does not support - left unchanged; upgrade super-backlog or delete it` instead of the message above. Commands that change the configuration refuse to run, as for an invalid file, and `sbl models show` prints the defaults. `sbl update` warns but leaves the installed agent files unchanged, so it does not downgrade agents that the newer release wrote. A `version` that is not a number, or a number below `2`, is read as version 1 and migrated.
 
 **Invalid `.claude/settings.json`.** When the v1 cleanup cannot parse `.claude/settings.json`, it prints `warning: .claude/settings.json is not valid JSON - legacy SessionStart hook left in place` and changes nothing in that file. Fix the file and run `sbl update` again to remove the hook.
 
@@ -122,4 +122,4 @@ The **Model Router** button in the dashboard opens a dialog with the router stat
 
 ## Uninstall
 
-`sbl uninstall` removes `models.json`, the agent files of both router generations and the router's `SessionStart` entry, whether that hook is written with `args` or as a single `node <path>` command string.
+`sbl uninstall` removes `models.json`, the agent files of both router generations and the router's `SessionStart` entry, whether that hook is written with `args` or as a single `node <path>` command string. A hook that passes further arguments or runs another interpreter is not the router's and stays.
