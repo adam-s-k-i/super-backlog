@@ -62,28 +62,18 @@ Every initialized project also gets a binding delegation rule in its `AGENTS.md`
 
 ## Model router (opt-in)
 
-The model router routes cheap models to simple agents and keeps your main model for complex work.
+The model router writes one subagent per tier (`sbl-light`, `sbl-standard`, `sbl-strong`, `sbl-top`) for Claude Code and OpenCode, each with a fixed model from `.super-backlog/models.json`.
 
 | Command | What it does |
 | --- | --- |
-| `sbl init --models` | Install the router and harness adapters. |
-| `sbl models enable` | Turn routing on. |
-| `sbl models disable` | Turn routing off. |
-| `sbl models show` | Show the current router config. |
-| `sbl models discover` | Discover available OpenCode models and rank them into tiers. |
+| `sbl init --models` | Install the router and enable it. |
+| `sbl models enable` | Turn the router on and install its agents. |
+| `sbl models disable` | Turn the router off; the agents fall back to the session model. |
+| `sbl models show` | Print the router configuration. |
+| `sbl models set <harness> <tier> <model>` | Set one tier (`-` removes it). |
+| `sbl models discover` | Rank the available OpenCode models into the four tiers. |
 
-When enabled:
-
-- **OpenCode** uses a `chat.params` plugin to rewrite the model for `sbl-worker` (workhorse) and `sbl-worker-cheap` / `explore` (budget) agents.
-- **Claude Code** uses a `SessionStart` hook to update agent `model:` placeholders based on your current main model.
-- The dashboard server exposes `/api/models` (with an `installed` flag) plus
-  `/api/models/enable`, `/api/models/disable`, and `/api/models/discover`.
-- The Board & Quick Actions section has a **Model Router** button that opens
-  a modal: it shows the installed/enabled state, toggles the router, runs
-  discovery with the resolved workhorse/budget tiers, and offers a copyable
-  `sbl init --models` when the router is not installed yet.
-
-The router is removed cleanly by `sbl uninstall`.
+`sbl update` keeps installed router files current and migrates a router v1 configuration. The dashboard's **Model Router** button shows the tiers and toggles the router. `sbl uninstall` removes every router file. Full reference: [Model router](model-router).
 
 ## Project dashboard
 

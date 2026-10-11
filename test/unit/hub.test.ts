@@ -211,8 +211,8 @@ describe('startHubServer', () => {
     dirs.push(a.cwd, b.cwd);
     mkdirSync(join(a.cwd, '.super-backlog'));
     mkdirSync(join(b.cwd, '.super-backlog'));
-    writeFileSync(join(a.cwd, '.super-backlog', 'models.json'), JSON.stringify({ enabled: true, mode: 'family' }));
-    writeFileSync(join(b.cwd, '.super-backlog', 'models.json'), JSON.stringify({ enabled: true, mode: 'individual' }));
+    writeFileSync(join(a.cwd, '.super-backlog', 'models.json'), JSON.stringify({ version: 2, enabled: true, tiers: { opencode: { light: 'a/one' } } }));
+    writeFileSync(join(b.cwd, '.super-backlog', 'models.json'), JSON.stringify({ version: 2, enabled: false, tiers: { opencode: { light: 'b/two' } } }));
 
     const hub = await startHubServer({ port: 0, token: 't' });
     handles.push(hub);
@@ -226,8 +226,8 @@ describe('startHubServer', () => {
     const modelsB = await req(hub.port, `/p/${regB.slug}/api/models`);
     expect(modelsA.status).toBe(200);
     expect(modelsB.status).toBe(200);
-    expect(JSON.parse(modelsA.body).config).toMatchObject({ enabled: true, mode: 'family' });
-    expect(JSON.parse(modelsB.body).config).toMatchObject({ enabled: true, mode: 'individual' });
+    expect(JSON.parse(modelsA.body).config).toMatchObject({ enabled: true, tiers: { opencode: { light: 'a/one' } } });
+    expect(JSON.parse(modelsB.body).config).toMatchObject({ enabled: false, tiers: { opencode: { light: 'b/two' } } });
   });
 
   it('ignores an unsanitized slug override passed into register()', async () => {

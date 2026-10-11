@@ -5,11 +5,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createModelApiHandler } from '../../src/models/dashboard-api.js';
 import { startHubServer } from '../../src/dashboard/hub.js';
+import { injectBlock } from '../../src/lib/markers.js';
+import { KIT_VERSION } from '../../src/lib/version.js';
+import { createModelApiHandler, type ModelApiDeps } from '../../src/models/dashboard-api.js';
 
 const dirs: string[] = [];
 const servers: Array<{ close(): void } | { close(): Promise<void> }> = [];
+const TIERS = ['light', 'standard', 'strong', 'top'];
 
 function freshDir(prefix = 'sbl-mapi-'): string {
   const dir = mkdtempSync(join(tmpdir(), prefix));
@@ -24,8 +27,8 @@ afterEach(async () => {
   dirs.length = 0;
 });
 
-function listen(cwd: string): Promise<{ port: number; server: Server }> {
-  const handler = createModelApiHandler(cwd);
+function listen(cwd: string, deps: ModelApiDeps = {}): Promise<{ port: number; server: Server }> {
+  const handler = createModelApiHandler(cwd, deps);
   const server = createServer((req, res) => {
     void handler(req, res);
   });
@@ -67,16 +70,20 @@ function configPath(cwd: string): string {
   return join(cwd, '.super-backlog', 'models.json');
 }
 
+type Tiers = { claude: Record<string, string>; opencode: Record<string, string> };
+
 describe('model dashboard api', () => {
-  it('GET /api/models reports installed=false without a config file', async () => {
+  it('GET /api/models reports installed=false and the default tiers without a config file', async () => {
     const cwd = freshDir();
     const { port } = await listen(cwd);
     const res = await call(port, '/api/models');
     expect(res.status).toBe(200);
     expect(res.json['installed']).toBe(false);
+    expect(res.json['config']).toEqual({ version: 2, enabled: false, tiers: {} });
+    expect(res.json['tiers']).toEqual({ claude: { light: 'haiku', standard: 'sonnet', strong: 'opus', top: 'fable' }, opencode: {} });
   });
 
-  it('POST /api/models/enable writes the config and returns it', async () => {
+  it('POST /api/models/enable writes the config and installs the agents', async () => {
     const cwd = freshDir();
     const { port } = await listen(cwd);
     const res = await call(port, '/api/models/enable', 'POST');
@@ -84,44 +91,68 @@ describe('model dashboard api', () => {
     expect(res.json['ok']).toBe(true);
     expect((res.json['config'] as Record<string, unknown>)['enabled']).toBe(true);
     expect(JSON.parse(readFileSync(configPath(cwd), 'utf8')).enabled).toBe(true);
+    for (const t of TIERS) {
+      expect(existsSync(join(cwd, `.claude/agents/sbl-${t}.md`))).toBe(true);
+      expect(existsSync(join(cwd, `.opencode/agents/sbl-${t}.md`))).toBe(true);
+    }
     const after = await call(port, '/api/models');
     expect(after.json['installed']).toBe(true);
   });
 
-  it('POST /api/models/disable flips enabled to false', async () => {
+  it('POST /api/models/disable migrates a v1 file and flips enabled to false', async () => {
     const cwd = freshDir();
     mkdirSync(join(cwd, '.super-backlog'), { recursive: true });
-    writeFileSync(configPath(cwd), JSON.stringify({ version: 1, enabled: true }));
+    writeFileSync(configPath(cwd), JSON.stringify({ version: 1, enabled: true, individual: { budget: 'x/cheap' } }));
     const { port } = await listen(cwd);
     const res = await call(port, '/api/models/disable', 'POST');
     expect(res.status).toBe(200);
     expect((res.json['config'] as Record<string, unknown>)['enabled']).toBe(false);
-    expect(JSON.parse(readFileSync(configPath(cwd), 'utf8')).enabled).toBe(false);
+    expect((res.json['tiers'] as Tiers).opencode['light']).toBe('x/cheap');
+    expect(JSON.parse(readFileSync(configPath(cwd), 'utf8'))).toEqual({
+      version: 2,
+      enabled: false,
+      tiers: { opencode: { light: 'x/cheap' } },
+    });
   });
 
-  it('persists discovered tiers so the modal shows them on the next open', async () => {
+  it('persists discovered tiers and writes them into installed agents', async () => {
     const cwd = freshDir('sbl-mapi-disc-');
-    const handler = createModelApiHandler(cwd, {
-      discover: async () => ({ workhorse: 'model-w', budget: 'model-b' }),
-    });
-    const server = createServer((req, res) => {
-      void handler(req, res);
-    });
-    servers.push({ close: () => new Promise<void>((r) => server.close(() => r())) });
-    const port = await new Promise<number>((resolve) => {
-      server.listen(0, '127.0.0.1', () => {
-        const addr = server.address();
-        resolve(addr !== null && typeof addr === 'object' ? addr.port : 0);
-      });
+    mkdirSync(join(cwd, '.super-backlog'), { recursive: true });
+    writeFileSync(configPath(cwd), JSON.stringify({ version: 2, enabled: true, tiers: {} }));
+    mkdirSync(join(cwd, '.opencode', 'agents'), { recursive: true });
+    writeFileSync(join(cwd, '.opencode', 'agents', 'sbl-light.md'), '---\nname: sbl-light\nmode: subagent\n---\nbody\n');
+    const { port } = await listen(cwd, {
+      discover: async () => ({ discoveredAt: '2026-10-11T08:00:00.000Z', tiers: { standard: 'model-w', light: 'model-b' } }),
     });
     const res = await call(port, '/api/models/discover', 'POST');
     expect(res.status).toBe(200);
-    expect(res.json['workhorse']).toBe('model-w');
+    expect(res.json['ok']).toBe(true);
+    expect((res.json['tiers'] as Tiers).opencode).toEqual({ light: 'model-b', standard: 'model-w' });
     const persisted = JSON.parse(readFileSync(configPath(cwd), 'utf8'));
-    expect(persisted.resolved.workhorse).toBe('model-w');
-    expect(persisted.resolved.budget).toBe('model-b');
+    expect(persisted.tiers.opencode).toEqual({ light: 'model-b', standard: 'model-w' });
+    expect(persisted.discoveredAt).toBe('2026-10-11T08:00:00.000Z');
+    expect(readFileSync(join(cwd, '.opencode', 'agents', 'sbl-light.md'), 'utf8')).toContain('\nmodel: model-b\n');
     const info = await call(port, '/api/models');
-    expect((info.json['config'] as Record<string, Record<string, unknown>>)['resolved']?.['workhorse']).toBe('model-w');
+    expect((info.json['config'] as { tiers: { opencode: Record<string, string> } }).tiers.opencode['standard']).toBe('model-w');
+  });
+
+  it('reports a failed discovery without writing', async () => {
+    const cwd = freshDir();
+    const { port } = await listen(cwd, { discover: async () => null });
+    const res = await call(port, '/api/models/discover', 'POST');
+    expect(res.status).toBe(200);
+    expect(res.json).toEqual({ ok: false, error: 'discovery failed' });
+    expect(existsSync(configPath(cwd))).toBe(false);
+  });
+
+  it('re-renders the managed block on enable', async () => {
+    const cwd = freshDir();
+    writeFileSync(join(cwd, 'AGENTS.md'), injectBlock('', '0.0.1', 'old body').content);
+    const { port } = await listen(cwd);
+    await call(port, '/api/models/enable', 'POST');
+    const agents = readFileSync(join(cwd, 'AGENTS.md'), 'utf8');
+    expect(agents).toContain(`<!-- SUPER-BACKLOG:${KIT_VERSION} START -->`);
+    expect(agents).toContain('Examples (from `.super-backlog/models.json`; change them with');
   });
 
   it('returns 500 with a message when the config cannot be written', async () => {
@@ -133,6 +164,27 @@ describe('model dashboard api', () => {
     expect(res.json['ok']).toBe(false);
     expect(typeof res.json['message']).toBe('string');
   });
+
+  it.each(['enable', 'disable', 'discover'])(
+    'POST /api/models/%s returns 500 and leaves an unparsable models.json byte-unchanged',
+    async (route) => {
+      const broken = '{"version":2,"enabled":true,"tiers":{"claude":{"top":"opus"},}';
+      const cwd = freshDir('sbl-mapi-bad-');
+      mkdirSync(join(cwd, '.super-backlog'), { recursive: true });
+      writeFileSync(configPath(cwd), broken);
+      const { port } = await listen(cwd, {
+        discover: async () => ({ discoveredAt: '2026-10-11T08:00:00.000Z', tiers: { light: 'model-b' } }),
+      });
+      const res = await call(port, `/api/models/${route}`, 'POST');
+      expect(res.status).toBe(500);
+      expect(res.json).toEqual({
+        ok: false,
+        message: '.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it',
+      });
+      expect(readFileSync(configPath(cwd), 'utf8')).toBe(broken);
+      expect(existsSync(join(cwd, '.claude', 'agents'))).toBe(false);
+    },
+  );
 
   it('still 404s unknown model routes', async () => {
     const cwd = freshDir();

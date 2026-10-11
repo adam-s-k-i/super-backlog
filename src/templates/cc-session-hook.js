@@ -1,26 +1,6 @@
 // src/templates/cc-session-hook.js
-import { loadConfig } from 'super-backlog/dist/models/config.js';
-import { resolveTier } from 'super-backlog/dist/models/resolve.js';
-import { updateAgentFile } from 'super-backlog/dist/models/claude.js';
-
-async function main() {
-  try {
-    let input = '';
-    process.stdin.on('data', (d) => { input += d; });
-    await new Promise((resolve) => process.stdin.on('end', resolve));
-    let event = {};
-    try { event = JSON.parse(input); } catch { /* ignore */ }
-    const cwd = process.cwd();
-    const cfg = loadConfig(cwd);
-    if (!cfg.enabled) process.exit(0);
-    const mainModel = event.model;
-    if (!mainModel || typeof mainModel !== 'string') process.exit(0);
-    updateAgentFile(cwd, 'sbl-worker.md', resolveTier(mainModel, 'workhorse', cfg));
-    updateAgentFile(cwd, 'sbl-worker-cheap.md', resolveTier(mainModel, 'budget', cfg));
-  } catch {
-    // degrade silently so a broken router never blocks Claude Code startup
-  }
-  process.exit(0);
-}
-
-main().catch(() => process.exit(0));
+// Compat shim: router v1 registered this file as a Claude Code SessionStart
+// hook. Router v2 writes models into agent files and removes the hook on
+// `sbl update`; until then this no-op keeps old projects starting cleanly.
+// The next major version removes it.
+process.exit(0);

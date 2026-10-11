@@ -1,11 +1,23 @@
+// src/models/discovery.ts
 import { runCapture } from '../lib/run.js';
-import type { FamilyTiers } from './types.js';
+import { isValidModelId } from './config.js';
+import { TIERS } from './defaults.js';
+import type { Tier, TierModels } from './types.js';
 
-export interface ResolvedTiers {
+export interface DiscoveryResult {
   discoveredAt: string;
-  workhorse: string;
-  budget: string;
+  tiers: TierModels;
 }
+
+const LIGHT_PATTERNS = ['haiku', 'flash-lite', 'nano', '-lite', '-mini'];
+
+/** Ordered substring preferences; earlier patterns win, the first id matching a pattern wins. */
+const PREFERENCES: Record<Tier, string[]> = {
+  top: ['fable', 'mythos', 'opus'],
+  strong: ['opus', 'codex', 'gpt-5', '-pro'],
+  standard: ['sonnet', 'flash', 'k2.5'],
+  light: LIGHT_PATTERNS,
+};
 
 export function parseOpenCodeModels(output: string): string[] {
   return output
@@ -14,47 +26,44 @@ export function parseOpenCodeModels(output: string): string[] {
     .filter((s) => s.length > 0 && s.includes('/'));
 }
 
-function scoreForTier(modelId: string, tier: 'workhorse' | 'budget'): number {
-  const lower = modelId.toLowerCase();
-  // Prefer flagship-ish names for workhorse, avoid 'nano/lite' for workhorse
-  if (tier === 'workhorse') {
-    if (lower.includes('opus')) return 100;
-    if (lower.includes('sonnet')) return 90;
-    if (lower.includes('k2.7-code') || lower.includes('k2.6-code')) return 85;
-    if (lower.includes('gpt-5.1') || lower.includes('gpt-5.2') || lower.includes('k3')) return 80;
-    if (lower.includes('gemini-3.1') || lower.includes('gemini-3.5') || lower.includes('gemini-3.6')) return 70;
-    if (lower.includes('k2.7') || lower.includes('k2.6')) return 60;
-    if (lower.includes('grok-4.6')) return 55;
-    if (lower.includes('grok-4.5')) return 50;
-    return 10;
+function isLightMatch(id: string): boolean {
+  const lower = id.toLowerCase();
+  return LIGHT_PATTERNS.some((p) => lower.includes(p));
+}
+
+function pick(available: string[], tier: Tier): string | undefined {
+  const pool = tier === 'light' ? available : available.filter((id) => !isLightMatch(id));
+  for (const pattern of PREFERENCES[tier]) {
+    const hit = pool.find((id) => id.toLowerCase().includes(pattern));
+    if (hit !== undefined) return hit;
   }
-  // Budget tier: prefer nano/lite/flash names
-  if (lower.includes('nano') || lower.includes('lite')) return 100;
-  if (lower.includes('flash')) return 90;
-  if (lower.includes('haiku')) return 85;
-  if (lower.includes('k2.5')) return 80;
-  if (lower.includes('grok-4.3')) return 70;
-  return 10;
+  return undefined;
 }
 
-export function rankTiers(available: string[]): Pick<FamilyTiers, 'workhorse' | 'budget'> {
-  const workhorse = [...available].sort((a, b) => scoreForTier(b, 'workhorse') - scoreForTier(a, 'workhorse'))[0] || '';
-  const budget = [...available].sort((a, b) => scoreForTier(b, 'budget') - scoreForTier(a, 'budget'))[0] || '';
-  return { workhorse, budget };
+export function rankFourTiers(available: string[]): TierModels {
+  const picks: TierModels = {
+    light: pick(available, 'light'),
+    standard: pick(available, 'standard'),
+    strong: pick(available, 'strong'),
+  };
+  picks.top = pick(available, 'top') ?? picks.strong;
+  const out: TierModels = {};
+  for (const tier of TIERS) {
+    const id = picks[tier];
+    if (id !== undefined) out[tier] = id;
+  }
+  return out;
 }
 
-export async function discoverModels(cwd: string): Promise<ResolvedTiers | null> {
+export async function discoverModels(cwd: string): Promise<DiscoveryResult | null> {
   try {
     const result = runCapture('opencode', ['models'], cwd);
     if (result.status !== 0) return null;
-    const available = parseOpenCodeModels(result.stdout);
+    const available = parseOpenCodeModels(result.stdout).filter(isValidModelId);
     if (available.length === 0) return null;
-    const ranked = rankTiers(available);
-    return {
-      discoveredAt: new Date().toISOString(),
-      workhorse: ranked.workhorse,
-      budget: ranked.budget,
-    };
+    const tiers = rankFourTiers(available);
+    if (Object.keys(tiers).length === 0) return null;
+    return { discoveredAt: new Date().toISOString(), tiers };
   } catch {
     return null;
   }

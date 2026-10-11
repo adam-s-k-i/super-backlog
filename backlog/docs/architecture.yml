@@ -81,11 +81,12 @@ nodes:
     sub: src/models/ · opt-in
     kind: optional
     cell: [3, 3]
-    purpose: Maps cheaper model tiers to simple subagents so hard work stays on the main model. Installed only with --models.
-    why: Opt-in keeps the default install untouched.
-    files: [src/models/]
+    purpose: Writes one subagent per tier (light, standard, strong, top) for Claude Code and OpenCode from .super-backlog/models.json and renders the block's model examples. Installed only with --models.
+    why: Static models in agent files have no runtime failure mode; opt-in keeps the default install untouched.
+    files: [src/models/, src/models/apply.ts, src/models/agents.ts, src/models/render.ts, src/commands/models.ts]
     commands:
       - { run: sbl models show, note: print the router config }
+      - { run: sbl models set opencode light <model>, note: set one tier }
   - id: hub
     label: Dashboard hub
     sub: dashboard/ · :6428
@@ -161,7 +162,7 @@ highlights:
   - { node: phase, title: Resume at the last gate, text: "The pipeline phase lives on the task as a label, so any session picks up where work stopped." }
   - { node: hub, title: Live without a build, text: "Static HTML, a reload event on every backlog change, many projects on one port." }
   - { node: summary, title: Facts plus curation, text: "Versions, size and open work are computed; only the architecture story is written by hand and checked by sbl doctor." }
-  - { node: router, title: Opt-in cheaper models, text: Simple subagents can run on cheaper tiers while the main model keeps the hard work. }
+  - { node: router, title: Opt-in model tiers, text: "One subagent per tier with a fixed model, kept current by sbl update." }
 stack:
   - { name: TypeScript, package: typescript, group: Runtime, role: "language, tsc build to dist/", nodes: [cli, planner, executor, hub, summary] }
   - { name: cross-spawn, package: cross-spawn, group: Runtime, role: the only runtime dependency, nodes: [cli, backlog] }

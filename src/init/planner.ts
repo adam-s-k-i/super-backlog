@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { PM } from '../lib/pm.js';
 import { applyPluginEntry } from '../lib/opencode.js';
+import { loadConfig } from '../models/config.js';
+import { renderModelExamples } from '../models/render.js';
 
 export interface FileOp { kind: 'write'; path: string; contents: string }
 export interface JsonOp { kind: 'merge-json'; path: 'opencode.json' | 'package.json'; transform: 'plugin-entry' | 'scripts-and-devdeps' }
@@ -14,7 +16,8 @@ export interface HookOp { kind: 'install-guard-hook' }
 export interface UpstreamOp { kind: 'upstream-install'; pm: PM | 'none' } // skipped when SBL_SKIP_INSTALL
 export interface ScaffoldPkgOp { kind: 'scaffold-package-json' } // emitted when no package.json exists
 export interface ModelRouterOp { kind: 'install-model-router'; enabled: boolean }
-export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | UpstreamOp | ScaffoldPkgOp | ModelRouterOp;
+export interface RefreshModelRouterOp { kind: 'refresh-model-router' } // prepended by `sbl update`, never planned by init
+export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | UpstreamOp | ScaffoldPkgOp | ModelRouterOp | RefreshModelRouterOp;
 
 export interface InitOptions {
   projectName?: string;
@@ -42,8 +45,12 @@ function readTemplate(name: string): string {
   throw new Error(`template not found: ${name}`);
 }
 
-export function agentsBlockContents(version: string): string {
-  return readTemplate('workflow-block.md').replace(/\{\{VERSION\}\}/g, version);
+/** The managed block for AGENTS.md: template with the version and the router's model examples substituted (LF). */
+export function agentsBlockContents(version: string, cwd: string): string {
+  return readTemplate('workflow-block.md')
+    .replace(/\r\n/g, '\n')
+    .replace(/\{\{VERSION\}\}/g, version)
+    .replace('{{MODEL_EXAMPLES}}', () => renderModelExamples(loadConfig(cwd)));
 }
 
 export function planInit(
@@ -88,13 +95,13 @@ export function planInit(
     actions.push({ kind: 'merge-json', path: 'package.json', transform: 'scripts-and-devdeps' });
   }
 
+  if (opts.models === true) actions.push({ kind: 'install-model-router', enabled: true });
   if (opts.harnesses.length > 0) {
     actions.push({ kind: 'inject-agents-block' });
     actions.push({ kind: 'copy-skills' });
   }
   if (opts.harnesses.includes('claude')) actions.push({ kind: 'write-claude-pointer' });
   if (opts.guard) actions.push({ kind: 'install-guard-hook' });
-  if (opts.models === true) actions.push({ kind: 'install-model-router', enabled: true });
 
   return { actions, warnings };
 }
