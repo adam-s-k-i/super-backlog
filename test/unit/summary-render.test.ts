@@ -3,10 +3,10 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DashboardData, DashboardTask } from '../../src/dashboard/data.js';
-import { renderDashboard } from '../../src/dashboard/render.js';
+import { renderDashboard, tokensCss } from '../../src/dashboard/render.js';
 import type { SummaryFacts } from '../../src/dashboard/summary-facts.js';
 import { SUMMARY_PROMPTS } from '../../src/dashboard/summary-drift.js';
 import { layoutArchitecture } from '../../src/dashboard/summary-layout.js';
@@ -89,8 +89,23 @@ function island(html: string): unknown {
 }
 
 describe('buildSummaryView', () => {
-  it('full view (valid architecture) matches the snapshot', () => {
-    expect(buildSummaryView(DATA, validModel())).toMatchSnapshot();
+  it('full view (valid architecture) keeps a stable structure', () => {
+    const v = buildSummaryView(DATA, validModel());
+    expect({
+      keys: Object.keys(v),
+      facts: v.facts.map((f) => f.label),
+      nodes: v.architecture?.nodes.map((n) => n.id),
+      edges: v.architecture?.edges.map((e) => e.id),
+      flows: v.architecture?.flows.map((f) => f.id),
+      layoutNodes: v.layout?.nodes.map((n) => n.id),
+      layoutEdges: v.layout?.edges.map((e) => `${e.id}:${e.kind}`),
+      zones: v.layout?.zones.map((z) => z.label),
+      warnings: v.source.warnings.length,
+      tasks: v.tasks.map((t) => `${t.id}:${t.node ?? '-'}`),
+      commands: v.commands.map((c) => `${c.group}:${c.entries.length}`),
+      stack: v.stack.map((s) => s.name),
+      source: v.source,
+    }).toMatchSnapshot();
   });
 
   it('reduced view (no architecture file) matches the snapshot', () => {
@@ -143,6 +158,45 @@ describe('buildSummaryView', () => {
       ['constructor', ''],
       ['Strings', ''],
       ['Own', '1.0.0'],
+    ]);
+  });
+
+  it('uses singular nouns for counts of one on the data-source lines', () => {
+    const one: SummaryFacts = { ...FACTS, sourceFiles: 1, releases: 1, releasesNote: null, dependencies: 1, devDependencies: 0 };
+    const load = checkArchitectureText(
+      [
+        'schema: 1',
+        'pitch: p',
+        'grid: { cols: 2, rows: 2 }',
+        'nodes:',
+        '  - { id: a, label: A, kind: core, cell: [0, 0] }',
+        '  - { id: b, label: B, kind: core, cell: [1, 0] }',
+        'edges:',
+        '  - { from: a, to: b, label: x }',
+        'flows:',
+        '  - { id: f, label: F, steps: [a>b] }',
+        'highlights:',
+        '  - { node: a, title: T, text: t }',
+        'stack:',
+        '  - { name: S, group: G, nodes: [a] }',
+        'commands:',
+        '  Dev:',
+        '    - { run: x }',
+        'tasks:',
+        '  T-2: a',
+        '',
+      ].join('\n'),
+      ARCHITECTURE_PATH,
+    );
+    if (load.status !== 'valid') throw new Error('invalid');
+    const v = buildSummaryView(DATA, { facts: one, load, layout: layoutArchitecture(load.architecture), renderError: null, drift: null });
+    expect(v.source.auto.join('\n')).toMatch(/^1 source file \(/m);
+    expect(v.source.auto).toContain('1 release from git version tags');
+    expect(v.source.auto).toContain('1 runtime and 0 development dependency; versions from lockfiles where present');
+    expect(v.source.curated).toEqual([
+      'Pitch, 2 components, 1 connection, 1 flow',
+      '1 highlight, 1 stack entry, 1 command group',
+      '1 task-to-component mapping (status comes from the backlog CLI)',
     ]);
   });
 
@@ -260,9 +314,17 @@ describe('renderSummary template', () => {
     expect(html).not.toMatch(/__[A-Z_]+__/);
   });
 
+  it('fills placeholders in one pass: a project named like a placeholder stays literal', () => {
+    const tricky = renderSummary({ ...DATA, project: { ...DATA.project, name: '__SBL_SUMMARY_JSON__' } }, validModel());
+    expect(tricky).toContain('<title>__SBL_SUMMARY_JSON__ &middot; Project Summary</title>');
+    expect((island(tricky) as { project: string }).project).toBe('__SBL_SUMMARY_JSON__');
+  });
+
   it('defines colors only through tokens (no raw colors outside token blocks)', () => {
     const style = /<style>([\s\S]*?)<\/style>/.exec(html)?.[1] ?? '';
-    const outsideTokens = style.replace(/:root(\[data-theme="light"\])?\s*\{[\s\S]*?\}/g, '');
+    const tokens = tokensCss();
+    expect(style.split(tokens).length - 1).toBe(1);
+    const outsideTokens = style.replace(tokens, '');
     expect(outsideTokens).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     expect(outsideTokens).not.toMatch(/\brgba?\(/);
   });
@@ -385,6 +447,38 @@ describe('writeSummaryPage', () => {
     const target = join(cwd, 'blocker', 'dash.html');
     expect(() => writeSummaryPage(cwd, DATA, target, { runCapture: noGit })).not.toThrow();
     expect(existsSync(summaryFileFor(target))).toBe(false);
+  });
+
+  it('collects facts only once when the layout throws, and does not claim the file is missing (E3)', () => {
+    const load = checkArchitectureText(FIXTURE, ARCHITECTURE_PATH);
+    let lsFiles = 0;
+    const counting = (cmd: string, args: string[]): RunResult => {
+      if (cmd === 'git' && args[0] === 'ls-files') lsFiles++;
+      return noGit();
+    };
+    const file = writeSummaryPage(cwd, DATA, join(cwd, 'dash.html'), {
+      runCapture: counting,
+      loadArchitecture: () => load,
+      layoutArchitecture: () => {
+        throw new Error('layout exploded');
+      },
+    });
+    expect(lsFiles).toBe(1);
+    const curated = (island(readFileSync(file, 'utf8')) as { source: { curated: string[] } }).source.curated;
+    expect(curated).toEqual([`${ARCHITECTURE_PATH} was not shown because the summary could not be rendered; see the notice above.`]);
+  });
+
+  it('logs a failed summary write to stderr and still returns', () => {
+    writeFileSync(join(cwd, 'blocker'), 'a file where a directory is expected');
+    const target = join(cwd, 'blocker', 'dash.html');
+    const err = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      expect(() => writeSummaryPage(cwd, DATA, target, { runCapture: noGit })).not.toThrow();
+      const out = err.mock.calls.map((c) => String(c[0])).join('');
+      expect(out).toContain(`sbl: could not write the summary page ${summaryFileFor(target)}: `);
+    } finally {
+      err.mockRestore();
+    }
   });
 });
 

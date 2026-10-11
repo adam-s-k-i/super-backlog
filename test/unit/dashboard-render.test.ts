@@ -269,6 +269,13 @@ describe('renderDashboard data islands', () => {
     const parsed = JSON.parse(island) as DashboardData['glossary'];
     expect(parsed).toEqual(SAMPLE.glossary);
   });
+
+  it('fills placeholders in one pass: a project named like a placeholder stays literal', () => {
+    const html = renderDashboard({ ...SAMPLE, project: { ...SAMPLE.project, name: '__SBL_PHASES_JSON__' } });
+    expect(html).toContain('<title>__SBL_PHASES_JSON__ &middot; Project Dashboard</title>');
+    const m = /<script type="application\/json" id="sbl-data">([\s\S]*?)<\/script>/.exec(html);
+    expect((JSON.parse(m?.[1] ?? 'null') as { project: { name: string } }).project.name).toBe('__SBL_PHASES_JSON__');
+  });
 });
 
 describe('sidebar version and update badge', () => {

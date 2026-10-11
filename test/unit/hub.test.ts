@@ -1,4 +1,4 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,6 +11,7 @@ vi.mock('../../src/dashboard/server.js', async (importOriginal) => {
 });
 
 import { startHubServer } from '../../src/dashboard/hub.js';
+import { summaryFileFor } from '../../src/dashboard/summary-render.js';
 import { KIT_VERSION } from '../../src/lib/version.js';
 import { computeBuildFingerprint } from '../../src/lib/build-fingerprint.js';
 
@@ -287,6 +288,40 @@ describe('startHubServer', () => {
     expect(regB.ok).toBe(true);
     expect(warn).toHaveBeenCalledTimes(1);
     warn.mockRestore();
+  });
+
+  it('removes its temporary sbl-dashboard-*.html pages and their summary siblings on close, but never other files', async () => {
+    const tmp = fixture('sbl-hub-tmp-', 'Temp');
+    dirs.push(tmp.cwd);
+    const page = join(tmp.cwd, 'sbl-dashboard-1-temp.html');
+    writeFileSync(page, '<html>temp</html>');
+    writeFileSync(summaryFileFor(page), '<html>summary</html>');
+    const keep = fixture('sbl-hub-keep-', 'Keep');
+    dirs.push(keep.cwd);
+    writeFileSync(summaryFileFor(keep.file), '<html>summary</html>');
+    const hub = await startHubServer({ port: 0, token: 't' });
+    expect(hub.register({ cwd: tmp.cwd, file: page, regenerate: () => {} }).ok).toBe(true);
+    expect(hub.register({ cwd: keep.cwd, file: keep.file, regenerate: () => {} }).ok).toBe(true);
+    await hub.close();
+    expect(existsSync(page)).toBe(false);
+    expect(existsSync(summaryFileFor(page))).toBe(false);
+    expect(existsSync(keep.file)).toBe(true);
+    expect(existsSync(summaryFileFor(keep.file))).toBe(true);
+  });
+
+  it('removes the old temporary page when a project re-registers with a new file', async () => {
+    const p = fixture('sbl-hub-rereg-', 'Rereg');
+    dirs.push(p.cwd);
+    const first = join(p.cwd, 'sbl-dashboard-1-rereg.html');
+    const second = join(p.cwd, 'sbl-dashboard-2-rereg.html');
+    writeFileSync(first, '<html>1</html>');
+    writeFileSync(second, '<html>2</html>');
+    const hub = await startHubServer({ port: 0, token: 't' });
+    handles.push(hub);
+    hub.register({ cwd: p.cwd, file: first, regenerate: () => {} });
+    hub.register({ cwd: p.cwd, file: second, regenerate: () => {} });
+    expect(existsSync(first)).toBe(false);
+    expect(existsSync(second)).toBe(true);
   });
 });
 

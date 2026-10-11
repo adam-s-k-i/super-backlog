@@ -315,6 +315,16 @@ describe('check 5: architecture.yml', () => {
     expect(d.lines).toContain('[fail] backlog/docs/architecture.yml layout failed (layout exploded)');
   });
 
+  it('turns a throwing architecture load into a failure instead of crashing', () => {
+    const d = makeDeps({
+      loadArchitecture: () => {
+        throw new Error('load exploded');
+      },
+    });
+    expect(runDoctor('/proj', d)).toBe(1);
+    expect(d.lines).toContain('[fail] backlog/docs/architecture.yml check failed (load exploded)');
+  });
+
   it('does not run the drift check for a missing file', () => {
     let ran = false;
     const d = makeDeps({

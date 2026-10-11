@@ -1,8 +1,8 @@
-import { watch, type FSWatcher } from 'node:fs';
+import { rmSync, watch, type FSWatcher } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import process from 'node:process';
 
 import { createBrowserManager, type BrowserManagerDeps } from './backlog-browser.js';
@@ -140,6 +140,21 @@ function sendText(res: ServerResponse, status: number, body: string): void {
   res.end(body);
 }
 
+/** Temp pages are named sbl-dashboard-<time>-<slug>.html by the hub and `sbl dashboard`; nothing else is ever deleted. */
+const TEMP_PAGE_RE = /^sbl-dashboard-.*\.html$/i;
+
+function removePageFiles(file: string): void {
+  if (!TEMP_PAGE_RE.test(basename(file))) return;
+  const summary = summaryFileFor(file);
+  for (const f of [file, `${file}.tmp`, summary, `${summary}.tmp`]) {
+    try {
+      rmSync(f, { force: true });
+    } catch {
+      /* best effort: a locked file stays until the OS cleans the temp dir */
+    }
+  }
+}
+
 function serveFile(file: string, res: ServerResponse, notFound = 'dashboard not generated yet'): void {
   readFile(file)
     .then((bytes) => {
@@ -198,6 +213,7 @@ export async function startHubServer(opts: {
     entry.broker.close();
     entry.watcher?.close();
     entry.browser.close();
+    removePageFiles(entry.file);
   }
 
   function register(project: Omit<HubProject, 'slug'>): RegisterResult {
@@ -230,6 +246,7 @@ export async function startHubServer(opts: {
     const url = projectUrl(port, slug);
     if (existing && existing.realpath === key) {
       existing.cwd = project.cwd;
+      if (existing.file !== project.file) removePageFiles(existing.file);
       existing.file = project.file;
       existing.reloader.cancel();
       existing.watcher?.close();
