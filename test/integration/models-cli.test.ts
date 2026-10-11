@@ -1,5 +1,5 @@
 // test/integration/models-cli.test.ts
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -156,6 +156,41 @@ describe('sbl models CLI', () => {
     expect(await models(cwd, 'discover')).toBe(1);
     expect(err).toEqual(['discovery failed (is the OpenCode CLI available?)']);
     expect(existsSync(join(cwd, '.super-backlog'))).toBe(false);
+  });
+
+  describe('with an unparsable models.json', () => {
+    const BROKEN = '{"version":2,"enabled":true,"tiers":{"claude":{"top":"opus"},}';
+    const ERROR = '.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it';
+
+    function broken(): string {
+      const cwd = freshDir();
+      mkdirSync(join(cwd, '.super-backlog'), { recursive: true });
+      writeFileSync(join(cwd, '.super-backlog', 'models.json'), BROKEN);
+      return cwd;
+    }
+
+    it.each([[['set', 'opencode', 'light', 'x/y']], [['enable']], [['disable']], [['discover']]])(
+      '%j exits 1 with an error and leaves the file byte-unchanged',
+      async (positionals: string[]) => {
+        const cwd = broken();
+        vi.spyOn(runModule, 'runCapture').mockReturnValue({ status: 0, stdout: 'opencode/claude-haiku-4-5\n', stderr: '' });
+        const { err } = capture();
+        expect(await models(cwd, ...positionals)).toBe(1);
+        expect(err).toEqual([ERROR]);
+        expect(readFileSync(join(cwd, '.super-backlog', 'models.json'), 'utf8')).toBe(BROKEN);
+        expect(existsSync(join(cwd, '.claude', 'agents'))).toBe(false);
+      },
+    );
+
+    it('init --models warns, skips the router and still completes', async () => {
+      const cwd = broken();
+      const { out } = capture();
+      await runInit(cwd, emptyArgs({ pm: 'skip', models: true }));
+      expect(readFileSync(join(cwd, '.super-backlog', 'models.json'), 'utf8')).toBe(BROKEN);
+      expect(out).toContain(`warning: ${ERROR} (model router not installed)`);
+      expect(existsSync(join(cwd, 'AGENTS.md'))).toBe(true);
+      expect(existsSync(join(cwd, '.claude', 'agents', 'sbl-top.md'))).toBe(false);
+    });
   });
 
   it('rejects unknown subcommands', async () => {

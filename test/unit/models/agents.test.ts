@@ -133,6 +133,13 @@ describe('setModelLine', () => {
     expect(setModelLine(once, 'b')).toBe(once);
   });
 
+  it('accepts an opening --- with trailing whitespace instead of prepending a second frontmatter', () => {
+    const once = setModelLine('--- \nname: x\n---\nbody\n', 'b');
+    expect(once).toBe('--- \nmodel: b\nname: x\n---\nbody\n');
+    expect(setModelLine(once, 'b')).toBe(once);
+    expect(setModelLine('---\t\r\nname: x\r\nmodel: a\r\n---\r\nbody\r\n', null)).toBe('---\t\r\nname: x\r\n---\r\nbody\r\n');
+  });
+
   it('prepends frontmatter to a file without one, and leaves it alone for null', () => {
     expect(setModelLine('just a body\n', 'm')).toBe('---\nmodel: m\n---\njust a body\n');
     expect(setModelLine('just a body\n', null)).toBe('just a body\n');

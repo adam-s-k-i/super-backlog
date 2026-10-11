@@ -165,6 +165,27 @@ describe('model dashboard api', () => {
     expect(typeof res.json['message']).toBe('string');
   });
 
+  it.each(['enable', 'disable', 'discover'])(
+    'POST /api/models/%s returns 500 and leaves an unparsable models.json byte-unchanged',
+    async (route) => {
+      const broken = '{"version":2,"enabled":true,"tiers":{"claude":{"top":"opus"},}';
+      const cwd = freshDir('sbl-mapi-bad-');
+      mkdirSync(join(cwd, '.super-backlog'), { recursive: true });
+      writeFileSync(configPath(cwd), broken);
+      const { port } = await listen(cwd, {
+        discover: async () => ({ discoveredAt: '2026-10-11T08:00:00.000Z', tiers: { light: 'model-b' } }),
+      });
+      const res = await call(port, `/api/models/${route}`, 'POST');
+      expect(res.status).toBe(500);
+      expect(res.json).toEqual({
+        ok: false,
+        message: '.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it',
+      });
+      expect(readFileSync(configPath(cwd), 'utf8')).toBe(broken);
+      expect(existsSync(join(cwd, '.claude', 'agents'))).toBe(false);
+    },
+  );
+
   it('still 404s unknown model routes', async () => {
     const cwd = freshDir();
     const { port } = await listen(cwd);

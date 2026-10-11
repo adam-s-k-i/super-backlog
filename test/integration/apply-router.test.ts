@@ -160,6 +160,8 @@ describe('applyRouter', () => {
   });
 });
 
+const CTX = { version: '0.4.0', projectName: 'test', hasBacklogConfig: false };
+
 describe('install-model-router action', () => {
   it('enables the config and installs both harnesses', async () => {
     const cwd = freshDir();
@@ -176,5 +178,42 @@ describe('install-model-router action', () => {
     }
     expect(existsSync(join(cwd, '.opencode/plugins/sbl-model-router.js'))).toBe(false);
     expect(existsSync(join(cwd, '.claude/settings.json'))).toBe(false);
+  });
+
+  it('warns and skips on an unparsable models.json, leaving it byte-unchanged', async () => {
+    const cwd = freshDir();
+    put(cwd, CONFIG, '{ broken');
+    const result = await executeActions(cwd, [{ kind: 'install-model-router', enabled: true }], CTX);
+    expect(result.applied).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(result.warnings).toEqual([
+      '.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it (model router not installed)',
+    ]);
+    expect(read(cwd, CONFIG)).toBe('{ broken');
+    expect(existsSync(join(cwd, '.claude/agents'))).toBe(false);
+  });
+});
+
+describe('refresh-model-router action', () => {
+  it('counts router warnings as execute warnings', async () => {
+    const cwd = freshDir();
+    put(cwd, CONFIG, '{ broken');
+    put(cwd, '.claude/agents/sbl-top.md', '---\nname: sbl-top\nmodel: opus\n---\nbody\n');
+    const result = await executeActions(cwd, [{ kind: 'refresh-model-router' }], CTX);
+    expect(result.warnings).toEqual(['.super-backlog/models.json is not valid JSON - left unchanged']);
+    expect(read(cwd, CONFIG)).toBe('{ broken');
+  });
+
+  it('turns a router failure into a warning and runs the remaining actions', async () => {
+    const cwd = freshDir();
+    mkdirSync(join(cwd, CONFIG), { recursive: true }); // models.json as a directory makes the read throw
+    const result = await executeActions(
+      cwd,
+      [{ kind: 'refresh-model-router' }, { kind: 'write', path: 'after.txt', contents: 'ok\n' }],
+      CTX,
+    );
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatch(/^model router refresh failed: /);
+    expect(read(cwd, 'after.txt')).toBe('ok\n');
   });
 });

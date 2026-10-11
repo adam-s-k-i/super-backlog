@@ -949,10 +949,18 @@ __SBL_TOKENS_CSS__
     row.appendChild(toggle);
     var discover = actionButton('sbl models discover', 'run', function () {
       discover.disabled = true;
+      discover.removeAttribute('title');
       cmdFeedback(discover, 'running…');
       fetch('api/models/discover', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
         .then(function (res) { return res.json(); })
-        .then(function (r) { if (r && r.ok) renderModelsDialog(r); else cmdFeedback(discover, 'no OpenCode ✗'); })
+        .then(function (r) {
+          if (r && r.ok) { renderModelsDialog(r); return; }
+          if (r && r.error === 'discovery failed') cmdFeedback(discover, 'no OpenCode ✗');
+          else {
+            if (r && r.message) discover.title = r.message;
+            cmdFeedback(discover, 'failed ✗');
+          }
+        })
         .catch(function () { cmdFeedback(discover, 'failed ✗'); })
         .then(function () { discover.disabled = false; });
     });

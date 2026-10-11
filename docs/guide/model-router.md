@@ -58,9 +58,9 @@ The Claude Code defaults are aliases that track Anthropic's current models. Open
 | `sbl models set <harness> <tier> <model>` | Set one tier. The model `-` removes the entry. |
 | `sbl models discover` | Rank the models that `opencode models` lists into the four OpenCode tiers and save them. |
 
-`set` and `discover` never change `enabled`. On a project without `models.json` they create it disabled and print a reminder to run `sbl models enable`.
+`set` and `discover` never change `enabled`. On a project without `models.json` they create it disabled. Whenever the resulting configuration is disabled, they print a reminder to run `sbl models enable`.
 
-Every command that changes the configuration rewrites the agent files and the managed block in `AGENTS.md`. `sbl update` keeps installed router files current; it never installs them.
+Only `sbl models enable` and `sbl init --models` install the agents, for both harnesses. `set`, `discover` and `disable` rewrite the agent files only for a harness where the router is already installed. Every `sbl models` command that changes the configuration also re-renders the managed block in `AGENTS.md`. `sbl update` keeps installed router files current; it never installs them.
 
 ### Discovery
 
@@ -85,12 +85,26 @@ Ids that match a `light` pattern are never picked for the other tiers. Discovery
 
 An existing agent file keeps your edits to its description and body; only its `model:` line is replaced, inserted or removed.
 
+## Errors and warnings
+
+**Invalid `models.json`.** A `models.json` that is not valid JSON is never rewritten:
+
+- Commands that change the configuration refuse to run. `sbl models set`, `enable`, `disable` and `discover` print `.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it` and exit with code 1. In the dashboard, the toggle and the discover button show `failed ✗`; the discover button carries the message as its tooltip.
+- `sbl init --models` prints the same message as a warning and finishes the rest of the installation without the router.
+- `sbl update` warns and treats the router as disabled: installed Claude Code agents get `model: inherit`, and OpenCode agents lose their `model` line. `sbl models show` prints the default configuration.
+
+Fix the JSON or delete the file, then run the command again.
+
+**Invalid `.claude/settings.json`.** When the v1 cleanup cannot parse `.claude/settings.json`, it prints `warning: .claude/settings.json is not valid JSON - legacy SessionStart hook left in place` and changes nothing in that file. Fix the file and run `sbl update` again to remove the hook.
+
+In `sbl update`, router warnings join the update's warning list, so the update exits with code 4. If the router refresh itself fails, for example on a locked agent file, the update reports `model router refresh failed: <reason>` as a warning and still refreshes the block, the pointer and the skills.
+
 ## Migration from router v1
 
 Router v1 had two tiers (`workhorse`, `budget`), a `SessionStart` hook for Claude Code and a `chat.params` plugin for OpenCode. The first `sbl update` after upgrading:
 
 - rewrites `models.json` as version 2: `workhorse` becomes the OpenCode `standard` tier, `budget` the OpenCode `light` tier, and `mode` and `families` are dropped. Claude tiers start from the defaults;
-- writes the eight `sbl-<tier>.md` agents with concrete models;
+- writes four `sbl-<tier>.md` agents with concrete models for each harness where the router is installed, eight when both are;
 - removes `sbl-worker.md`, `sbl-worker-cheap.md`, `.opencode/plugins/sbl-model-router.js` and the router's `SessionStart` entry in `.claude/settings.json`. Other hooks and settings stay.
 
 Each removal prints one `removed legacy <path>` line.

@@ -1,7 +1,7 @@
 // src/commands/models.ts
 import { KIT_VERSION } from '../lib/version.js';
 import { applyRouter } from '../models/apply.js';
-import { isHarness, isTier, isValidModelId, loadConfig, serializeConfig } from '../models/config.js';
+import { InvalidConfigError, isHarness, isTier, isValidModelId, loadConfig, serializeConfig } from '../models/config.js';
 import { HARNESSES, TIERS } from '../models/defaults.js';
 import { discoverModels } from '../models/discovery.js';
 import { saveDiscovery, setRouterEnabled, setRouterTier } from '../models/install.js';
@@ -60,6 +60,16 @@ async function runDiscover(cwd: string): Promise<number> {
 }
 
 export async function runModels(cwd: string, args: ParsedArgs): Promise<number> {
+  try {
+    return await runSubcommand(cwd, args);
+  } catch (err) {
+    if (!(err instanceof InvalidConfigError)) throw err;
+    console.error(err.message);
+    return 1;
+  }
+}
+
+async function runSubcommand(cwd: string, args: ParsedArgs): Promise<number> {
   const [sub = 'show', ...rest] = args.positionals;
   switch (sub) {
     case 'show':

@@ -11,6 +11,7 @@ import { applyPluginEntry } from '../lib/opencode.js';
 import { OwnershipError, renderSkill } from '../lib/ownership.js';
 import { refreshPointer } from '../lib/pointer.js';
 import { applyRouter } from '../models/apply.js';
+import { InvalidConfigError } from '../models/config.js';
 import { setRouterEnabled } from '../models/install.js';
 import {
   addDevDependencies,
@@ -173,6 +174,15 @@ function applyCopySkills(cwd: string, version: string): boolean {
   return true;
 }
 
+/** Prints applyRouter's report lines; `warning: ` lines go to the warnings list instead (printed by the caller, exit 4). */
+function reportRouterLines(lines: string[], warnings: string[]): void {
+  const prefix = 'warning: ';
+  for (const line of lines) {
+    if (line.startsWith(prefix)) warnings.push(line.slice(prefix.length));
+    else console.log(line);
+  }
+}
+
 export async function executeActions(
   cwd: string,
   actions: Action[],
@@ -225,14 +235,30 @@ export async function executeActions(
         break;
       }
       case 'install-model-router': {
-        setRouterEnabled(cwd, action.enabled);
-        for (const line of applyRouter(cwd, { install: action.enabled, block: false, version: ctx.version })) console.log(line);
+        try {
+          setRouterEnabled(cwd, action.enabled);
+        } catch (err) {
+          // An unparsable models.json is never overwritten; init goes on without the router.
+          if (!(err instanceof InvalidConfigError)) throw err;
+          warnings.push(`${err.message} (model router not installed)`);
+          skipped++;
+          break;
+        }
+        reportRouterLines(applyRouter(cwd, { install: action.enabled, block: false, version: ctx.version }), warnings);
         applied++;
         break;
       }
       case 'refresh-model-router': {
-        const lines = applyRouter(cwd, { install: false, block: false, version: ctx.version });
-        for (const line of lines) console.log(line);
+        // A router failure (e.g. a locked agent file) must not abort the rest of the update.
+        let lines: string[];
+        try {
+          lines = applyRouter(cwd, { install: false, block: false, version: ctx.version });
+        } catch (err) {
+          warnings.push(`model router refresh failed: ${err instanceof Error ? err.message : String(err)}`);
+          skipped++;
+          break;
+        }
+        reportRouterLines(lines, warnings);
         lines.length > 0 ? applied++ : skipped++;
         break;
       }

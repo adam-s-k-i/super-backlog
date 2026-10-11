@@ -790,6 +790,13 @@ describe('models modal', () => {
     expect(app).toContain("'sbl init --models'");
   });
 
+  it('blames OpenCode only for a failed discovery and shows other failures generically', () => {
+    const app = appScript();
+    expect(app).toContain("if (r && r.error === 'discovery failed') cmdFeedback(discover, 'no OpenCode ✗');");
+    expect(app).toContain('if (r && r.message) discover.title = r.message;');
+    expect(app).not.toContain("else cmdFeedback(discover, 'no OpenCode ✗')");
+  });
+
   it('disables the discover button while a discovery request is in flight', () => {
     const app = appScript();
     expect(app).toContain('discover.disabled = true');

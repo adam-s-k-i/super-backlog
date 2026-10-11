@@ -89,6 +89,28 @@ export function loadConfig(cwd: string): RouterConfig {
   }
 }
 
+/** Thrown instead of overwriting an unparsable models.json. */
+export class InvalidConfigError extends Error {
+  constructor() {
+    super(`${CONFIG_PATH} is not valid JSON - left unchanged; fix or delete it`);
+    this.name = 'InvalidConfigError';
+  }
+}
+
+/** Like loadConfig, but an unparsable file throws InvalidConfigError. For callers that write the config back. */
+export function readConfigStrict(cwd: string): RouterConfig {
+  const path = join(cwd, CONFIG_PATH);
+  if (!existsSync(path)) return defaultConfig();
+  const raw = readFileSync(path, 'utf8');
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new InvalidConfigError();
+  }
+  return normalizeConfig(parsed);
+}
+
 export function serializeConfig(cfg: RouterConfig): string {
   return `${JSON.stringify(normalizeConfig(cfg), null, 2)}\n`;
 }

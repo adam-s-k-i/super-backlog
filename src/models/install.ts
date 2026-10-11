@@ -1,9 +1,10 @@
 // src/models/install.ts
-import { loadConfig, normalizeConfig, writeConfig } from './config.js';
+import { normalizeConfig, readConfigStrict, writeConfig } from './config.js';
 import type { Harness, RouterConfig, Tier, TierModels } from './types.js';
 
+/** Throws InvalidConfigError, without writing, when models.json is not valid JSON. */
 function mutate(cwd: string, change: (cfg: RouterConfig) => void): RouterConfig {
-  const cfg = loadConfig(cwd);
+  const cfg = readConfigStrict(cwd);
   change(cfg);
   const next = normalizeConfig(cfg);
   writeConfig(cwd, next);

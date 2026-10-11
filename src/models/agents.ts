@@ -58,7 +58,7 @@ export function setModelLine(content: string, model: string | null): string {
   const bom = content.startsWith('\uFEFF') ? '\uFEFF' : '';
   const eol = detectEol(content);
   const lines = content.slice(bom.length).split(/\r?\n/);
-  if (lines[0] !== '---') {
+  if ((lines[0] ?? '').trimEnd() !== '---') {
     return model === null ? content : bom + ['---', `model: ${model}`, '---', ...lines].join(eol);
   }
   const close = lines.findIndex((l, i) => i > 0 && l.trimEnd() === '---');
