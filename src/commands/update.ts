@@ -180,7 +180,8 @@ export async function runUpdate(
   };
 
   const plan = planInit(state, opts, KIT_VERSION);
-  const actions = refreshActions(plan.actions);
+  // Router first: it migrates models.json before inject-agents-block renders the examples.
+  const actions: Action[] = [{ kind: 'refresh-model-router' }, ...refreshActions(plan.actions)];
   const warnings = [...plan.warnings];
 
   try {

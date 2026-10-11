@@ -16,7 +16,8 @@ export interface HookOp { kind: 'install-guard-hook' }
 export interface UpstreamOp { kind: 'upstream-install'; pm: PM | 'none' } // skipped when SBL_SKIP_INSTALL
 export interface ScaffoldPkgOp { kind: 'scaffold-package-json' } // emitted when no package.json exists
 export interface ModelRouterOp { kind: 'install-model-router'; enabled: boolean }
-export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | UpstreamOp | ScaffoldPkgOp | ModelRouterOp;
+export interface RefreshModelRouterOp { kind: 'refresh-model-router' } // prepended by `sbl update`, never planned by init
+export type Action = FileOp | JsonOp | InjectOp | PointerOp | SkillsOp | HookOp | UpstreamOp | ScaffoldPkgOp | ModelRouterOp | RefreshModelRouterOp;
 
 export interface InitOptions {
   projectName?: string;

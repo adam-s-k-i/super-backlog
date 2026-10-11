@@ -25,7 +25,7 @@ Commands:
   uninstall   Remove kit-managed files (project data kept unless --with-backlog)
   update      Refresh kit-managed files and report upstream versions
   dashboard   Start the project dashboard server (live-reload) (alias: db)
-  models      Manage the model router (show, enable, disable, discover)
+  models      Manage the model router (show, enable, disable, set, discover)
   phase       Show or advance a task's pipeline phase (spec|plan|impl|verify|done)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
   summary     Check backlog/docs/architecture.yml for drift (missing paths, Done tasks, stale file)

@@ -230,6 +230,12 @@ export async function executeActions(
         applied++;
         break;
       }
+      case 'refresh-model-router': {
+        const lines = applyRouter(cwd, { install: false, block: false, version: ctx.version });
+        for (const line of lines) console.log(line);
+        lines.length > 0 ? applied++ : skipped++;
+        break;
+      }
       case 'write':
         atomicWrite(join(cwd, action.path), action.contents);
         applied++;
