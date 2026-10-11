@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.10.2](https://github.com/adam-s-k-i/super-backlog/compare/v1.10.1...v1.10.2) (2026-10-11)
+
+
+### Bug Fixes
+
+* **version-check:** refresh the startup hint cache in a detached worker ([#100](https://github.com/adam-s-k-i/super-backlog/issues/100)) ([d5ac6dd](https://github.com/adam-s-k-i/super-backlog/commit/d5ac6dde4d952a95f5b394f09abbfa8e8597a02b))
+
 ## [1.10.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.10.0...v1.10.1) (2026-10-11)
 
 
