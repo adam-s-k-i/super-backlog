@@ -110,6 +110,8 @@ describe('uninstall model router', () => {
       `node.exe "C:\\proj\\${rel.split('/').join('\\')}"`,
       `  node  '$CLAUDE_PROJECT_DIR/${rel}'  `,
       `node "$CLAUDE_PROJECT_DIR"/${rel}`,
+      `node \${CLAUDE_PROJECT_DIR}/${rel}`,
+      `node "/home/my user/proj/${rel}"`,
       `/usr/bin/node ${rel}`,
       `"C:\\Program Files\\nodejs\\node.exe" "C:\\proj\\${rel.split('/').join('\\')}"`,
     ];
@@ -132,6 +134,15 @@ describe('uninstall model router', () => {
       'node scripts/my-cc-session-hook.js',
       `node "${rel}'`,
       rel,
+      `node x;/${rel}`,
+      `node x|/${rel}`,
+      `node a&&/${rel}`,
+      `node $(evil)/${rel}`,
+      'node `evil`/' + rel,
+      `node "$(rm -rf ~)"/${rel}`,
+      `node %EVIL%/${rel}`,
+      `$(evil)/node ${rel}`,
+      `node\n${rel}`,
     ];
     const entries = commands.map((command) => ({ matcher: '*', hooks: [{ type: 'command', command }] }));
     const cwd = freshDir();

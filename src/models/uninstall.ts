@@ -36,12 +36,22 @@ const HOOK_REPORT: Record<HookStripResult, ReportLine> = {
 /** Router v1 registered exactly `node node_modules/super-backlog/dist/templates/cc-session-hook.js`. */
 const OWNED_HOOK_RE = /(^|\/)super-backlog\/dist\/templates\/cc-session-hook\.js$/;
 
-/** `node` or `node.exe`, optionally with a path in front, optionally quoted as a whole. */
-const NODE = String.raw`(?:"(?:[^"]*[\\/])?node(?:\.exe)?"|(?:[^\s"']*[\\/])?node(?:\.exe)?)`;
-const NODE_COMMAND_RE = new RegExp(String.raw`^\s*${NODE}\s*$`, 'i');
+/**
+ * Path characters that carry no shell meaning. Anything else (`; | & $( ) \` % < >`, newlines) makes a
+ * command someone else's, so uninstall never removes it. The only expansion allowed is the project dir.
+ */
+const SAFE = String.raw`[\w.~:/\\+@-]`;
+const PROJECT_DIR = String.raw`\$CLAUDE_PROJECT_DIR|\$\{CLAUDE_PROJECT_DIR\}`;
 
-/** Single-string form `node <script>`: exactly one shell word after the interpreter, built from quoted and unquoted parts. */
-const STRING_HOOK_RE = new RegExp(String.raw`^\s*${NODE}\s+((?:"[^"]*"|'[^']*'|[^\s"'])+)\s*$`, 'i');
+/** `node` or `node.exe`, optionally with a path in front, optionally quoted as a whole. */
+const NODE = String.raw`(?:"(?:(?:${SAFE}| )*[\\/])?node(?:\.exe)?"|(?:${SAFE}*[\\/])?node(?:\.exe)?)`;
+const NODE_COMMAND_RE = new RegExp(String.raw`^[ \t]*${NODE}[ \t]*$`, 'i');
+
+/** One shell word built from unquoted, double-quoted and single-quoted parts. */
+const WORD = String.raw`(?:"(?:${SAFE}| |${PROJECT_DIR})*"|'(?:${SAFE}| |${PROJECT_DIR})*'|${SAFE}|${PROJECT_DIR})+`;
+
+/** Single-string form `node <script>`: exactly one word after the interpreter. */
+const STRING_HOOK_RE = new RegExp(String.raw`^[ \t]*${NODE}[ \t]+(${WORD})[ \t]*$`, 'i');
 
 function unquote(word: string): string {
   return word.replace(/"([^"]*)"|'([^']*)'/g, (_, double?: string, single?: string) => double ?? single ?? '');
