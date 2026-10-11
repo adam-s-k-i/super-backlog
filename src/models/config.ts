@@ -107,7 +107,7 @@ export class UnsupportedConfigVersionError extends InvalidConfigError {
 
 /** Editors such as PowerShell 5.1 `Set-Content -Encoding utf8` write a leading UTF-8 BOM, which JSON.parse rejects. */
 export function stripBom(text: string): string {
-  return text.startsWith('﻿') ? text.slice(1) : text;
+  return text.startsWith('\uFEFF') ? text.slice(1) : text;
 }
 
 /** Parses models.json text; throws InvalidConfigError for bad JSON and UnsupportedConfigVersionError for a version above 2. */

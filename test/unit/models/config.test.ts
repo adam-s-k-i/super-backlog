@@ -167,13 +167,13 @@ describe('UTF-8 BOM', () => {
 
   it('loadConfig reads a file with a leading BOM', () => {
     const cwd = freshDir();
-    writeRaw(cwd, `﻿${v2}`);
+    writeRaw(cwd, `\uFEFF${v2}`);
     expect(loadConfig(cwd)).toEqual({ version: 2, enabled: true, tiers: { claude: { top: 'opus' } } });
   });
 
   it('readConfigStrict reads a file with a leading BOM', () => {
     const cwd = freshDir();
-    writeRaw(cwd, `﻿${v2}`);
+    writeRaw(cwd, `\uFEFF${v2}`);
     expect(readConfigStrict(cwd)).toEqual({ version: 2, enabled: true, tiers: { claude: { top: 'opus' } } });
   });
 });

@@ -115,7 +115,7 @@ describe('applyRouter', () => {
 
   it('does not rewrite a normalized file that only differs by a UTF-8 BOM', () => {
     const cwd = freshDir();
-    const bom = `﻿${pretty({ version: 2, enabled: true, tiers: {} })}`;
+    const bom = `\uFEFF${pretty({ version: 2, enabled: true, tiers: {} })}`;
     put(cwd, CONFIG, bom);
     expect(applyRouter(cwd, opts())).toEqual([]);
     expect(read(cwd, CONFIG)).toBe(bom);
@@ -123,7 +123,7 @@ describe('applyRouter', () => {
 
   it('migrates a v1 file with a UTF-8 BOM instead of calling it invalid', () => {
     const cwd = freshDir();
-    put(cwd, CONFIG, `﻿${JSON.stringify({ version: 1, enabled: true, individual: { workhorse: 'i/w' } })}`);
+    put(cwd, CONFIG, `\uFEFF${JSON.stringify({ version: 1, enabled: true, individual: { workhorse: 'i/w' } })}`);
     expect(applyRouter(cwd, opts())).toEqual(['migrated .super-backlog/models.json to version 2']);
     expect(read(cwd, CONFIG)).toBe(pretty({ version: 2, enabled: true, tiers: { opencode: { standard: 'i/w' } } }));
   });
