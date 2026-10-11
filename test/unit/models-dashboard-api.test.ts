@@ -186,6 +186,23 @@ describe('model dashboard api', () => {
     },
   );
 
+  it('POST /api/models/discover checks models.json before running discovery', async () => {
+    const cwd = freshDir('sbl-mapi-bad-');
+    mkdirSync(join(cwd, '.super-backlog'), { recursive: true });
+    writeFileSync(configPath(cwd), '{ broken');
+    let discovered = 0;
+    const { port } = await listen(cwd, {
+      discover: async () => {
+        discovered++;
+        return { discoveredAt: '2026-10-11T08:00:00.000Z', tiers: { light: 'model-b' } };
+      },
+    });
+    const res = await call(port, '/api/models/discover', 'POST');
+    expect(res.status).toBe(500);
+    expect(res.json).toEqual({ ok: false, message: '.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it' });
+    expect(discovered).toBe(0);
+  });
+
   it('still 404s unknown model routes', async () => {
     const cwd = freshDir();
     const { port } = await listen(cwd);

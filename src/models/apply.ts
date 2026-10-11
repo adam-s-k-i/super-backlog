@@ -5,7 +5,15 @@ import { agentsBlockContents } from '../init/planner.js';
 import { atomicWrite } from '../lib/atomic.js';
 import { injectBlock, stripOwned } from '../lib/markers.js';
 import { agentModel, agentPath, cleanLegacy, isRouterInstalled, writeAgentFile } from './agents.js';
-import { loadConfig, serializeConfig } from './config.js';
+import {
+  InvalidConfigError,
+  loadConfig,
+  normalizeConfig,
+  parseConfigText,
+  serializeConfig,
+  stripBom,
+  UnsupportedConfigVersionError,
+} from './config.js';
 import { CONFIG_PATH, HARNESSES, TIERS } from './defaults.js';
 
 export interface ApplyOptions {
@@ -14,22 +22,29 @@ export interface ApplyOptions {
   version: string;
 }
 
+interface Migration {
+  lines: string[];
+  /** models.json comes from a newer super-backlog: agents written from it must not be downgraded. */
+  newerVersion: boolean;
+}
+
 /** Writes models.json back when it differs from its normalized form. Unparsable files are never touched. */
-function migrateFile(cwd: string): string[] {
+function migrateFile(cwd: string): Migration {
   const path = join(cwd, CONFIG_PATH);
-  if (!existsSync(path)) return [];
+  if (!existsSync(path)) return { lines: [], newerVersion: false };
   const raw = readFileSync(path, 'utf8');
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return [`warning: ${CONFIG_PATH} is not valid JSON - left unchanged`];
+    parsed = parseConfigText(raw);
+  } catch (err) {
+    if (!(err instanceof InvalidConfigError)) throw err;
+    return { lines: [`warning: ${err.message}`], newerVersion: err instanceof UnsupportedConfigVersionError };
   }
-  const normalized = serializeConfig(loadConfig(cwd));
-  if (raw.replace(/\r\n/g, '\n') === normalized) return [];
+  const normalized = serializeConfig(normalizeConfig(parsed));
+  if (stripBom(raw).replace(/\r\n/g, '\n') === normalized) return { lines: [], newerVersion: false };
   atomicWrite(path, normalized);
   const version = parsed !== null && typeof parsed === 'object' ? (parsed as { version?: unknown }).version : undefined;
-  return [version === 2 ? `normalized ${CONFIG_PATH}` : `migrated ${CONFIG_PATH} to version 2`];
+  return { lines: [version === 2 ? `normalized ${CONFIG_PATH}` : `migrated ${CONFIG_PATH} to version 2`], newerVersion: false };
 }
 
 function refreshBlock(cwd: string, version: string): string[] {
@@ -45,9 +60,9 @@ function refreshBlock(cwd: string, version: string): string[] {
 
 /** The only code path that writes router files. Returns the report lines. */
 export function applyRouter(cwd: string, opts: ApplyOptions): string[] {
-  const lines = migrateFile(cwd);
+  const { lines, newerVersion } = migrateFile(cwd);
   const cfg = loadConfig(cwd);
-  const harnesses = opts.install ? [...HARNESSES] : HARNESSES.filter((h) => isRouterInstalled(cwd, h));
+  const harnesses = newerVersion ? [] : opts.install ? [...HARNESSES] : HARNESSES.filter((h) => isRouterInstalled(cwd, h));
   for (const harness of harnesses) {
     for (const tier of TIERS) {
       const result = writeAgentFile(cwd, harness, tier, agentModel(cfg, harness, tier));
