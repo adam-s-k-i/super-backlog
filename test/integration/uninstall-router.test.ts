@@ -1,7 +1,7 @@
 // test/integration/uninstall-router.test.ts
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, win32 } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { applyRouter } from '../../src/models/apply.js';
 import { uninstallModelRouter } from '../../src/models/uninstall.js';
@@ -87,6 +87,19 @@ describe('uninstall model router', () => {
     expect(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8'))).toEqual({
       hooks: { SessionStart: [{ matcher: '*', hooks: [{ type: 'command', command: './my-start.sh' }] }], PreToolUse: [OWN_HOOK] },
     });
+    expect(report).toContainEqual({ verdict: 'removed', label: '.claude/settings.json SessionStart hook' });
+  });
+
+  it('recognises backslash and absolute-path variants of the sbl hook', () => {
+    const tail = ['node_modules', 'super-backlog', 'dist', 'templates', 'cc-session-hook.js'];
+    const variants = [win32.join(...tail), win32.join('C:', 'proj', ...tail), `/home/u/proj/${tail.join('/')}`];
+    expect(variants[0]).toContain(win32.sep);
+    const entries = variants.map((arg) => ({ matcher: '*', hooks: [{ type: 'command', command: 'node', args: [arg] }] }));
+    const cwd = freshDir();
+    put(cwd, '.claude/settings.json', JSON.stringify({ hooks: { SessionStart: [...entries, OWN_HOOK] } }, null, 2));
+    const report: Line[] = [];
+    uninstallModelRouter(cwd, report);
+    expect(JSON.parse(readFileSync(join(cwd, '.claude/settings.json'), 'utf8')).hooks.SessionStart).toEqual([OWN_HOOK]);
     expect(report).toContainEqual({ verdict: 'removed', label: '.claude/settings.json SessionStart hook' });
   });
 

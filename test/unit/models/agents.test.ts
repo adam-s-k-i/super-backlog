@@ -116,12 +116,21 @@ describe('setModelLine', () => {
   });
 
   it('keeps a UTF-8 BOM in front of the existing frontmatter', () => {
-    expect(setModelLine('﻿---\nname: x\nmodel: a\n---\nbody\n', 'b')).toBe('﻿---\nname: x\nmodel: b\n---\nbody\n');
+    expect(setModelLine('\uFEFF---\nname: x\nmodel: a\n---\nbody\n', 'b')).toBe('\uFEFF---\nname: x\nmodel: b\n---\nbody\n');
   });
 
-  it('never edits body lines when the frontmatter is not closed', () => {
-    expect(setModelLine('---\nname: x\nmodel: a\n', 'b')).toBe('---\nmodel: b\nname: x\nmodel: a\n');
-    expect(setModelLine('---\nname: x\nmodel: a\n', null)).toBe('---\nname: x\nmodel: a\n');
+  it('leaves a file with unclosed frontmatter unchanged, so repeated applies are idempotent', () => {
+    const unclosed = '---\nname: x\nmodel: a\nbody\n';
+    expect(setModelLine(unclosed, 'b')).toBe(unclosed);
+    expect(setModelLine(unclosed, null)).toBe(unclosed);
+    expect(setModelLine(setModelLine(unclosed, 'b'), 'b')).toBe(unclosed);
+  });
+
+  it('accepts a closing --- with trailing whitespace', () => {
+    expect(setModelLine('---\nname: x\nmodel: a\n---  \nbody\n', 'b')).toBe('---\nname: x\nmodel: b\n---  \nbody\n');
+    const once = setModelLine('---\nname: x\n--- \t\nbody\n', 'b');
+    expect(once).toBe('---\nmodel: b\nname: x\n--- \t\nbody\n');
+    expect(setModelLine(once, 'b')).toBe(once);
   });
 
   it('prepends frontmatter to a file without one, and leaves it alone for null', () => {
@@ -141,6 +150,15 @@ describe('writeAgentFile', () => {
     expect(read(cwd, rel)).toContain('my own words');
     expect(read(cwd, rel)).toContain('\nmodel: inherit\n');
     expect(writeAgentFile(cwd, 'claude', 'light', 'inherit')).toBe('unchanged');
+  });
+
+  it('reports unchanged on every apply for a file with unclosed frontmatter', () => {
+    const cwd = freshDir();
+    const rel = agentPath('claude', 'top');
+    put(cwd, rel, '---\nname: sbl-top\nbody without a closing line\n');
+    expect(writeAgentFile(cwd, 'claude', 'top', 'opus')).toBe('unchanged');
+    expect(writeAgentFile(cwd, 'claude', 'top', 'opus')).toBe('unchanged');
+    expect(read(cwd, rel)).toBe('---\nname: sbl-top\nbody without a closing line\n');
   });
 });
 

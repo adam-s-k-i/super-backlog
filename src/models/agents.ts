@@ -52,17 +52,19 @@ export function renderAgentFile(harness: Harness, tier: Tier, model: string | nu
 
 /**
  * Replaces, inserts (after the opening ---) or removes (null) the frontmatter `model:` line; keeps everything
- * else, a leading UTF-8 BOM and the file's EOL. Without a closing --- no existing line is touched.
+ * else, a leading UTF-8 BOM and the file's EOL. A file whose frontmatter has no closing --- is returned unchanged.
  */
 export function setModelLine(content: string, model: string | null): string {
-  const bom = content.startsWith('﻿') ? '﻿' : '';
+  const bom = content.startsWith('\uFEFF') ? '\uFEFF' : '';
   const eol = detectEol(content);
   const lines = content.slice(bom.length).split(/\r?\n/);
   if (lines[0] !== '---') {
     return model === null ? content : bom + ['---', `model: ${model}`, '---', ...lines].join(eol);
   }
-  const close = lines.indexOf('---', 1);
-  const found = close === -1 ? -1 : lines.slice(1, close).findIndex((l) => l.startsWith('model:'));
+  const close = lines.findIndex((l, i) => i > 0 && l.trimEnd() === '---');
+  // Unclosed frontmatter: any edit would be repeated on every apply, so leave the file alone.
+  if (close === -1) return content;
+  const found = lines.slice(1, close).findIndex((l) => l.startsWith('model:'));
   const at = found === -1 ? -1 : found + 1;
   if (model === null) {
     if (at !== -1) lines.splice(at, 1);
