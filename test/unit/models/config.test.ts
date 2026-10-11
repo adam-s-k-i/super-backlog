@@ -6,12 +6,15 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   claudeModel,
   effectiveTiers,
+  InvalidConfigError,
   isHarness,
   isTier,
   isValidModelId,
   loadConfig,
   normalizeConfig,
+  readConfigStrict,
   serializeConfig,
+  UnsupportedConfigVersionError,
   writeConfig,
 } from '../../../src/models/config.js';
 import { CLAUDE_DEFAULTS, defaultConfig } from '../../../src/models/defaults.js';
@@ -156,6 +159,55 @@ describe('loadConfig', () => {
     const cwd = freshDir();
     writeRaw(cwd, JSON.stringify({ version: 1, enabled: true, individual: { budget: 'x/cheap' } }));
     expect(loadConfig(cwd)).toEqual({ version: 2, enabled: true, tiers: { opencode: { light: 'x/cheap' } } });
+  });
+});
+
+describe('UTF-8 BOM', () => {
+  const v2 = JSON.stringify({ version: 2, enabled: true, tiers: { claude: { top: 'opus' } } });
+
+  it('loadConfig reads a file with a leading BOM', () => {
+    const cwd = freshDir();
+    writeRaw(cwd, `﻿${v2}`);
+    expect(loadConfig(cwd)).toEqual({ version: 2, enabled: true, tiers: { claude: { top: 'opus' } } });
+  });
+
+  it('readConfigStrict reads a file with a leading BOM', () => {
+    const cwd = freshDir();
+    writeRaw(cwd, `﻿${v2}`);
+    expect(readConfigStrict(cwd)).toEqual({ version: 2, enabled: true, tiers: { claude: { top: 'opus' } } });
+  });
+});
+
+describe('unsupported version', () => {
+  const MESSAGE =
+    '.super-backlog/models.json has version 3, which this super-backlog does not support - left unchanged; upgrade super-backlog or delete it';
+
+  it('loadConfig falls back to the default instead of migrating a newer file', () => {
+    const cwd = freshDir();
+    writeRaw(cwd, JSON.stringify({ version: 3, enabled: true, individual: { budget: 'x/cheap' } }));
+    expect(loadConfig(cwd)).toEqual(defaultConfig());
+  });
+
+  it('readConfigStrict throws an InvalidConfigError subclass naming the version', () => {
+    const cwd = freshDir();
+    writeRaw(cwd, JSON.stringify({ version: 3, enabled: true }));
+    let caught: unknown;
+    try {
+      readConfigStrict(cwd);
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(UnsupportedConfigVersionError);
+    expect(caught).toBeInstanceOf(InvalidConfigError);
+    expect((caught as Error).message).toBe(MESSAGE);
+  });
+
+  it('keeps treating version 1, a missing version and a non-numeric version as v1', () => {
+    for (const version of [1, undefined, '3', 0]) {
+      const cwd = freshDir();
+      writeRaw(cwd, JSON.stringify({ version, enabled: true, individual: { budget: 'x/cheap' } }));
+      expect(readConfigStrict(cwd), String(version)).toEqual({ version: 2, enabled: true, tiers: { opencode: { light: 'x/cheap' } } });
+    }
   });
 });
 

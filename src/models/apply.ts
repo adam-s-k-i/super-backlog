@@ -5,7 +5,7 @@ import { agentsBlockContents } from '../init/planner.js';
 import { atomicWrite } from '../lib/atomic.js';
 import { injectBlock, stripOwned } from '../lib/markers.js';
 import { agentModel, agentPath, cleanLegacy, isRouterInstalled, writeAgentFile } from './agents.js';
-import { loadConfig, serializeConfig } from './config.js';
+import { InvalidConfigError, loadConfig, normalizeConfig, parseConfigText, serializeConfig, stripBom } from './config.js';
 import { CONFIG_PATH, HARNESSES, TIERS } from './defaults.js';
 
 export interface ApplyOptions {
@@ -21,12 +21,13 @@ function migrateFile(cwd: string): string[] {
   const raw = readFileSync(path, 'utf8');
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return [`warning: ${CONFIG_PATH} is not valid JSON - left unchanged`];
+    parsed = parseConfigText(raw);
+  } catch (err) {
+    if (!(err instanceof InvalidConfigError)) throw err;
+    return [`warning: ${err.message}`];
   }
-  const normalized = serializeConfig(loadConfig(cwd));
-  if (raw.replace(/\r\n/g, '\n') === normalized) return [];
+  const normalized = serializeConfig(normalizeConfig(parsed));
+  if (stripBom(raw).replace(/\r\n/g, '\n') === normalized) return [];
   atomicWrite(path, normalized);
   const version = parsed !== null && typeof parsed === 'object' ? (parsed as { version?: unknown }).version : undefined;
   return [version === 2 ? `normalized ${CONFIG_PATH}` : `migrated ${CONFIG_PATH} to version 2`];

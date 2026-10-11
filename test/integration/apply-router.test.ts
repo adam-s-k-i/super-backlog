@@ -113,12 +113,37 @@ describe('applyRouter', () => {
     expect(read(cwd, CONFIG)).toBe(crlf);
   });
 
+  it('does not rewrite a normalized file that only differs by a UTF-8 BOM', () => {
+    const cwd = freshDir();
+    const bom = `﻿${pretty({ version: 2, enabled: true, tiers: {} })}`;
+    put(cwd, CONFIG, bom);
+    expect(applyRouter(cwd, opts())).toEqual([]);
+    expect(read(cwd, CONFIG)).toBe(bom);
+  });
+
+  it('migrates a v1 file with a UTF-8 BOM instead of calling it invalid', () => {
+    const cwd = freshDir();
+    put(cwd, CONFIG, `﻿${JSON.stringify({ version: 1, enabled: true, individual: { workhorse: 'i/w' } })}`);
+    expect(applyRouter(cwd, opts())).toEqual(['migrated .super-backlog/models.json to version 2']);
+    expect(read(cwd, CONFIG)).toBe(pretty({ version: 2, enabled: true, tiers: { opencode: { standard: 'i/w' } } }));
+  });
+
+  it('never rewrites a file with a newer version and warns instead', () => {
+    const cwd = freshDir();
+    const v3 = JSON.stringify({ version: 3, enabled: true, tiers: { claude: { top: 'future' } } });
+    put(cwd, CONFIG, v3);
+    expect(applyRouter(cwd, opts())).toEqual([
+      'warning: .super-backlog/models.json has version 3, which this super-backlog does not support - left unchanged; upgrade super-backlog or delete it',
+    ]);
+    expect(read(cwd, CONFIG)).toBe(v3);
+  });
+
   it('leaves an unparsable models.json alone with a warning and treats the router as disabled', () => {
     const cwd = freshDir();
     put(cwd, CONFIG, '{ broken');
     put(cwd, '.claude/agents/sbl-light.md', '---\nname: sbl-light\nmodel: haiku\n---\nbody\n');
     expect(applyRouter(cwd, opts())).toEqual([
-      'warning: .super-backlog/models.json is not valid JSON - left unchanged',
+      'warning: .super-backlog/models.json is not valid JSON - left unchanged; fix or delete it',
       'updated .claude/agents/sbl-light.md',
       ...['standard', 'strong', 'top'].map((t) => `created .claude/agents/sbl-${t}.md`),
     ]);
@@ -200,7 +225,7 @@ describe('refresh-model-router action', () => {
     put(cwd, CONFIG, '{ broken');
     put(cwd, '.claude/agents/sbl-top.md', '---\nname: sbl-top\nmodel: opus\n---\nbody\n');
     const result = await executeActions(cwd, [{ kind: 'refresh-model-router' }], CTX);
-    expect(result.warnings).toEqual(['.super-backlog/models.json is not valid JSON - left unchanged']);
+    expect(result.warnings).toEqual(['.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it']);
     expect(read(cwd, CONFIG)).toBe('{ broken');
   });
 

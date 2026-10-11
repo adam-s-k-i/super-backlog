@@ -57,7 +57,7 @@ function migrateV1(raw: Record<string, unknown>): RouterConfig {
   return cfg;
 }
 
-/** Any input → a normalized version 2 config. Files whose `version` is not 2 are migrated from v1. */
+/** Any input → a normalized version 2 config. Files whose `version` is not 2 are migrated from v1; readers reject versions above 2 before this. */
 export function normalizeConfig(raw: unknown): RouterConfig {
   const obj = asObject(raw);
   if (!obj) return defaultConfig();
@@ -83,7 +83,7 @@ export function loadConfig(cwd: string): RouterConfig {
   const path = join(cwd, CONFIG_PATH);
   if (!existsSync(path)) return defaultConfig();
   try {
-    return normalizeConfig(JSON.parse(readFileSync(path, 'utf8')));
+    return normalizeConfig(parseConfigText(readFileSync(path, 'utf8')));
   } catch {
     return defaultConfig();
   }
@@ -91,24 +91,43 @@ export function loadConfig(cwd: string): RouterConfig {
 
 /** Thrown instead of overwriting an unparsable models.json. */
 export class InvalidConfigError extends Error {
-  constructor() {
-    super(`${CONFIG_PATH} is not valid JSON - left unchanged; fix or delete it`);
+  constructor(message = `${CONFIG_PATH} is not valid JSON - left unchanged; fix or delete it`) {
+    super(message);
     this.name = 'InvalidConfigError';
   }
 }
 
-/** Like loadConfig, but an unparsable file throws InvalidConfigError. For callers that write the config back. */
-export function readConfigStrict(cwd: string): RouterConfig {
-  const path = join(cwd, CONFIG_PATH);
-  if (!existsSync(path)) return defaultConfig();
-  const raw = readFileSync(path, 'utf8');
+/** Thrown instead of migrating or overwriting a models.json written by a newer super-backlog. */
+export class UnsupportedConfigVersionError extends InvalidConfigError {
+  constructor(version: number) {
+    super(`${CONFIG_PATH} has version ${version}, which this super-backlog does not support - left unchanged; upgrade super-backlog or delete it`);
+    this.name = 'UnsupportedConfigVersionError';
+  }
+}
+
+/** Editors such as PowerShell 5.1 `Set-Content -Encoding utf8` write a leading UTF-8 BOM, which JSON.parse rejects. */
+export function stripBom(text: string): string {
+  return text.startsWith('﻿') ? text.slice(1) : text;
+}
+
+/** Parses models.json text; throws InvalidConfigError for bad JSON and UnsupportedConfigVersionError for a version above 2. */
+export function parseConfigText(raw: string): unknown {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(raw);
+    parsed = JSON.parse(stripBom(raw));
   } catch {
     throw new InvalidConfigError();
   }
-  return normalizeConfig(parsed);
+  const version = asObject(parsed)?.['version'];
+  if (typeof version === 'number' && version > 2) throw new UnsupportedConfigVersionError(version);
+  return parsed;
+}
+
+/** Like loadConfig, but an unreadable file throws InvalidConfigError. For callers that write the config back. */
+export function readConfigStrict(cwd: string): RouterConfig {
+  const path = join(cwd, CONFIG_PATH);
+  if (!existsSync(path)) return defaultConfig();
+  return normalizeConfig(parseConfigText(readFileSync(path, 'utf8')));
 }
 
 export function serializeConfig(cfg: RouterConfig): string {
