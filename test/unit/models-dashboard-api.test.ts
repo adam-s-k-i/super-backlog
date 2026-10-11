@@ -103,7 +103,7 @@ describe('model dashboard api', () => {
   it('persists discovered tiers so the modal shows them on the next open', async () => {
     const cwd = freshDir('sbl-mapi-disc-');
     const handler = createModelApiHandler(cwd, {
-      discover: async () => ({ discoveredAt: '2026-10-11T08:00:00.000Z', workhorse: 'model-w', budget: 'model-b' }),
+      discover: async () => ({ discoveredAt: '2026-10-11T08:00:00.000Z', tiers: { standard: 'model-w', light: 'model-b' } }),
     });
     const server = createServer((req, res) => {
       void handler(req, res);
@@ -117,7 +117,7 @@ describe('model dashboard api', () => {
     });
     const res = await call(port, '/api/models/discover', 'POST');
     expect(res.status).toBe(200);
-    expect(res.json['workhorse']).toBe('model-w');
+    expect((res.json['tiers'] as Record<string, string>)['standard']).toBe('model-w');
     const persisted = JSON.parse(readFileSync(configPath(cwd), 'utf8'));
     expect(persisted.version).toBe(2);
     expect(persisted.tiers.opencode.standard).toBe('model-w');

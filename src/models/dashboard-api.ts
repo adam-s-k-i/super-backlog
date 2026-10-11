@@ -48,7 +48,7 @@ export function createModelApiHandler(
       const result = await discover(cwd);
       if (result) {
         try {
-          saveDiscovery(cwd, result.discoveredAt, { light: result.budget, standard: result.workhorse });
+          saveDiscovery(cwd, result.discoveredAt, result.tiers);
         } catch {
           // discovery result still returned; the modal just won't remember it
         }
