@@ -10,7 +10,9 @@ import { injectBlock } from '../lib/markers.js';
 import { applyPluginEntry } from '../lib/opencode.js';
 import { OwnershipError, renderSkill } from '../lib/ownership.js';
 import { refreshPointer } from '../lib/pointer.js';
-import { writeRouterConfig } from '../models/install.js';
+import { applyRouter } from '../models/apply.js';
+import { InvalidConfigError } from '../models/config.js';
+import { setRouterEnabled } from '../models/install.js';
 import {
   addDevDependencies,
   mergeScripts,
@@ -146,7 +148,7 @@ function applyMergeJson(cwd: string, op: JsonOp): boolean {
 function applyInjectAgentsBlock(cwd: string, ctx: ExecuteContext): boolean {
   const path = join(cwd, 'AGENTS.md');
   const current = readTextIfExists(path) ?? '';
-  const injected = injectBlock(current, ctx.version, agentsBlockContents(ctx.version));
+  const injected = injectBlock(current, ctx.version, agentsBlockContents(ctx.version, cwd));
   if (injected.action === 'unchanged') return false;
   atomicWrite(path, injected.content);
   return true;
@@ -170,6 +172,15 @@ function applyCopySkills(cwd: string, version: string): boolean {
     atomicWrite(join(cwd, '.claude', 'skills', skill, 'SKILL.md'), rendered);
   }
   return true;
+}
+
+/** Prints applyRouter's report lines; `warning: ` lines go to the warnings list instead (printed by the caller, exit 4). */
+function reportRouterLines(lines: string[], warnings: string[]): void {
+  const prefix = 'warning: ';
+  for (const line of lines) {
+    if (line.startsWith(prefix)) warnings.push(line.slice(prefix.length));
+    else console.log(line);
+  }
 }
 
 export async function executeActions(
@@ -224,14 +235,31 @@ export async function executeActions(
         break;
       }
       case 'install-model-router': {
-        const { installOpenCodeAdapter } = await import('../models/opencode.js');
-        const { installClaudeAdapter } = await import('../models/claude.js');
-        writeRouterConfig(cwd, action.enabled);
-        if (action.enabled) {
-          installOpenCodeAdapter(cwd);
-          installClaudeAdapter(cwd);
+        try {
+          setRouterEnabled(cwd, action.enabled);
+        } catch (err) {
+          // An unparsable models.json is never overwritten; init goes on without the router.
+          if (!(err instanceof InvalidConfigError)) throw err;
+          warnings.push(`${err.message} (model router not installed)`);
+          skipped++;
+          break;
         }
+        reportRouterLines(applyRouter(cwd, { install: action.enabled, block: false, version: ctx.version }), warnings);
         applied++;
+        break;
+      }
+      case 'refresh-model-router': {
+        // A router failure (e.g. a locked agent file) must not abort the rest of the update.
+        let lines: string[];
+        try {
+          lines = applyRouter(cwd, { install: false, block: false, version: ctx.version });
+        } catch (err) {
+          warnings.push(`model router refresh failed: ${err instanceof Error ? err.message : String(err)}`);
+          skipped++;
+          break;
+        }
+        reportRouterLines(lines, warnings);
+        lines.length > 0 ? applied++ : skipped++;
         break;
       }
       case 'write':

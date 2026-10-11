@@ -79,13 +79,7 @@ that did not see the work being produced.
 If the harness has no subagents or no per-dispatch model choice, work
 directly and without mentioning it.
 
-Examples (current as of this super-backlog release):
-
-- Claude Code: the Agent tool's `model` parameter — light `haiku`, standard
-  `sonnet`, strong `opus`, top = the strongest available model (e.g. Fable).
-- OpenCode: set the tier's model on the subagent, e.g. the `model` field of
-  an agent in `.opencode/agents/`.
-- Other harnesses: the equivalent per-subagent model setting.
+{{MODEL_EXAMPLES}}
 
 Project-specific human gates are intentionally out of scope for this block.
 Add project-specific human gates below the block.

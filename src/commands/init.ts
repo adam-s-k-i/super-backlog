@@ -65,6 +65,8 @@ function describeAction(action: Action): string {
       return 'copy-skills (.opencode/skill + .claude/skills)';
     case 'install-model-router':
       return 'install-model-router .super-backlog/models.json';
+    case 'refresh-model-router':
+      return 'refresh-model-router (.claude/agents + .opencode/agents)';
     case 'install-guard-hook':
       return 'install-guard-hook .git/hooks/pre-commit';
     case 'write':

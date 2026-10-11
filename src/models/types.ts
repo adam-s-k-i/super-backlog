@@ -1,18 +1,12 @@
-export { DEFAULT_CONFIG } from './defaults.js';
+// src/models/types.ts
+export type Tier = 'light' | 'standard' | 'strong' | 'top';
+export type Harness = 'claude' | 'opencode';
+export type TierModels = Partial<Record<Tier, string>>;
 
-export type ModelMode = 'auto' | 'family' | 'individual';
-
-export interface FamilyTiers {
-  workhorse: string;
-  budget: string;
-}
-
+/** `.super-backlog/models.json` version 2. */
 export interface RouterConfig {
-  version: number;
+  version: 2;
   enabled: boolean;
-  mode: ModelMode;
-  tiers: Partial<FamilyTiers>;
-  individual: Partial<FamilyTiers>;
-  families: Record<string, Partial<FamilyTiers>>;
-  resolved: Partial<{ discoveredAt: string } & FamilyTiers>;
+  tiers: Partial<Record<Harness, TierModels>>;
+  discoveredAt?: string;
 }

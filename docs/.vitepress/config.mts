@@ -26,6 +26,7 @@ export default defineConfig({
           { text: 'Project summary', link: '/guide/project-summary' },
           { text: 'Project profile', link: '/guide/project-profile' },
           { text: 'Harness support', link: '/guide/harness-support' },
+          { text: 'Model router', link: '/guide/model-router' },
           { text: 'Guard hook', link: '/guide/guard' },
           { text: 'Operations', link: '/guide/operations' },
           { text: 'Publishing', link: '/guide/publishing' },

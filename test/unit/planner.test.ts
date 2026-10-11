@@ -22,6 +22,15 @@ describe('planInit', () => {
     expect(warnings).toEqual([]);
   });
 
+  it('plans the model router before the block injection so init renders configured examples', () => {
+    const { actions } = planInit(base, {
+      harnesses: ['opencode', 'claude'], pm: 'auto', guard: false, skipInstall: false, models: true,
+    }, '1.0.0');
+    const kinds = actions.map(a => a.kind);
+    expect(kinds.indexOf('install-model-router')).toBeGreaterThanOrEqual(0);
+    expect(kinds.indexOf('install-model-router')).toBeLessThan(kinds.indexOf('inject-agents-block'));
+  });
+
   it('skips upstream when skipInstall', () => {
     const { actions } = planInit(base, { harnesses: ['opencode'], pm: 'auto', guard: false, skipInstall: true }, '1.0.0');
     expect(actions.map(a => a.kind)).not.toContain('upstream-install');

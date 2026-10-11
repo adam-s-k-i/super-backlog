@@ -78,11 +78,11 @@ onMounted(() => {
       ],
     },
     models: {
-      text: 'The optional model router sends simple agents to cheaper tiers and keeps your main model for complex work. Installed with sbl init --models; configured per project under .super-backlog/models.json.',
+      text: 'The optional model router writes one subagent per tier (light, standard, strong, top) for Claude Code and OpenCode, each with a fixed model. Installed with sbl init --models; configured per project in .super-backlog/models.json.',
       cmds: [
         ['sbl models enable', 'turn routing on'],
         ['sbl models show', 'inspect current config'],
-        ['sbl models discover', 'rank available models into tiers'],
+        ['sbl models discover', 'rank OpenCode models into four tiers'],
       ],
     },
     uninstall: {
@@ -209,7 +209,7 @@ onMounted(() => {
 
   <div class="sbl-cmd cmd-card">
       <div class="cmd-line-row"><span class="cmd-name">sbl models</span><button class="copy" data-copy="sbl models show">copy</button></div>
-      <div class="cmd-short">Optional model router: cheap tiers for simple agents, your main model for hard work.</div>
+      <div class="cmd-short">Optional model router: one subagent per tier with a fixed model, for Claude Code and OpenCode.</div>
       <div class="cmd-foot">
         <button class="details-btn" data-details="models">Details</button>
       </div>
@@ -289,7 +289,7 @@ sbl uninstall">copy</button>
 <b>sbl doctor</b>                      environment + phase-label hygiene
 <b>sbl update</b>                      self-update + refresh injected files
 <b>sbl models enable</b>               turn the model router on
-<b>sbl models discover</b>             discover and rank available models
+<b>sbl models discover</b>             rank OpenCode models into tiers
 <b>sbl uninstall</b>                   remove kit files, keep backlog/ data</pre>
   </div>
 </section>
