@@ -160,6 +160,27 @@ describe('parseYamlSubset: accepted constructs', () => {
     expect(parseYamlSubset('')).toBeNull();
     expect(parseYamlSubset('# nothing\n\n')).toBeNull();
   });
+
+  it('accepts a "- |" literal block as a sequence item', () => {
+    expect(parseYamlSubset('items:\n  - |\n    one\n    two\n  - b\n')).toEqual({ items: ['one\ntwo\n', 'b'] });
+  });
+
+  it('accepts quoted mapping keys', () => {
+    expect(parseYamlSubset('"a b": 1\n\'c\': 2\n')).toEqual({ 'a b': 1, c: 2 });
+  });
+
+  it('reads -0 as 0 (documented normalisation)', () => {
+    const v = (parseYamlSubset('a: -0\n') as { a: number }).a;
+    expect(Object.is(v, 0)).toBe(true);
+  });
+
+  it('strips trailing spaces on literal block lines (documented normalisation)', () => {
+    expect(parseYamlSubset('a: |\n  x  \n  y\n')).toEqual({ a: 'x\ny\n' });
+  });
+
+  it('still accepts a comment after a space following a quoted scalar and a flow collection', () => {
+    expect(parseYamlSubset('a: "x" # c\nb: [1] # c\n')).toEqual({ a: 'x', b: [1] });
+  });
 });
 
 describe('parseYamlSubset: rejected constructs carry line and column', () => {
@@ -193,6 +214,21 @@ describe('parseYamlSubset: rejected constructs carry line and column', () => {
     rejects('commands:\n  constructor:\n    - { run: x }\n', 2, 3, /reserved key "constructor"/));
   it('rejects the reserved key prototype when quoted', () => rejects('"prototype": 1\n', 1, 1, /reserved key "prototype"/));
   it('rejects a reserved key in a flow mapping', () => rejects('a: { x: 1, __proto__: 2 }\n', 1, 12, /reserved key "__proto__"/));
+  it.each([
+    ['a: x:\n', 5, /plain values must not end with ":"/],
+    ['a: - x\n', 4, /plain values must not start with "- "/],
+    ['a: -\n', 4, /plain values must not start with "- "/],
+    ['a: [x:]\n', 6, /plain values must not end with ":"/],
+    ['a: [- x]\n', 5, /plain values must not start with "- "/],
+    ['a: [a]#x\n', 7, /unexpected text after flow collection/],
+    ['a: "x"#y\n', 7, /unexpected text after quoted scalar/],
+    ['a: { k: }\n', 9, /empty entry in flow collection/],
+    ['a: [a] b\n', 8, /unexpected text after flow collection/],
+    ['a: { k: v } x\n', 13, /unexpected text after flow collection/],
+    ['a: "x" y\n', 7, /unexpected text after quoted scalar/],
+  ])('rejects the ambiguous %j with its column', (text, column, reason) => {
+    rejects(text, 1, column, reason);
+  });
   it('does not let __proto__ replace the prototype of the parsed object', () => {
     expect(() => parseYamlSubset('__proto__:\n  schema: 1\n')).toThrow(YamlSubsetError);
     expect(parseYamlSubset('proto: 1\n')).toEqual({ proto: 1 });
@@ -243,6 +279,7 @@ describe('parseYamlSubset: size limit', () => {
     const parsed = parseYamlSubset(body);
     const elapsed = performance.now() - started;
     expect(parsed).toEqual({ k: 'x' });
-    expect(elapsed).toBeLessThan(1000);
+    // A quadratic regression on 256 KB takes minutes; 10 s catches it without flaking on slow CI runners.
+    expect(elapsed).toBeLessThan(10_000);
   });
 });
