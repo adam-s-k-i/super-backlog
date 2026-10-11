@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { KIT_VERSION } from '../lib/version.js';
 import { applyRouter } from './apply.js';
-import { effectiveTiers, loadConfig } from './config.js';
+import { effectiveTiers, loadConfig, readConfigStrict } from './config.js';
 import { CONFIG_PATH } from './defaults.js';
 import { discoverModels } from './discovery.js';
 import { saveDiscovery, setRouterEnabled } from './install.js';
@@ -54,6 +54,12 @@ export function createModelApiHandler(
     }
 
     if (method === 'POST' && url === '/api/models/discover') {
+      try {
+        readConfigStrict(cwd); // fail before running `opencode models`
+      } catch (err) {
+        sendJson(res, 500, { ok: false, message: errorMessage(err) });
+        return;
+      }
       const result = await discover(cwd);
       if (!result) {
         sendJson(res, 200, { ok: false, error: 'discovery failed' });

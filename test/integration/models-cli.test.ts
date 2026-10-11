@@ -191,6 +191,22 @@ describe('sbl models CLI', () => {
       expect(existsSync(join(cwd, 'AGENTS.md'))).toBe(true);
       expect(existsSync(join(cwd, '.claude', 'agents', 'sbl-top.md'))).toBe(false);
     });
+
+    it('discover never runs opencode models', async () => {
+      const cwd = broken();
+      const spy = vi.spyOn(runModule, 'runCapture').mockReturnValue({ status: 0, stdout: 'opencode/claude-haiku-4-5\n', stderr: '' });
+      capture();
+      expect(await models(cwd, 'discover')).toBe(1);
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('show warns on stderr and prints the defaults', async () => {
+      const cwd = broken();
+      const { out, err } = capture();
+      expect(await models(cwd, 'show')).toBe(0);
+      expect(err).toEqual([`warning: ${ERROR}`]);
+      expect(out.join('\n')).toBe('{\n  "version": 2,\n  "enabled": false,\n  "tiers": {}\n}');
+    });
   });
 
   it('rejects unknown subcommands', async () => {
