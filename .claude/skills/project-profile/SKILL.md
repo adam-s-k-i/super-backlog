@@ -3,7 +3,7 @@ name: project-profile
 description: Create or revise backlog/docs/critical-areas.md, the project profile that names the areas where work always runs on the top tier. Use when the file is missing, the user asks for it, the project changed substantially, a misclassification caused a mistake, or sbl doctor reports the profile as provisional.
 ---
 
-<!-- managed-by: super-backlog 1.8.0 -->
+<!-- managed-by: super-backlog 1.9.0 -->
 # Project Profile: name the critical areas of this project
 
 Writes `backlog/docs/critical-areas.md`. The managed AGENTS.md block tells

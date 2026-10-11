@@ -44,7 +44,7 @@ That's it. Everything else below is detail.
 | `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, `architecture.yml` and the `critical-areas.md` project profile. |
 | `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it (`--check` for CI). |
 | `sbl update` | Self-update the CLI, then refresh every injected file. |
-| `sbl models enable` | Optional model router: cheap models for simple agents, your main model for hard work. |
+| `sbl models enable` | Optional model router: one subagent per tier (light, standard, strong, top) with a fixed model. |
 | `sbl uninstall` | Remove everything super-backlog owns — your `backlog/` data stays. |
 
 Full reference with flags and parameters: [Quick start guide](https://adam-s-k-i.github.io/super-backlog/guide/quickstart).
@@ -89,7 +89,7 @@ Next to the dashboard, every project gets a summary page with an architecture di
 
 ## Model router (opt-in)
 
-`sbl init --models` routes simple agents to cheaper tiers while keeping your main model for complex work. Toggle with `sbl models enable|disable`, inspect with `sbl models show`, discover tiers with `sbl models discover`. Independent of the block's always-on delegation rule, see [Harness support](https://adam-s-k-i.github.io/super-backlog/guide/harness-support).
+`sbl init --models` writes one subagent per tier (`sbl-light`, `sbl-standard`, `sbl-strong`, `sbl-top`) for Claude Code and OpenCode, each with a fixed model from `.super-backlog/models.json`. Set a tier with `sbl models set <harness> <tier> <model>`, toggle with `sbl models enable|disable`, rank OpenCode models with `sbl models discover`. Independent of the block's always-on delegation rule; see [Model router](https://adam-s-k-i.github.io/super-backlog/guide/model-router).
 
 ## Uninstall guarantee
 
