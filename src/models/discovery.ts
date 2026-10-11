@@ -1,5 +1,5 @@
 import { runCapture } from '../lib/run.js';
-import type { FamilyTiers } from './types.js';
+type TwoTiers = { workhorse: string; budget: string };
 
 export interface ResolvedTiers {
   discoveredAt: string;
@@ -37,7 +37,7 @@ function scoreForTier(modelId: string, tier: 'workhorse' | 'budget'): number {
   return 10;
 }
 
-export function rankTiers(available: string[]): Pick<FamilyTiers, 'workhorse' | 'budget'> {
+export function rankTiers(available: string[]): TwoTiers {
   const workhorse = [...available].sort((a, b) => scoreForTier(b, 'workhorse') - scoreForTier(a, 'workhorse'))[0] || '';
   const budget = [...available].sort((a, b) => scoreForTier(b, 'budget') - scoreForTier(a, 'budget'))[0] || '';
   return { workhorse, budget };

@@ -97,12 +97,13 @@ describe('model dashboard api', () => {
     expect(res.status).toBe(200);
     expect((res.json['config'] as Record<string, unknown>)['enabled']).toBe(false);
     expect(JSON.parse(readFileSync(configPath(cwd), 'utf8')).enabled).toBe(false);
+    expect(JSON.parse(readFileSync(configPath(cwd), 'utf8')).version).toBe(2);
   });
 
   it('persists discovered tiers so the modal shows them on the next open', async () => {
     const cwd = freshDir('sbl-mapi-disc-');
     const handler = createModelApiHandler(cwd, {
-      discover: async () => ({ workhorse: 'model-w', budget: 'model-b' }),
+      discover: async () => ({ discoveredAt: '2026-10-11T08:00:00.000Z', workhorse: 'model-w', budget: 'model-b' }),
     });
     const server = createServer((req, res) => {
       void handler(req, res);
@@ -118,10 +119,11 @@ describe('model dashboard api', () => {
     expect(res.status).toBe(200);
     expect(res.json['workhorse']).toBe('model-w');
     const persisted = JSON.parse(readFileSync(configPath(cwd), 'utf8'));
-    expect(persisted.resolved.workhorse).toBe('model-w');
-    expect(persisted.resolved.budget).toBe('model-b');
+    expect(persisted.version).toBe(2);
+    expect(persisted.tiers.opencode.standard).toBe('model-w');
+    expect(persisted.tiers.opencode.light).toBe('model-b');
     const info = await call(port, '/api/models');
-    expect((info.json['config'] as Record<string, Record<string, unknown>>)['resolved']?.['workhorse']).toBe('model-w');
+    expect((info.json['config'] as { tiers: { opencode: Record<string, string> } }).tiers.opencode['standard']).toBe('model-w');
   });
 
   it('returns 500 with a message when the config cannot be written', async () => {

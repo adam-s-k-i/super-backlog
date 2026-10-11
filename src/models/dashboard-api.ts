@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 import { loadConfig } from './config.js';
 import { discoverModels } from './discovery.js';
-import { writeResolvedTiers, writeRouterConfig } from './install.js';
+import { saveDiscovery, setRouterEnabled } from './install.js';
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json' });
@@ -36,7 +36,7 @@ export function createModelApiHandler(
     if (method === 'POST' && (url === '/api/models/enable' || url === '/api/models/disable')) {
       const enabled = url === '/api/models/enable';
       try {
-        writeRouterConfig(cwd, enabled);
+        setRouterEnabled(cwd, enabled);
         sendJson(res, 200, { ok: true, config: loadConfig(cwd), installed: routerInstalled(cwd) });
       } catch (err) {
         sendJson(res, 500, { ok: false, message: err instanceof Error ? err.message : String(err) });
@@ -48,7 +48,7 @@ export function createModelApiHandler(
       const result = await discover(cwd);
       if (result) {
         try {
-          writeResolvedTiers(cwd, result);
+          saveDiscovery(cwd, result.discoveredAt, { light: result.budget, standard: result.workhorse });
         } catch {
           // discovery result still returned; the modal just won't remember it
         }

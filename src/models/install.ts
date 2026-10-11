@@ -1,33 +1,35 @@
 // src/models/install.ts
-import { existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { atomicWrite } from '../lib/atomic.js';
-import { loadConfig } from './config.js';
-import type { RouterConfig } from './types.js';
+import { loadConfig, normalizeConfig, writeConfig } from './config.js';
+import type { Harness, RouterConfig, Tier, TierModels } from './types.js';
 
-const CONFIG_DIR = '.super-backlog';
-const CONFIG_FILE = 'models.json';
-
-export function writeRouterConfig(cwd: string, enabled: boolean): boolean {
-  writeConfigPatch(cwd, { enabled });
-  return true;
+function mutate(cwd: string, change: (cfg: RouterConfig) => void): RouterConfig {
+  const cfg = loadConfig(cwd);
+  change(cfg);
+  const next = normalizeConfig(cfg);
+  writeConfig(cwd, next);
+  return next;
 }
 
-/** Persist discovered tiers so the dashboard shows them across sessions. */
-export function writeResolvedTiers(
-  cwd: string,
-  resolved: RouterConfig['resolved'],
-): void {
-  writeConfigPatch(cwd, { resolved });
+export function setRouterEnabled(cwd: string, enabled: boolean): RouterConfig {
+  return mutate(cwd, (cfg) => {
+    cfg.enabled = enabled;
+  });
 }
 
-function writeConfigPatch(cwd: string, patch: Partial<RouterConfig>): void {
-  const dir = join(cwd, CONFIG_DIR);
-  const path = join(dir, CONFIG_FILE);
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
-  const current = loadConfig(cwd);
-  const next: RouterConfig = { ...current, ...patch };
-  atomicWrite(path, `${JSON.stringify(next, null, 2)}\n`);
+/** `model: null` removes the entry. */
+export function setRouterTier(cwd: string, harness: Harness, tier: Tier, model: string | null): RouterConfig {
+  return mutate(cwd, (cfg) => {
+    const current: TierModels = { ...(cfg.tiers[harness] ?? {}) };
+    if (model === null) delete current[tier];
+    else current[tier] = model;
+    cfg.tiers[harness] = current;
+  });
+}
+
+/** Replaces the OpenCode tiers; Claude tiers and `enabled` stay. */
+export function saveDiscovery(cwd: string, discoveredAt: string, tiers: TierModels): RouterConfig {
+  return mutate(cwd, (cfg) => {
+    cfg.tiers.opencode = { ...tiers };
+    cfg.discoveredAt = discoveredAt;
+  });
 }

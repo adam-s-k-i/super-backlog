@@ -3,19 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { atomicWrite } from '../lib/atomic.js';
-import { loadConfig } from './config.js';
-import { resolveTier } from './resolve.js';
 
 const MODEL_RE = /^model:\s*.+$/m;
-
-export function syncClaudeAgents(cwd: string, mainModel?: string): void {
-  const cfg = loadConfig(cwd);
-  if (!cfg.enabled) return;
-  const workhorse = mainModel ? resolveTier(mainModel, 'workhorse', cfg) : cfg.resolved.workhorse || null;
-  const budget = mainModel ? resolveTier(mainModel, 'budget', cfg) : cfg.resolved.budget || null;
-  updateAgentFile(cwd, 'sbl-worker.md', workhorse);
-  updateAgentFile(cwd, 'sbl-worker-cheap.md', budget);
-}
 
 export function updateAgentFile(cwd: string, file: string, model: string | null): void {
   const path = join(cwd, '.claude', 'agents', file);

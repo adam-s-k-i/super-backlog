@@ -1,7 +1,7 @@
 // src/commands/models.ts
 import { loadConfig } from '../models/config.js';
 import { discoverModels } from '../models/discovery.js';
-import { writeRouterConfig } from '../models/install.js';
+import { setRouterEnabled } from '../models/install.js';
 import type { ParsedArgs } from './init.js';
 
 export async function runModels(cwd: string, args: ParsedArgs): Promise<number> {
@@ -13,11 +13,11 @@ export async function runModels(cwd: string, args: ParsedArgs): Promise<number> 
       return 0;
     }
     case 'enable':
-      writeRouterConfig(cwd, true);
+      setRouterEnabled(cwd, true);
       console.log('model router enabled');
       return 0;
     case 'disable':
-      writeRouterConfig(cwd, false);
+      setRouterEnabled(cwd, false);
       console.log('model router disabled');
       return 0;
     case 'discover': {

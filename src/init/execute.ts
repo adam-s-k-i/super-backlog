@@ -10,7 +10,7 @@ import { injectBlock } from '../lib/markers.js';
 import { applyPluginEntry } from '../lib/opencode.js';
 import { OwnershipError, renderSkill } from '../lib/ownership.js';
 import { refreshPointer } from '../lib/pointer.js';
-import { writeRouterConfig } from '../models/install.js';
+import { setRouterEnabled } from '../models/install.js';
 import {
   addDevDependencies,
   mergeScripts,
@@ -226,7 +226,7 @@ export async function executeActions(
       case 'install-model-router': {
         const { installOpenCodeAdapter } = await import('../models/opencode.js');
         const { installClaudeAdapter } = await import('../models/claude.js');
-        writeRouterConfig(cwd, action.enabled);
+        setRouterEnabled(cwd, action.enabled);
         if (action.enabled) {
           installOpenCodeAdapter(cwd);
           installClaudeAdapter(cwd);
