@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { renderAgentFile } from '../../src/models/agents.js';
 
 const tplDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'templates');
 const read = (f: string) => readFileSync(join(tplDir, f), 'utf8');
@@ -107,28 +108,41 @@ describe('claude-pointer.md', () => {
   });
 });
 
+// Claude Code drops the whole frontmatter when it is invalid YAML and falls back to the first
+// body line as the skill description. A plain (unquoted) scalar must not contain ': ' or ' #'.
+function expectPlainScalars(name: string, text: string): void {
+  const block = text.split(/\r?\n---\r?\n/)[0].replace(/^---\r?\n/, '');
+  for (const line of block.split(/\r?\n/)) {
+    const m = /^([A-Za-z_][\w-]*):(?: (.*))?$/.exec(line);
+    expect(m, `${name}: not a "key: value" line: ${line}`).not.toBeNull();
+    const value = (m?.[2] ?? '').trim();
+    if (/^(['"]).*\1$/.test(value)) continue;
+    expect(value, `${name}: unquoted ': ' in ${m?.[1]}`).not.toMatch(/: |:$/);
+    expect(value, `${name}: unquoted ' #' in ${m?.[1]}`).not.toMatch(/ #/);
+  }
+}
+
 describe('template frontmatter', () => {
-  // Claude Code drops the whole frontmatter when it is invalid YAML and falls back to the first
-  // body line as the skill description. A plain (unquoted) scalar must not contain ': ' or ' #'.
   const withFrontmatter = readdirSync(tplDir)
     .filter((f) => f.endsWith('.md'))
     .filter((f) => read(f).startsWith('---\n') || read(f).startsWith('---\r\n'));
 
-  it('covers every skill and agent template', () => {
+  it('covers every skill template', () => {
     expect(withFrontmatter.filter((f) => f.startsWith('skill-')).length).toBeGreaterThanOrEqual(3);
-    expect(withFrontmatter.some((f) => f.includes('agent-'))).toBe(true);
   });
 
   it.each(withFrontmatter)('%s has only valid plain-scalar values', (f) => {
-    const block = read(f).split(/\r?\n---\r?\n/)[0].replace(/^---\r?\n/, '');
-    for (const line of block.split(/\r?\n/)) {
-      const m = /^([A-Za-z_][\w-]*):(?: (.*))?$/.exec(line);
-      expect(m, `${f}: not a "key: value" line: ${line}`).not.toBeNull();
-      const value = (m?.[2] ?? '').trim();
-      if (/^(['"]).*\1$/.test(value)) continue;
-      expect(value, `${f}: unquoted ': ' in ${m?.[1]}`).not.toMatch(/: |:$/);
-      expect(value, `${f}: unquoted ' #' in ${m?.[1]}`).not.toMatch(/ #/);
-    }
+    expectPlainScalars(f, read(f));
+  });
+});
+
+describe('router agent frontmatter', () => {
+  const cases = (['claude', 'opencode'] as const).flatMap((h) =>
+    (['light', 'standard', 'strong', 'top'] as const).map((t) => [h, t] as const),
+  );
+
+  it.each(cases)('%s sbl-%s has only valid plain-scalar values', (harness, tier) => {
+    expectPlainScalars(`${harness}/sbl-${tier}`, renderAgentFile(harness, tier, 'openrouter/meta-llama/llama-4:free'));
   });
 });
 
