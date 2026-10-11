@@ -78,8 +78,10 @@ export interface LayoutZone {
   h: number;
 }
 
+export type LayoutWarningCode = 'route-fallback' | 'label-collision' | 'crossing' | 'port-overflow';
+
 export interface LayoutWarning {
-  code: 'route-fallback' | 'label-collision' | 'crossing';
+  code: LayoutWarningCode;
   edge: string;
   message: string;
 }
@@ -212,6 +214,10 @@ export function badgeFor(seg: Segment, slot: LabelSlot, tw: number, labels: read
 
 const SLOT_POSITIONS = [0.5, 0.38, 0.62, 0.26, 0.74] as const;
 
+// Labels sit on the edge's longest segment. A horizontal neighbour edge is a single segment of
+// LAYOUT.gx (104 px), so labels wider than ~100 px cannot avoid both boxes there; a detour would
+// add a crossing. Such labels score > 0 and doctor reports label-collision: keep them short
+// (see spec 2026-10-11, TASK-96 #4; the dogfood dev>cli label is "sbl commands" for this reason).
 export function slotsFor(seg: Segment): LabelSlot[] {
   const out: LabelSlot[] = [];
   for (const t of SLOT_POSITIONS) {
@@ -235,16 +241,33 @@ function segHitsBox(sg: Segment, b: Box): boolean {
   return sg.x1 >= b.x0 && sg.x1 <= b.x1 && Math.min(sg.y1, sg.y2) < b.y1 && Math.max(sg.y1, sg.y2) > b.y0;
 }
 
-/** Score of a label box (spec L5): +5 outside, +3 per node, +2 per placed label, +1 per foreign segment. */
+/** Box of a zone's label text, drawn by the client at (z.x + 12, z.y + 16) in 12 px type; mirrored in summary.html. */
+export function zoneLabelBox(z: LayoutZone, tw: number): Box {
+  return { x0: z.x + 10, y0: z.y + 4, x1: z.x + 12 + tw, y1: z.y + 21 };
+}
+
+/**
+ * Score of a label box (spec L5): +5 outside, +3 per node, +2 per placed label, +2 per zone label,
+ * +1 per foreign segment. Foreign segments are every routed segment except the one carrying the
+ * label, so the edge's own other leg counts too. Mirrored in summary.html (drift-guarded by a test).
+ */
 export function scoreBox(
   box: Box,
-  ctx: { width: number; height: number; nodeBoxes: readonly Box[]; placed: readonly Box[]; foreignSegments: readonly Segment[] },
+  ctx: {
+    width: number;
+    height: number;
+    nodeBoxes: readonly Box[];
+    placed: readonly Box[];
+    foreignSegments: readonly Segment[];
+    zoneLabels?: readonly Box[];
+  },
 ): number {
   let s = 0;
   if (box.x0 < 4 || box.x1 > ctx.width - 4 || box.y0 < 2 || box.y1 > ctx.height - 2) s += 5;
   for (const r of ctx.nodeBoxes) if (hit(box, r)) s += 3;
   for (const r of ctx.placed) if (hit(box, r)) s += 2;
   for (const sg of ctx.foreignSegments) if (segHitsBox(sg, box)) s += 1;
+  for (const r of ctx.zoneLabels ?? []) if (hit(box, r)) s += 2;
   return s;
 }
 
@@ -508,7 +531,14 @@ function placeSidePorts(sp: SidePorts): void {
   });
 }
 
-/** L4: port coordinates of every edge end. */
+/** Ports stay this many px inside the corners of their side. */
+const PORT_INSET = 8;
+/** Below this distance between neighbouring ports, a clamped side is reported as port-overflow. */
+const MIN_PORT_GAP = 6;
+const SIDE_NAMES: Record<Side, string> = { L: 'left', R: 'right', T: 'top', B: 'bottom' };
+const portLimit = (sp: SidePorts): number => (sp.side === 'T' || sp.side === 'B' ? sp.node.w : sp.node.h) / 2 - PORT_INSET;
+
+/** L4: port coordinates of every edge end; reports sides too crowded to keep MIN_PORT_GAP. */
 function assignPorts(work: readonly WorkEdge[], nodes: readonly WorkNode[]): LayoutWarning[] {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const sides = collectSides(work);
@@ -521,9 +551,37 @@ function assignPorts(work: readonly WorkEdge[], nodes: readonly WorkNode[]): Lay
     const side = k.slice(sep + 1) as Side;
     perSide.set(k, { node, side, list, offsets: sideOffsets(list, straightOff) });
   }
+  // Ports must stay PORT_INSET px inside the corners. One factor per straight group keeps
+  // straight edges at the same offset on both ends; crowding below MIN_PORT_GAP is reported.
+  const warnings: LayoutWarning[] = [];
+  for (const g of groups.values()) {
+    let scale = 1;
+    let binding: SidePorts | null = null;
+    for (const k of g.keys) {
+      const sp = perSide.get(k) as SidePorts;
+      const max = Math.max(0, ...sp.offsets.map(Math.abs));
+      if (max > 0 && portLimit(sp) / max < scale) {
+        scale = portLimit(sp) / max;
+        binding = sp;
+      }
+    }
+    if (binding === null) continue;
+    for (const k of g.keys) {
+      const sp = perSide.get(k) as SidePorts;
+      sp.offsets = sp.offsets.map((o) => o * scale + 0);
+    }
+    const gap = LAYOUT.port * scale;
+    if (gap < MIN_PORT_GAP) {
+      warnings.push({
+        code: 'port-overflow',
+        edge: binding.list[0].ed.id,
+        message: `${binding.list.length} connections on the ${SIDE_NAMES[binding.side]} side of ${binding.node.id} leave ${gap.toFixed(1)}px between ports (minimum ${MIN_PORT_GAP}); move cells to spread the connections`,
+      });
+    }
+  }
   for (const sp of perSide.values()) placeSidePorts(sp);
   // both ends of a straight edge got the same offset and their nodes share a row (H) or column (V)
-  return [];
+  return warnings;
 }
 
 interface Routed {
@@ -534,10 +592,10 @@ interface Routed {
   seg: Segment;
 }
 
-/** Orthogonal polylines between the assigned ports. */
+/** Orthogonal polylines between the assigned ports; points are rounded first, so segments, points and d agree. */
 function routePolylines(work: readonly WorkEdge[]): Routed[] {
   return work.map((ed) => {
-    const { sx, sy, tx, ty } = ed;
+    const [sx, sy, tx, ty] = [round(ed.sx), round(ed.sy), round(ed.tx), round(ed.ty)];
     const points: Point[] =
       ed.kind === 'VH' ? [[sx, sy], [sx, ty], [tx, ty]] : ed.kind === 'HV' ? [[sx, sy], [tx, sy], [tx, ty]] : [[sx, sy], [tx, ty]];
     const segs = segmentsOf(points);
@@ -556,21 +614,23 @@ interface LabelChoice {
 function placeLabels(
   routed: readonly Routed[],
   nodes: readonly WorkNode[],
+  zones: readonly LayoutZone[],
   width: number,
   height: number,
 ): { labels: Map<string, LabelChoice>; placed: Box[] } {
   const nodeBoxes: Box[] = nodes.map((n) => ({ x0: n.x - 1, y0: n.y - 1, x1: n.x + n.w + 1, y1: n.y + n.h + 1 }));
+  const zoneLabels = zones.map((z) => zoneLabelBox(z, estimateLabelWidth(z.label)));
   const placed: Box[] = [];
   const order = routed.slice().sort((a, b) => b.seg.length - a.seg.length || cmp(a.ed.id, b.ed.id));
   const labels = new Map<string, LabelChoice>();
   for (const r of order) {
     const tw = estimateLabelWidth(r.ed.label);
     const candidates = slotsFor(r.seg);
-    const foreignSegments = routed.filter((o) => o !== r).flatMap((o) => o.segs);
+    const foreignSegments = routed.flatMap((o) => o.segs).filter((s) => s !== r.seg);
     let best = 0;
     let bestScore = Number.POSITIVE_INFINITY;
     for (let i = 0; i < candidates.length; i++) {
-      const s = scoreBox(slotBox(candidates[i], tw).box, { width, height, nodeBoxes, placed, foreignSegments });
+      const s = scoreBox(slotBox(candidates[i], tw).box, { width, height, nodeBoxes, placed, foreignSegments, zoneLabels });
       if (s < bestScore) {
         bestScore = s;
         best = i;
@@ -631,7 +691,7 @@ function buildEdges(routed: readonly Routed[], labels: Map<string, LabelChoice>,
       to: r.ed.to,
       kind: r.ed.kind,
       fallback: r.ed.fallback,
-      points: r.points.map(([x, y]) => [round(x), round(y)] as Point),
+      points: r.points,
       d: pathD(r.points),
       segment: r.seg,
       labelWidth: l.tw,
@@ -670,12 +730,13 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
   const work = chooseRoutes(input, nodes);
   const portWarnings = assignPorts(work, nodes);
   const routed = routePolylines(work);
-  const { labels, placed } = placeLabels(routed, nodes, width, height);
+  const zones = layoutZones(input);
+  const { labels, placed } = placeLabels(routed, nodes, zones, width, height);
   const diag = diagnose(routed, labels);
   return {
     width,
     height,
-    zones: layoutZones(input),
+    zones,
     nodes: readingOrder(nodes),
     edges: buildEdges(routed, labels, placed),
     warnings: [...portWarnings, ...diag.warnings],

@@ -64,8 +64,8 @@ sbl doctor
 Check 5 validates `backlog/docs/architecture.yml`. It is skipped when the file
 does not exist, fails with every problem and its path when the file is invalid,
 and warns when the file is valid but the diagram cannot be drawn cleanly
-(an edge without a straight or single-corner route, an overlapping label, or a
-crossing).
+(an edge without a straight or single-corner route, an overlapping label, a
+crossing, or too many connections on one side of a box).
 On a valid file, check 5 also counts the drift findings described in
 [Keeping it current](#keeping-it-current) and points to `sbl summary`.
 

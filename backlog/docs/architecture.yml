@@ -135,7 +135,7 @@ nodes:
     purpose: Supplies the agent methodology (brainstorm, plan, TDD, review) through its plugin entry, never as a copy.
     why: The kit owns only the glue between the two tools.
 edges:
-  - { from: dev, to: cli, label: sbl … }
+  - { from: dev, to: cli, label: sbl commands }
   - { from: cli, to: npm, label: version check, text: sbl update checks the package version before it refreshes files. }
   - { from: cli, to: planner, label: plans }
   - { from: planner, to: executor, label: "Action[]", text: The action list is the only interface between planning and writing. }
