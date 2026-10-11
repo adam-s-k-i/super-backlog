@@ -1,13 +1,12 @@
 ---
 id: TASK-118
 title: 'Router v2: hardening from review findings'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 06:48'
-updated_date: '2026-10-11 07:11'
+updated_date: '2026-10-11 07:38'
 labels:
   - bug
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-11-router-v2-hardening.md

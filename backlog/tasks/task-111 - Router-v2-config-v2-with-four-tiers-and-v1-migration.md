@@ -4,10 +4,9 @@ title: 'Router v2: config v2 with four tiers and v1 migration'
 status: Done
 assignee: []
 created_date: '2026-10-11 00:17'
-updated_date: '2026-10-11 01:13'
+updated_date: '2026-10-11 07:38'
 labels:
   - feature
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-11-router-v2.md

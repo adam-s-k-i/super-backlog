@@ -4,10 +4,9 @@ title: 'Summary facts: harden file and git reads, fill test gaps'
 status: Done
 assignee: []
 created_date: '2026-10-10 10:28'
-updated_date: '2026-10-11 02:44'
+updated_date: '2026-10-11 07:37'
 labels:
   - bug
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-09-project-summary-design.md

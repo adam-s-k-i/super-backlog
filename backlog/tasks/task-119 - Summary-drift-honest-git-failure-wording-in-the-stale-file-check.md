@@ -1,13 +1,12 @@
 ---
 id: TASK-119
 title: 'Summary drift: honest git failure wording in the stale-file check'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-11 07:30'
-updated_date: '2026-10-11 07:32'
+updated_date: '2026-10-11 07:38'
 labels:
   - bug
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-11-drift-git-failure.md

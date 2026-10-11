@@ -4,10 +4,9 @@ title: 'Summary layout: port overflow, label scoring and edge-label polish'
 status: Done
 assignee: []
 created_date: '2026-10-10 10:28'
-updated_date: '2026-10-11 02:44'
+updated_date: '2026-10-11 07:37'
 labels:
   - enhancement
-  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/specs/2026-10-09-project-summary-design.md
