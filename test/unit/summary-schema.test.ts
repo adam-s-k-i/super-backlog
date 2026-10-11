@@ -297,3 +297,98 @@ describe('checkArchitectureText: hostile input never throws', () => {
     }
   });
 });
+
+describe('validateArchitecture: hardening (TASK-94)', () => {
+  const nodeLines = (n: number): string[] =>
+    Array.from({ length: n }, (_, i) => `  - { id: n${i}, label: N${i}, kind: core, cell: [${i % 8}, ${Math.floor(i / 8)}] }`);
+
+  it('reports only the size error when nodes exceed the limit (no unknown-node cascade)', () => {
+    const r = check([
+      'schema: 1',
+      'pitch: p',
+      'grid: { cols: 8, rows: 8 }',
+      'nodes:',
+      ...nodeLines(41),
+      'edges:',
+      '  - { from: n0, to: n1, label: x }',
+      'highlights:',
+      '  - { node: n0, title: T, text: t }',
+      'stack:',
+      '  - { name: S, group: G, nodes: [n0] }',
+      'tasks:',
+      '  TASK-1: n0',
+    ]);
+    expect(problems(r)).toEqual([{ path: 'nodes', message: 'at most 40 entries (found 41)', level: 'error' }]);
+  });
+
+  it('still checks the label of a flow whose id is invalid', () => {
+    const r = check([...BASE, 'flows:', `  - { id: Bad_Id, label: ${'x'.repeat(29)}, steps: [a>b] }`]);
+    expectError(r, 'flows[0].id', /^must match \^\[a-z\]\[a-z0-9-\]\{0,31\}\$$/);
+    expectError(r, 'flows[0].label', /at most 28 characters \(found 29\)/);
+  });
+
+  it('does not let a dropped flow consume a default color', () => {
+    const r = check([...BASE, 'flows:', '  - { id: gone, label: Gone, steps: [a>c] }', '  - { id: kept, label: Kept, steps: [a>b] }']);
+    expect(r.status).toBe('valid');
+    if (r.status !== 'valid') return;
+    expect(r.architecture.flows.map((f) => [f.id, f.color])).toEqual([['kept', 'accent']]);
+  });
+
+  it('warns about unknown keys and ignores them', () => {
+    const r = check([...BASE, 'colour: red']);
+    expect(r.status).toBe('valid');
+    expect(problems(r)).toContainEqual({ path: 'colour', message: 'unknown key, ignored', level: 'warning' });
+  });
+
+  it('rejects an invalid node id format', () => {
+    expectError(check(withLine('  - { id: a,', '  - { id: 1a, label: Alpha, kind: core, cell: [0, 0] }')), 'nodes[0].id', /must match/);
+  });
+
+  it('rejects a bad flow color', () => {
+    expectError(check([...BASE, 'flows:', '  - { id: f, label: F, color: red, steps: [a>b] }']), 'flows[0].color', /must be one of accent, ok/);
+  });
+
+  it('rejects a non-boolean dashed', () => {
+    const lines = [...BASE.slice(0, 3), 'kinds:', '  core: { label: Core, color: accent, dashed: yes }', '  output: { label: Out, color: ok }', '  external: { label: Ext, color: dim }', ...BASE.slice(3)];
+    expectError(check(lines), 'kinds.core.dashed', /expected true or false/);
+  });
+
+  it('rejects a reversed zone range', () => {
+    expectError(check([...BASE, 'zones:', '  - { label: Z, cols: [1, 0], rows: [0, 0] }']), 'zones[0]', /first <= last/);
+  });
+
+  it.each([
+    ['pitch', (s: string) => withLine('pitch:', `pitch: ${s}`), 'pitch', 400],
+    ['node label', (s: string) => withLine('  - { id: a,', `  - { id: a, label: ${s}, kind: core, cell: [0, 0] }`), 'nodes[0].label', 28],
+    ['node sub', (s: string) => withLine('  - { id: a,', `  - { id: a, label: A, sub: ${s}, kind: core, cell: [0, 0] }`), 'nodes[0].sub', 32],
+    ['edge label', (s: string) => withLine('  - { from: a, to: b', `  - { from: a, to: b, label: ${s} }`), 'edges[0].label', 24],
+    ['flow label', (s: string) => [...BASE, 'flows:', `  - { id: f, label: ${s}, steps: [a>b] }`], 'flows[0].label', 28],
+    ['zone label', (s: string) => [...BASE, 'zones:', `  - { label: ${s}, cols: [0, 0], rows: [0, 0] }`], 'zones[0].label', 40],
+    ['highlight title', (s: string) => [...BASE, 'highlights:', `  - { node: a, title: ${s}, text: t }`], 'highlights[0].title', 60],
+    ['stack name', (s: string) => [...BASE, 'stack:', `  - { name: ${s}, group: G, nodes: [a] }`], 'stack[0].name', 40],
+    ['stack package', (s: string) => [...BASE, 'stack:', `  - { name: S, group: G, package: ${s}, nodes: [a] }`], 'stack[0].package', 214],
+  ])('%s: accepts exactly the limit and rejects one over it', (_name, build, path, max) => {
+    expect(problems(check(build('x'.repeat(max)))).filter((p) => p.level === 'error')).toEqual([]);
+    expectError(check(build('x'.repeat(max + 1))), path, new RegExp(`at most ${max} characters \\(found ${max + 1}\\)`));
+  });
+
+  const groups = (n: number, name = (i: number) => `g${i}`, per = 1): string[] => [
+    'commands:',
+    ...Array.from({ length: n }, (_, i) => [`  ${name(i)}:`, ...Array.from({ length: per }, (_, j) => `    - { run: cmd${j} }`)]).flat(),
+  ];
+
+  it('accepts 6 command groups and rejects 7', () => {
+    expect(problems(check([...BASE, ...groups(6)])).filter((p) => p.level === 'error')).toEqual([]);
+    expectError(check([...BASE, ...groups(7)]), 'commands', /at most 6 groups \(found 7\)/);
+  });
+
+  it('rejects a command group name over 40 characters and accepts exactly 40', () => {
+    expect(problems(check([...BASE, ...groups(1, () => 'g'.repeat(40))])).filter((p) => p.level === 'error')).toEqual([]);
+    expectError(check([...BASE, ...groups(1, () => 'g'.repeat(41))]), `commands.${'g'.repeat(41)}`, /group name at most 40 characters/);
+  });
+
+  it('accepts 8 commands in a group and rejects 9', () => {
+    expect(problems(check([...BASE, ...groups(1, undefined, 8)])).filter((p) => p.level === 'error')).toEqual([]);
+    expectError(check([...BASE, ...groups(1, undefined, 9)]), 'commands.g0', /at most 8 entries \(found 9\)/);
+  });
+});

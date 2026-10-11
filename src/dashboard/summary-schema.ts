@@ -367,7 +367,9 @@ function readNodes(
   kinds: Record<string, ArchKind>,
   grid: ArchGrid | null,
   gridText: string,
-): { nodes: ArchNode[]; nodeIds: ReadonlySet<string> } {
+): { nodes: ArchNode[]; nodeIds: ReadonlySet<string> | null } {
+  const raw = root.nodes;
+  const listed = Array.isArray(raw) && raw.length >= LIMITS.nodesMin && raw.length <= LIMITS.nodes;
   const nodes: ArchNode[] = [];
   const nodeIds = new Set<string>();
   const cells = new Map<string, string>();
@@ -434,14 +436,16 @@ function readNodes(
     if (why !== undefined) node.why = why;
     nodes.push(node);
   });
-  return { nodes, nodeIds };
+  return { nodes, nodeIds: listed ? nodeIds : null };
 }
 
 function readEdges(
   c: Collector,
   root: YamlMap,
-  nodeIds: ReadonlySet<string>,
-): { edges: ArchEdge[]; edgeIds: ReadonlySet<string> } {
+  nodeIds: ReadonlySet<string> | null,
+): { edges: ArchEdge[]; edgeIds: ReadonlySet<string> | null } {
+  const raw = root.edges;
+  const listed = Array.isArray(raw) && raw.length >= 1 && raw.length <= LIMITS.edges;
   const edges: ArchEdge[] = [];
   const edgeIds = new Set<string>();
   c.list(root, 'edges', '', LIMITS.edges, true, 1).forEach((e, i) => {
@@ -459,7 +463,7 @@ function readEdges(
       if (typeof v !== 'string') {
         c.error(`${path}.${end}`, 'required');
         ok = false;
-      } else if (!nodeIds.has(v)) {
+      } else if (nodeIds !== null && !nodeIds.has(v)) {
         c.error(`${path}.${end}`, `unknown node "${v}"`);
         ok = false;
       }
@@ -481,10 +485,10 @@ function readEdges(
     if (text !== undefined) edge.text = text;
     edges.push(edge);
   });
-  return { edges, edgeIds };
+  return { edges, edgeIds: listed ? edgeIds : null };
 }
 
-function readFlows(c: Collector, root: YamlMap, edgeIds: ReadonlySet<string>): ArchFlow[] {
+function readFlows(c: Collector, root: YamlMap, edgeIds: ReadonlySet<string> | null): ArchFlow[] {
   const flows: ArchFlow[] = [];
   const flowIds = new Set<string>();
   c.list(root, 'flows', '', LIMITS.flows).forEach((f, i) => {
@@ -495,25 +499,28 @@ function readFlows(c: Collector, root: YamlMap, edgeIds: ReadonlySet<string>): A
     }
     c.unknownKeys(f, path, ['id', 'label', 'color', 'command', 'text', 'steps']);
     const id = f.id;
+    let idOk = true;
     if (typeof id !== 'string' || !ID_RE.test(id)) {
       c.error(`${path}.id`, id === undefined ? 'required' : ID_PATTERN_MESSAGE);
-      return;
-    }
-    if (flowIds.has(id)) {
+      idOk = false;
+    } else if (flowIds.has(id)) {
       c.error(`${path}.id`, `duplicate id "${id}"`);
-      return;
+      idOk = false;
+    } else {
+      flowIds.add(id);
     }
-    flowIds.add(id);
     const label = c.str(f, 'label', path, LIMITS.flowLabel, { required: true, singleLine: true });
     const command = c.str(f, 'command', path, LIMITS.run, { singleLine: true });
     const text = c.str(f, 'text', path, LIMITS.flowText, { singleLine: false });
-    let color: ColorToken = FLOW_COLORS[i % FLOW_COLORS.length];
+    let color: ColorToken | undefined;
+    let colorOk = true;
     if (f.color !== undefined && f.color !== null) {
       if (typeof f.color !== 'string' || !(COLOR_TOKENS as readonly string[]).includes(f.color)) {
         c.error(`${path}.color`, `must be one of ${COLOR_TOKENS.join(', ')}`);
-        return;
+        colorOk = false;
+      } else {
+        color = f.color as ColorToken;
       }
-      color = f.color as ColorToken;
     }
     const steps: string[] = [];
     let missing: string | null = null;
@@ -525,15 +532,15 @@ function readFlows(c: Collector, root: YamlMap, edgeIds: ReadonlySet<string>): A
         malformed = true;
         return;
       }
-      if (!edgeIds.has(s) && missing === null) missing = s;
+      if (edgeIds !== null && !edgeIds.has(s) && missing === null) missing = s;
       steps.push(s);
     });
-    if (label === undefined || malformed || rawSteps.length === 0) return;
+    if (!idOk || !colorOk || label === undefined || malformed || rawSteps.length === 0) return;
     if (missing !== null) {
       c.warn(`${path}.steps`, `no edge ${missing}; flow "${id}" dropped`);
       return;
     }
-    const flow: ArchFlow = { id, label, color, steps };
+    const flow: ArchFlow = { id: id as string, label, color: color ?? FLOW_COLORS[flows.length % FLOW_COLORS.length], steps };
     if (command !== undefined) flow.command = command;
     if (text !== undefined) flow.text = text;
     flows.push(flow);
@@ -541,7 +548,7 @@ function readFlows(c: Collector, root: YamlMap, edgeIds: ReadonlySet<string>): A
   return flows;
 }
 
-function readHighlights(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string>): ArchHighlight[] {
+function readHighlights(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string> | null): ArchHighlight[] {
   const highlights: ArchHighlight[] = [];
   const badged = new Map<string, number>();
   c.list(root, 'highlights', '', LIMITS.highlights).forEach((h, i) => {
@@ -558,7 +565,7 @@ function readHighlights(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string
       c.error(`${path}.node`, 'required');
       return;
     }
-    if (!nodeIds.has(node)) {
+    if (nodeIds !== null && !nodeIds.has(node)) {
       c.error(`${path}.node`, `unknown node "${node}"`);
       return;
     }
@@ -574,7 +581,7 @@ function readHighlights(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string
   return highlights;
 }
 
-function readStack(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string>): ArchStackEntry[] {
+function readStack(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string> | null): ArchStackEntry[] {
   const stack: ArchStackEntry[] = [];
   c.list(root, 'stack', '', LIMITS.stack).forEach((s, i) => {
     const path = `stack[${i}]`;
@@ -591,7 +598,7 @@ function readStack(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string>): A
     const used: string[] = [];
     c.list(s, 'nodes', path, LIMITS.nodes).forEach((n, j) => {
       if (typeof n !== 'string') c.error(`${path}.nodes[${j}]`, 'expected a node id');
-      else if (!nodeIds.has(n)) c.warn(`${path}.nodes[${j}]`, `unknown node "${n}", ignored`);
+      else if (nodeIds !== null && !nodeIds.has(n)) c.warn(`${path}.nodes[${j}]`, `unknown node "${n}", ignored`);
       else used.push(n);
     });
     if (name === undefined || group === undefined) return;
@@ -635,7 +642,7 @@ function readCommands(c: Collector, root: YamlMap): Record<string, ArchCommand[]
 function readTasks(
   c: Collector,
   root: YamlMap,
-  nodeIds: ReadonlySet<string>,
+  nodeIds: ReadonlySet<string> | null,
   taskIds?: readonly string[],
 ): Record<string, string> {
   const tasks: Record<string, string> = {};
@@ -646,7 +653,7 @@ function readTasks(
       const known = taskIds ? new Set(taskIds.map((t) => t.toUpperCase())) : null;
       for (const [taskId, node] of Object.entries(root.tasks)) {
         const path = `tasks.${taskId}`;
-        if (typeof node !== 'string' || !nodeIds.has(node)) {
+        if (typeof node !== 'string' || (nodeIds !== null && !nodeIds.has(node))) {
           c.error(path, `unknown node "${String(node)}"`);
           continue;
         }
