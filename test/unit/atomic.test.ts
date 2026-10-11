@@ -1,5 +1,5 @@
 // test/unit/atomic.test.ts
-import { mkdirSync, mkdtempSync, existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, existsSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -75,6 +75,28 @@ describe('atomicWrite', () => {
       expect(() => atomicWrite(p, 'two')).toThrow(/EPERM/);
       expect(readFileSync(p, 'utf8')).toBe('one');
       expect(readdirSync(dir)).toEqual(['x.md']);
+    });
+
+    it('keeps the original in the backup, names it in the error and removes the temp file when the restore fails too', async () => {
+      const p = join(dir, 'x.md');
+      atomicWrite(p, 'one');
+      await failRenames(3, (src) => src.endsWith('.tmp') || src.includes('.sbl-bak'));
+      expect(() => atomicWrite(p, 'two')).toThrow(/x\.md\.sbl-bak/);
+      const left = readdirSync(dir);
+      expect(left).toHaveLength(1);
+      expect(left[0]).toMatch(/^x\.md\.sbl-bak/);
+      expect(readFileSync(join(dir, left[0]!), 'utf8')).toBe('one');
+    });
+
+    it('never overwrites a user file that already has the backup name', async () => {
+      const p = join(dir, 'x.md');
+      atomicWrite(p, 'one');
+      writeFileSync(p + '.sbl-bak', 'mine');
+      await failTmpRenames(1);
+      atomicWrite(p, 'two');
+      expect(readFileSync(p, 'utf8')).toBe('two');
+      expect(readFileSync(p + '.sbl-bak', 'utf8')).toBe('mine');
+      expect(readdirSync(dir).sort()).toEqual(['x.md', 'x.md.sbl-bak']);
     });
 
     it('never moves a directory aside that sits where the file should go', () => {
