@@ -427,7 +427,7 @@ __SBL_TOKENS_CSS__
     });
   }
 
-  /* Label re-scoring with measured widths; mirrors slotBox/badgeFor/scoreBox in summary-layout.ts.
+  /* Label re-scoring with measured widths; mirrors slotBox/badgeFor/segHitsBox/scoreBox/zoneLabelBox in summary-layout.ts.
      The block between the sbl:badge-mirror markers is self-contained and drift-guarded by a unit test. */
   /* sbl:badge-mirror:start */
   var BADGE_R = 9.5, BADGE_END = 12, BADGE_GAP = 4, BADGE_STEP = 6;
@@ -480,12 +480,23 @@ __SBL_TOKENS_CSS__
     }
     return at(along[0], true);
   }
-  /* sbl:badge-mirror:end */
-  function segHit(sg, b) {
+  function segHitsBox(sg, b) {
     return sg.horizontal
       ? sg.y1 >= b.y0 && sg.y1 <= b.y1 && Math.min(sg.x1, sg.x2) < b.x1 && Math.max(sg.x1, sg.x2) > b.x0
       : sg.x1 >= b.x0 && sg.x1 <= b.x1 && Math.min(sg.y1, sg.y2) < b.y1 && Math.max(sg.y1, sg.y2) > b.y0;
   }
+  function scoreBox(box, ctx) {
+    var s = 0, i;
+    if (box.x0 < 4 || box.x1 > ctx.width - 4 || box.y0 < 2 || box.y1 > ctx.height - 2) s += 5;
+    for (i = 0; i < ctx.nodeBoxes.length; i++) if (hit(box, ctx.nodeBoxes[i])) s += 3;
+    for (i = 0; i < ctx.placed.length; i++) if (hit(box, ctx.placed[i])) s += 2;
+    for (i = 0; i < ctx.foreignSegments.length; i++) if (segHitsBox(ctx.foreignSegments[i], box)) s += 1;
+    var zl = ctx.zoneLabels || [];
+    for (i = 0; i < zl.length; i++) if (hit(box, zl[i])) s += 2;
+    return s;
+  }
+  function zoneLabelBox(z, tw) { return { x0: z.x + 10, y0: z.y + 4, x1: z.x + 12 + tw, y1: z.y + 21 }; }
+  /* sbl:badge-mirror:end */
   function segmentsOf(points) {
     var out = [];
     for (var i = 0; i < points.length - 1; i++) {
@@ -499,18 +510,24 @@ __SBL_TOKENS_CSS__
     var segs = {}; G.edges.forEach(function (e) { segs[e.id] = segmentsOf(e.points); });
     var placed = [], done = [];
     var order = G.edges.slice().sort(function (a, b) { return b.segment.length - a.segment.length || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0); });
+    var zoneLabels = $$('.zone text', svg).map(function (t, i) {
+      var z = G.zones[i], w = 0;
+      try { w = t.getComputedTextLength(); } catch (err) { w = 0; }
+      return zoneLabelBox(z, w ? w + 2 : z.label.length * 7);
+    });
+    function sameSeg(a, b) { return a.x1 === b.x1 && a.y1 === b.y1 && a.x2 === b.x2 && a.y2 === b.y2; }
     order.forEach(function (e) {
       var g = $('.edge[data-id="' + CSS.escape(e.id) + '"]', svg); if (!g) return;
       var txt = $('.lbl', g), tw = 0;
       try { tw = txt.getComputedTextLength(); } catch (err) { tw = 0; }
       tw = tw ? tw + 2 : e.labelWidth;
+      /* every routed segment except the one carrying this label, so the own other leg counts too */
+      var foreign = [];
+      G.edges.forEach(function (o) { segs[o.id].forEach(function (sg) { if (!(o.id === e.id && sameSeg(sg, e.segment))) foreign.push(sg); }); });
       var best = 0, bestScore = Infinity;
       for (var i = 0; i < e.candidates.length; i++) {
-        var box = slotBox(e.candidates[i], tw).box, s = 0;
-        if (box.x0 < 4 || box.x1 > G.width - 4 || box.y0 < 2 || box.y1 > G.height - 2) s += 5;
-        nodeBoxes.forEach(function (r) { if (hit(box, r)) s += 3; });
-        placed.forEach(function (r) { if (hit(box, r)) s += 2; });
-        G.edges.forEach(function (o) { if (o.id !== e.id) segs[o.id].forEach(function (sg) { if (segHit(sg, box)) s += 1; }); });
+        var box = slotBox(e.candidates[i], tw).box;
+        var s = scoreBox(box, { width: G.width, height: G.height, nodeBoxes: nodeBoxes, placed: placed, foreignSegments: foreign, zoneLabels: zoneLabels });
         if (s < bestScore) { bestScore = s; best = i; if (s === 0) break; }
       }
       var chosen = slotBox(e.candidates[best], tw);

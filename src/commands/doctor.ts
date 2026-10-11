@@ -141,8 +141,15 @@ export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
 
   // check 5: curated architecture file of the summary page. Task ids are not
   // passed: the schema would drop unknown ids before drift reports them.
-  const arch = (deps.loadArchitecture ?? ((c: string) => loadArchitecture(c)))(cwd);
-  if (arch.status === 'missing') {
+  let arch: ArchitectureLoadResult | null = null;
+  try {
+    arch = (deps.loadArchitecture ?? ((c: string) => loadArchitecture(c)))(cwd);
+  } catch (err) {
+    emit('fail', `${ARCHITECTURE_PATH} check failed (${err instanceof Error ? err.message : String(err)})`);
+  }
+  if (arch === null) {
+    // reported above
+  } else if (arch.status === 'missing') {
     emit('skip', `${ARCHITECTURE_PATH} not present (summary page shows the reduced view)`);
   } else if (arch.status === 'invalid') {
     const errors = arch.problems.filter((p) => p.level === 'error').length;

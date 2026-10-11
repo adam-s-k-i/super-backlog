@@ -26,6 +26,9 @@ export function readSimpleKeys(filePath: string, keys: string[]): Record<string,
  * may hold a flow sequence of scalars as a value, nothing deeper), the reserved
  * keys `__proto__`, `constructor` and `prototype`, and collections nested deeper
  * than YAML_SUBSET_MAX_DEPTH levels.
+ * Normalisations (documented in the guide): -0 reads as 0, trailing spaces
+ * on block-scalar lines are removed, a `#` starts a comment only after
+ * whitespace, and plain values must not end with ":" or start with "- ".
  * ------------------------------------------------------------------------- */
 
 export type YamlValue = string | number | boolean | null | YamlValue[] | { [key: string]: YamlValue };
@@ -237,8 +240,9 @@ class Parser {
       value = flow.readTop();
     } else if (c === '"' || c === "'") {
       const q = this.readQuoted(line, text, 0, offset);
-      const tail = text.slice(q.end).trimStart();
-      if (tail !== '' && !tail.startsWith('#')) {
+      const rest = text.slice(q.end);
+      const tail = rest.trimStart();
+      if (tail !== '' && !(tail.startsWith('#') && rest.length > tail.length)) {
         throw this.err(line, offset + q.end, 'unexpected text after quoted scalar');
       }
       value = q.value;
@@ -255,8 +259,8 @@ class Parser {
     }
     const hash = text.indexOf(' #');
     const raw = (hash === -1 ? text : text.slice(0, hash)).trimEnd();
-    const colon = raw.search(/: /);
-    if (colon !== -1) throw this.err(line, offset + colon, 'plain values must not contain ": " - quote the value');
+    const problem = plainProblem(raw);
+    if (problem) throw this.err(line, offset + problem.at, problem.reason);
     return resolvePlain(raw);
   }
 
@@ -361,13 +365,24 @@ function skipSpaces(text: string, i: number): number {
   return j;
 }
 
+/** Shared plain-scalar rule for block and flow context; `at` is an index into `raw`. */
+function plainProblem(raw: string): { at: number; reason: string } | null {
+  const colon = raw.search(/: /);
+  if (colon !== -1) return { at: colon, reason: 'plain values must not contain ": " - quote the value' };
+  if (raw === '-' || raw.startsWith('- ')) {
+    return { at: 0, reason: 'plain values must not start with "- " - quote the value or put block sequence items on the next lines' };
+  }
+  if (raw.endsWith(':')) return { at: raw.length - 1, reason: 'plain values must not end with ":" - quote the value' };
+  return null;
+}
+
 function resolvePlain(raw: string): YamlValue {
   if (raw === '' || raw === '~' || raw === 'null') return null;
   if (raw === 'true') return true;
   if (raw === 'false') return false;
   if (INT_RE.test(raw)) {
     const n = Number(raw);
-    if (Number.isSafeInteger(n)) return n;
+    if (Number.isSafeInteger(n)) return n === 0 ? 0 : n; // -0 reads as 0 (documented)
   }
   return raw;
 }
@@ -392,8 +407,11 @@ class FlowReader {
 
   readTop(): YamlValue {
     const value = this.text[0] === '[' ? this.readSeq(0) : this.readMap();
+    const end = this.i;
     this.ws();
-    if (this.i < this.text.length && this.text[this.i] !== '#') this.fail(this.i, 'unexpected text after flow collection');
+    if (this.i < this.text.length && !(this.text[this.i] === '#' && this.i > end)) {
+      this.fail(this.i, 'unexpected text after flow collection');
+    }
     return value;
   }
 
@@ -503,8 +521,8 @@ class FlowReader {
       this.fail(start, 'empty entry in flow collection');
     }
     if (RESERVED_START.has(raw[0])) this.fail(start, `"${raw[0]}" (anchor, alias, tag or directive) is not supported`);
-    const colon = raw.search(/: /);
-    if (colon !== -1) this.fail(start + colon, 'plain values must not contain ": " - quote the value');
+    const problem = plainProblem(raw);
+    if (problem) this.fail(start + problem.at, problem.reason);
     return resolvePlain(raw);
   }
 }

@@ -44,7 +44,7 @@ export interface SummaryFacts {
   locApprox: boolean;
   testFiles: number;
   releases: number;
-  /** "git unavailable" when the tag listing failed. */
+  /** Why the tag listing failed (see `gitFailure`), else null. */
   releasesNote: string | null;
   workflows: number;
   commands: FactCommandGroup[];
@@ -194,15 +194,33 @@ function composerCounts(name: string): boolean {
   return name !== 'php' && !name.startsWith('ext-');
 }
 
+/** Locale-independent order by UTF-16 code unit, shared by every facts sort. */
+export function byCodeUnit(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * Wording for a failed git call on the data-source line (spec TASK-95 #3).
+ * "not a git repository" is only claimed when git's stderr says so; any other
+ * non-zero exit (dubious ownership, permissions, ...) gets the neutral "git failed".
+ */
+export function gitFailure(r: RunResult): string {
+  if (r.errorCode === 'ENOBUFS') return 'git output exceeds the 64 MB buffer';
+  if (r.status === 127 || r.errorCode !== undefined) return 'git unavailable';
+  if (/not a git repository/i.test(r.stderr)) return 'not a git repository';
+  return 'git failed';
+}
+
 /** Paths relative to cwd with forward slashes: `git ls-files -z`, else a directory walk. */
 export function listProjectFiles(
   cwd: string,
   run: (cmd: string, args: string[], cwd: string) => RunResult,
-): { source: 'git' | 'walk'; files: string[] } {
+): { source: 'git' | 'walk'; files: string[]; note?: string } {
   const r = run('git', ['ls-files', '-z'], cwd);
   if (r.status === 0 && r.stdout.length > 0) {
-    return { source: 'git', files: r.stdout.split('\0').filter(Boolean).sort() };
+    return { source: 'git', files: r.stdout.split('\0').filter(Boolean).sort(byCodeUnit) };
   }
+  const note = r.errorCode === 'ENOBUFS' ? 'git ls-files: output exceeds the 64 MB buffer; files counted by a directory walk' : undefined;
   const files: string[] = [];
   const walk = (dir: string, rel: string): void => {
     let entries;
@@ -211,7 +229,7 @@ export function listProjectFiles(
     } catch {
       return;
     }
-    entries.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+    entries.sort((a, b) => byCodeUnit(a.name, b.name));
     for (const e of entries) {
       const relPath = rel ? `${rel}/${e.name}` : e.name;
       if (e.isDirectory()) {
@@ -222,7 +240,15 @@ export function listProjectFiles(
     }
   };
   walk(cwd, '');
-  return { source: 'walk', files };
+  return { source: 'walk', files, ...(note ? { note } : {}) };
+}
+
+function countWorkflows(cwd: string): number {
+  try {
+    return readdirSync(join(cwd, '.github', 'workflows')).filter((f) => /\.ya?ml$/i.test(f)).length;
+  } catch {
+    return 0; // no workflows directory
+  }
 }
 
 export function isTestFile(rel: string): boolean {
@@ -277,7 +303,7 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
   const versions: Record<string, string> = {};
   const add = (map: Record<string, string>, group: FactPackage['group'], source: ManifestKind, lock: Record<string, string>, keep: (n: string) => boolean): number => {
     let count = 0;
-    for (const [dep, range] of Object.entries(map).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    for (const [dep, range] of Object.entries(map).sort(([a], [b]) => byCodeUnit(a, b))) {
       if (!keep(dep)) continue;
       count++;
       const v = lock[dep] ?? range;
@@ -301,6 +327,7 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
 
   const extensions = manifest === 'package.json' ? JS_EXT : manifest === null ? [...JS_EXT, ...PHP_EXT] : PHP_EXT;
   const listed = listProjectFiles(cwd, run);
+  if (listed.note) warnings.push(listed.note);
   let loc = 0;
   let bytes = 0;
   let locApprox = false;
@@ -311,14 +338,23 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
     sourceFiles++;
     if (isTestFile(rel)) testFiles++;
     if (locApprox) continue;
-    let buf: Buffer;
+    const abs = join(cwd, rel);
+    let size: number;
     try {
-      buf = readFileSync(join(cwd, rel));
+      const st = statSync(abs);
+      if (!st.isFile()) continue;
+      size = st.size;
     } catch {
       continue; // listed by git but deleted in the work tree
     }
-    if (bytes + buf.length > maxBytes) {
+    if (bytes + size > maxBytes) {
       locApprox = true;
+      continue;
+    }
+    let buf: Buffer;
+    try {
+      buf = readFileSync(abs);
+    } catch {
       continue;
     }
     bytes += buf.length;
@@ -327,14 +363,9 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
 
   const tags = run('git', ['tag', '--list'], cwd);
   const releases = tags.status === 0 ? tags.stdout.split(/\r?\n/).filter((t) => TAG_RE.test(t.trim())).length : 0;
-  const releasesNote = tags.status === 0 ? null : 'git unavailable';
+  const releasesNote = tags.status === 0 ? null : gitFailure(tags);
 
-  let workflows = 0;
-  try {
-    workflows = readdirSync(join(cwd, '.github', 'workflows')).filter((f) => /\.ya?ml$/i.test(f)).length;
-  } catch {
-    workflows = 0;
-  }
+  const workflows = countWorkflows(cwd);
 
   const commands: FactCommandGroup[] = [];
   if (pkg) {

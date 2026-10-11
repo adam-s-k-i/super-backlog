@@ -45,11 +45,15 @@ releases, CI, open work). Schema and YAML subset:
 4. Place nodes on the `grid` so that every edge is a straight line or has a
    single corner: connected nodes share a row or a column, or the corner cell
    between them stays free.
-5. Write the file with two-space indentation, no tabs, and quote every value
-   that contains a comma, a colon followed by a space, or a `#`.
+5. Write the file with two-space indentation, no tabs, and quote every plain
+   value that contains a comma inside `{ }` or `[ ]`, a colon followed by a
+   space, or a `#` after a space, that ends with a colon, or that starts with
+   a dash and a space (or is a bare dash). A `#` starts a comment only after
+   a space, also after a quoted value or a flow collection.
 6. Run `sbl doctor`. Check 5 validates the file and prints every problem with
    its path, plus the layout warnings (`route-fallback`, `label-collision`,
-   `crossing`). Fix the file and run `sbl doctor` again until check 5 reports
+   `crossing`, `port-overflow` for too many connections on one side of a
+   box). Fix the file and run `sbl doctor` again until check 5 reports
    `[ok]`, or only its drift line remains.
 7. Run `sbl summary`, fix every drift finding it lists and run it again.
    Finish when it exits 0, or 4 only for warnings the user accepts. A

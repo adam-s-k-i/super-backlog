@@ -15,6 +15,7 @@ import {
   scoreBox,
   slotBox,
   slotsFor,
+  zoneLabelBox,
   type Box,
   type LayoutEdge,
   type LayoutInput,
@@ -332,12 +333,92 @@ describe('step badges', () => {
   });
 });
 
+describe('layoutArchitecture: port clamp (TASK-96)', () => {
+  const end = (g: ReturnType<typeof layoutArchitecture>, id: string): number[] =>
+    (g.edges.find((e) => e.id === id) as LayoutEdge).points.at(-1) as number[];
+
+  it('compresses four ports on a 56 px side into the box instead of overflowing it', () => {
+    const g = layoutArchitecture(
+      graph(3, 3, [['t', 2, 1], ['a', 0, 0], ['b', 1, 0], ['c', 0, 2], ['d', 1, 2]], [['a', 't'], ['b', 't'], ['c', 't'], ['d', 't']]),
+    );
+    expect(['a>t', 'b>t', 'c>t', 'd>t'].map((id) => end(g, id)[1])).toEqual([161.33, 148, 174.67, 188]);
+    const t = g.nodes.find((n) => n.id === 't') as { y: number; h: number };
+    for (const id of ['a>t', 'b>t', 'c>t', 'd>t']) {
+      expect(end(g, id)[1]).toBeGreaterThanOrEqual(t.y + 8);
+      expect(end(g, id)[1]).toBeLessThanOrEqual(t.y + t.h - 8);
+    }
+    expect(g.warnings.filter((w) => w.code === 'port-overflow')).toEqual([]);
+  });
+
+  it('warns with port-overflow when the clamp leaves less than 6 px between ports', () => {
+    const sources: [string, number, number][] = [];
+    for (const c of [0, 1, 2, 3]) for (const r of [2, 4]) sources.push([`s${c}${r}`, c, r]);
+    const g = layoutArchitecture(graph(8, 6, [['t', 7, 3], ...sources], sources.map(([id]) => [id, 't'] as [string, string])));
+    const overflow = g.warnings.filter((w) => w.code === 'port-overflow');
+    expect(overflow).toEqual([
+      {
+        code: 'port-overflow',
+        edge: 's32>t',
+        message: '8 connections on the left side of t leave 5.7px between ports (minimum 6); move cells to spread the connections',
+      },
+    ]);
+  });
+
+  it('derives the label segment from the same rounded points it emits', () => {
+    const g = layoutArchitecture(
+      graph(3, 3, [['t', 2, 1], ['a', 0, 0], ['b', 1, 0], ['c', 0, 2], ['d', 1, 2]], [['a', 't'], ['b', 't'], ['c', 't'], ['d', 't']]),
+    );
+    for (const e of g.edges) {
+      const segs = e.points.slice(1).map((p, i) => ({ x1: e.points[i][0], y1: e.points[i][1], x2: p[0], y2: p[1] }));
+      expect(segs).toContainEqual({ x1: e.segment.x1, y1: e.segment.y1, x2: e.segment.x2, y2: e.segment.y2 });
+    }
+  });
+});
+
+describe('label scoring (TASK-96)', () => {
+  it('scores a zone label hit like a placed label', () => {
+    const box: Box = { x0: 100, y0: 100, x1: 110, y1: 110 };
+    const base = { width: 1000, height: 1000, nodeBoxes: [], placed: [], foreignSegments: [] };
+    expect(scoreBox(box, base)).toBe(0);
+    expect(scoreBox(box, { ...base, zoneLabels: [{ x0: 105, y0: 105, x1: 120, y1: 120 }] })).toBe(2);
+  });
+
+  it('places the zone label box where the client draws the zone text', () => {
+    expect(zoneLabelBox({ label: 'Kit', x: 100, y: 50, w: 300, h: 200 }, 40)).toEqual({ x0: 110, y0: 54, x1: 152, y1: 71 });
+  });
+
+  it('dogfood: the dev>cli label renders in full without collisions', () => {
+    const g = layoutArchitecture(fromFile(join(ROOT, 'backlog', 'docs', 'architecture.yml')));
+    const e = g.edges.find((x) => x.id === 'dev>cli') as LayoutEdge;
+    expect(e.score).toBe(0);
+    expect(fromFile(join(ROOT, 'backlog', 'docs', 'architecture.yml')).edges.find((x) => x.id === 'dev>cli')?.label).toBe('sbl commands');
+  });
+
+  const all: [string, () => LayoutInput][] = [...SOURCES, ...SYNTHETIC.map(([n, i]) => [n, () => i] as [string, () => LayoutInput])];
+  it.each(all)('%s: with measured-like widths (x0.9 and x1.13) no badge covers any label, flow or not', (_name, load) => {
+    const g = layoutArchitecture(load());
+    for (const f of [0.9, 1.13]) {
+      const scaled = g.edges.map((e) => ({ ...e, labelWidth: e.labelWidth * f }));
+      const boxes = labelBoxes(scaled);
+      const moved = scaled.map((e) => ({ ...e, badge: badgeFor(e.segment, e.candidates[e.slot], e.labelWidth, boxes) }));
+      expect(badgeOverlaps(moved, moved.map((e) => e.id))).toEqual([]);
+    }
+  });
+});
+
+interface Mirror {
+  slotBox: typeof slotBox;
+  badgeFor: typeof badgeFor;
+  scoreBox: typeof scoreBox;
+  zoneLabelBox: typeof zoneLabelBox;
+}
+
 /** The client mirror in summary.html, extracted between its markers and evaluated in isolation. */
-function clientMirror(): { slotBox: typeof slotBox; badgeFor: typeof badgeFor } {
+function clientMirror(): Mirror {
   const html = readFileSync(join(ROOT, 'src', 'templates', 'summary.html'), 'utf8');
   const m = /\/\* sbl:badge-mirror:start \*\/([\s\S]*?)\/\* sbl:badge-mirror:end \*\//.exec(html);
   if (!m) throw new Error('badge mirror markers not found in summary.html');
-  return new Function(`${m[1]}\nreturn { slotBox: slotBox, badgeFor: badgeFor };`)() as { slotBox: typeof slotBox; badgeFor: typeof badgeFor };
+  return new Function(`${m[1]}\nreturn { slotBox: slotBox, badgeFor: badgeFor, scoreBox: scoreBox, zoneLabelBox: zoneLabelBox };`)() as Mirror;
 }
 
 describe('client mirror of slotBox/badgeFor (summary.html)', () => {
@@ -355,6 +436,23 @@ describe('client mirror of slotBox/badgeFor (summary.html)', () => {
       // measured widths differ from the estimate; the mirror must agree for those too
       const tw = e.labelWidth * 1.13;
       expect(client.badgeFor(e.segment, e.candidates[e.slot], tw, boxes)).toEqual(badgeFor(e.segment, e.candidates[e.slot], tw, boxes));
+    }
+  });
+
+  it.each(inputs)('%s: client and server score boxes and zone labels identically', (_name, load) => {
+    const client = clientMirror();
+    const input = load();
+    const g = layoutArchitecture(input);
+    const nodeBoxes = g.nodes.map((n) => ({ x0: n.x - 1, y0: n.y - 1, x1: n.x + n.w + 1, y1: n.y + n.h + 1 }));
+    const zoneLabels = g.zones.map((z) => zoneLabelBox(z, estimateLabelWidth(z.label)));
+    for (const z of g.zones) expect(client.zoneLabelBox(z, 50)).toEqual(zoneLabelBox(z, 50));
+    const placed = labelBoxes(g.edges);
+    for (const e of g.edges) {
+      const ctx = { width: g.width, height: g.height, nodeBoxes, placed, foreignSegments: g.edges.filter((o) => o !== e).map((o) => o.segment), zoneLabels };
+      for (const c of e.candidates) {
+        const box = slotBox(c, e.labelWidth).box;
+        expect(client.scoreBox(box, ctx)).toBe(scoreBox(box, ctx));
+      }
     }
   });
 });
