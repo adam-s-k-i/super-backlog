@@ -78,8 +78,10 @@ export interface LayoutZone {
   h: number;
 }
 
+export type LayoutWarningCode = 'route-fallback' | 'label-collision' | 'crossing' | 'port-overflow';
+
 export interface LayoutWarning {
-  code: 'route-fallback' | 'label-collision' | 'crossing';
+  code: LayoutWarningCode;
   edge: string;
   message: string;
 }
@@ -212,6 +214,10 @@ export function badgeFor(seg: Segment, slot: LabelSlot, tw: number, labels: read
 
 const SLOT_POSITIONS = [0.5, 0.38, 0.62, 0.26, 0.74] as const;
 
+// Labels sit on the edge's longest segment. A horizontal neighbour edge is a single segment of
+// LAYOUT.gx (104 px), so labels wider than ~100 px cannot avoid both boxes there; a detour would
+// add a crossing. Such labels score > 0 and doctor reports label-collision: keep them short
+// (see spec 2026-10-11, TASK-96 #4; the dogfood dev>cli label is "sbl commands" for this reason).
 export function slotsFor(seg: Segment): LabelSlot[] {
   const out: LabelSlot[] = [];
   for (const t of SLOT_POSITIONS) {
@@ -235,16 +241,33 @@ function segHitsBox(sg: Segment, b: Box): boolean {
   return sg.x1 >= b.x0 && sg.x1 <= b.x1 && Math.min(sg.y1, sg.y2) < b.y1 && Math.max(sg.y1, sg.y2) > b.y0;
 }
 
-/** Score of a label box (spec L5): +5 outside, +3 per node, +2 per placed label, +1 per foreign segment. */
+/** Box of a zone's label text, drawn by the client at (z.x + 12, z.y + 16) in 12 px type; mirrored in summary.html. */
+export function zoneLabelBox(z: LayoutZone, tw: number): Box {
+  return { x0: z.x + 10, y0: z.y + 4, x1: z.x + 12 + tw, y1: z.y + 21 };
+}
+
+/**
+ * Score of a label box (spec L5): +5 outside, +3 per node, +2 per placed label, +2 per zone label,
+ * +1 per foreign segment. Foreign segments are every routed segment except the one carrying the
+ * label, so the edge's own other leg counts too. Mirrored in summary.html (drift-guarded by a test).
+ */
 export function scoreBox(
   box: Box,
-  ctx: { width: number; height: number; nodeBoxes: readonly Box[]; placed: readonly Box[]; foreignSegments: readonly Segment[] },
+  ctx: {
+    width: number;
+    height: number;
+    nodeBoxes: readonly Box[];
+    placed: readonly Box[];
+    foreignSegments: readonly Segment[];
+    zoneLabels?: readonly Box[];
+  },
 ): number {
   let s = 0;
   if (box.x0 < 4 || box.x1 > ctx.width - 4 || box.y0 < 2 || box.y1 > ctx.height - 2) s += 5;
   for (const r of ctx.nodeBoxes) if (hit(box, r)) s += 3;
   for (const r of ctx.placed) if (hit(box, r)) s += 2;
   for (const sg of ctx.foreignSegments) if (segHitsBox(sg, box)) s += 1;
+  for (const r of ctx.zoneLabels ?? []) if (hit(box, r)) s += 2;
   return s;
 }
 
@@ -333,17 +356,21 @@ interface WorkEdge {
   ty: number;
 }
 
-/** Deterministic layout of a validated architecture (spec L1-L7). */
-export function layoutArchitecture(input: LayoutInput): LayoutResult {
-  const { cols, rows } = input.grid;
-  const width = 2 * LAYOUT.mx + cols * LAYOUT.w + (cols - 1) * LAYOUT.gx;
-  const height = LAYOUT.mt + rows * LAYOUT.h + (rows - 1) * LAYOUT.gy + LAYOUT.mb;
+const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+const straight = (ed: WorkEdge): boolean => ed.kind === 'H' || ed.kind === 'V';
+const sideKey = (node: WorkNode, side: Side): string => `${node.id}:${side}`;
 
-  const nodes: WorkNode[] = input.nodes.map((n) => {
+/** L2: grid cells to pixel boxes. */
+function placeNodes(input: LayoutInput): WorkNode[] {
+  return input.nodes.map((n) => {
     const x = colX(n.cell[0]);
     const y = rowY(n.cell[1]);
     return { id: n.id, col: n.cell[0], row: n.cell[1], x, y, w: LAYOUT.w, h: LAYOUT.h, cx: x + LAYOUT.w / 2, cy: y + LAYOUT.h / 2 };
   });
+}
+
+/** L3: route kind and port sides per edge. */
+function chooseRoutes(input: LayoutInput, nodes: readonly WorkNode[]): WorkEdge[] {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const occupied = new Set(nodes.map((n) => `${n.col},${n.row}`));
   const free = (c: number, r: number): boolean => !occupied.has(`${c},${r}`);
@@ -356,8 +383,7 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
     return true;
   };
 
-  // L3: route kind per edge
-  const work: WorkEdge[] = input.edges.map((e, index) => {
+  return input.edges.map((e, index) => {
     const s = byId.get(e.from);
     const t = byId.get(e.to);
     if (!s || !t) throw new Error(`layout: edge ${e.id} references an unknown node`);
@@ -376,41 +402,58 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
     const [sSide, tSide] = SIDES[kind](dx, dy);
     return { id: e.id, from: e.from, to: e.to, label: e.label, index, s, t, kind, fallback, sSide, tSide, sx: 0, sy: 0, tx: 0, ty: 0 };
   });
+}
 
-  // L4: ports; the sort key keeps siblings on one side from crossing each other
-  const straight = (ed: WorkEdge): boolean => ed.kind === 'H' || ed.kind === 'V';
-  const key = (side: Side, node: WorkNode, other: WorkNode, isStraight: boolean): number => {
-    if (isStraight) return 0;
-    const ox = other.cx;
-    const oy = other.cy;
-    if (side === 'T') return ox < node.cx ? -1e6 - oy : 1e6 + oy;
-    if (side === 'B') return ox < node.cx ? -1e6 + oy : 1e6 - oy;
-    if (side === 'L') return oy < node.cy ? -1e6 - ox : 1e6 + ox;
-    return oy < node.cy ? -1e6 + ox : 1e6 - ox;
-  };
-  interface Port {
-    ed: WorkEdge;
-    end: 's' | 't';
-    key: number;
-    tie: string;
-  }
+interface Port {
+  ed: WorkEdge;
+  end: 's' | 't';
+  key: number;
+  tie: string;
+}
+
+interface SidePorts {
+  node: WorkNode;
+  side: Side;
+  list: Port[];
+  offsets: number[];
+}
+
+type StraightGroups = Map<string, { keys: string[]; edges: WorkEdge[] }>;
+
+/** L4 sort key: keeps siblings on one side from crossing each other. */
+function sortKey(side: Side, node: WorkNode, other: WorkNode, isStraight: boolean): number {
+  if (isStraight) return 0;
+  const ox = other.cx;
+  const oy = other.cy;
+  if (side === 'T') return ox < node.cx ? -1e6 - oy : 1e6 + oy;
+  if (side === 'B') return ox < node.cx ? -1e6 + oy : 1e6 - oy;
+  if (side === 'L') return oy < node.cy ? -1e6 - ox : 1e6 + ox;
+  return oy < node.cy ? -1e6 + ox : 1e6 - ox;
+}
+
+/** Ports per node side (`<node>:<side>`), in edge order. */
+function collectSides(work: readonly WorkEdge[]): Map<string, Port[]> {
   const sides = new Map<string, Port[]>();
   const addPort = (node: WorkNode, side: Side, ed: WorkEdge, end: 's' | 't', other: WorkNode): void => {
-    const k = `${node.id}:${side}`;
+    const k = sideKey(node, side);
     const list = sides.get(k) ?? [];
-    list.push({ ed, end, key: key(side, node, other, straight(ed)), tie: `${ed.id}:${end}` });
+    list.push({ ed, end, key: sortKey(side, node, other, straight(ed)), tie: `${ed.id}:${end}` });
     sides.set(k, list);
   };
   for (const ed of work) {
     addPort(ed.s, ed.sSide, ed, 's', ed.t);
     addPort(ed.t, ed.tSide, ed, 't', ed.s);
   }
-  // Straight edges must sit at the same offset on both of their sides, so they are placed first.
-  // Sides joined by straight edges form a group; the group's straight edges share one block of
-  // port-spaced offsets centred on the mean of the centres each side would choose on its own
-  // (snapped to half a port step), and every side stacks its bending ports around that block.
-  const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
-  const sideKey = (node: WorkNode, side: Side): string => `${node.id}:${side}`;
+  return sides;
+}
+
+// Straight edges must sit at the same offset on both of their sides, so they are placed first.
+// Sides joined by straight edges form a group; the group's straight edges share one block of
+// port-spaced offsets centred on the mean of the centres each side would choose on its own
+// (snapped to half a port step), and every side stacks its bending ports around that block.
+
+/** Union-find over the side keys: sides joined by straight edges form one group. */
+function groupStraightSides(work: readonly WorkEdge[], sides: Map<string, Port[]>): StraightGroups {
   const parent = new Map<string, string>([...sides.keys()].map((k) => [k, k]));
   const find = (k: string): string => {
     let r = k;
@@ -423,78 +466,171 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
     const b = find(sideKey(ed.t, ed.tSide));
     if (a !== b) parent.set(cmp(a, b) < 0 ? b : a, cmp(a, b) < 0 ? a : b);
   }
-  const groups = new Map<string, { sides: Port[][]; edges: WorkEdge[] }>();
-  for (const [k, list] of sides) {
+  const groups: StraightGroups = new Map();
+  for (const k of sides.keys()) {
     const r = find(k);
-    const g = groups.get(r) ?? { sides: [], edges: [] };
-    g.sides.push(list);
+    const g = groups.get(r) ?? { keys: [], edges: [] };
+    g.keys.push(k);
     groups.set(r, g);
   }
   for (const ed of work) if (straight(ed)) groups.get(find(sideKey(ed.s, ed.sSide)))?.edges.push(ed);
+  return groups;
+}
+
+/** Offset of every straight edge, shared by both of its ends. */
+function straightOffsets(groups: StraightGroups, sides: Map<string, Port[]>): Map<WorkEdge, number> {
   const half = LAYOUT.port / 2;
   const straightOff = new Map<WorkEdge, number>();
   for (const g of groups.values()) {
     if (g.edges.length === 0) continue;
     // a side spread symmetrically puts the centre of its straight block at (bending before - bending after) * half
-    const wants = g.sides.map((l) => (l.filter((p) => p.key < 0).length - l.filter((p) => p.key > 0).length) * half);
+    const wants = g.keys.map((k) => {
+      const l = sides.get(k) as Port[];
+      return (l.filter((p) => p.key < 0).length - l.filter((p) => p.key > 0).length) * half;
+    });
+    // "+ 0" turns -0 into 0, so toEqual and the JSON output stay stable.
     const centre = Math.round(wants.reduce((s, w) => s + w, 0) / wants.length / half) * half + 0;
+    // Trade-off: a straight block centred on the snapped mean can sit -9/+9 px off the box
+    // centre, even for a lone straight edge. We accept the asymmetry, because the edge must
+    // meet the opposite side at the same height to stay straight.
     const block = g.edges.slice().sort((a, b) => cmp(a.id, b.id) || a.index - b.index);
     block.forEach((ed, i) => straightOff.set(ed, centre + (i - (block.length - 1) / 2) * LAYOUT.port));
   }
+  return straightOff;
+}
 
+/** Sorts `list` in place and returns the offset of each port from the side centre, in list order. */
+function sideOffsets(list: Port[], straightOff: Map<WorkEdge, number>): number[] {
+  list.sort((a, b) => a.key - b.key || cmp(a.tie, b.tie));
+  const fixed = list.flatMap((p) => straightOff.get(p.ed) ?? []);
+  const before = list.filter((p) => p.key < 0);
+  const after = list.filter((p) => p.key > 0);
+  const offset = (pt: Port, i: number): number => {
+    if (fixed.length === 0) return (i - (list.length - 1) / 2) * LAYOUT.port;
+    const own = straightOff.get(pt.ed);
+    if (own !== undefined) return own;
+    if (pt.key < 0) return Math.min(...fixed) - (before.length - before.indexOf(pt)) * LAYOUT.port;
+    return Math.max(...fixed) + (after.indexOf(pt) + 1) * LAYOUT.port;
+  };
+  return list.map((pt, i) => offset(pt, i));
+}
+
+/** Writes the port coordinates of one side into its edges. */
+function placeSidePorts(sp: SidePorts): void {
+  const { node, side } = sp;
+  sp.list.forEach((pt, i) => {
+    const off = sp.offsets[i];
+    let x: number;
+    let y: number;
+    if (side === 'T') [x, y] = [node.cx + off, node.y];
+    else if (side === 'B') [x, y] = [node.cx + off, node.y + node.h];
+    else if (side === 'L') [x, y] = [node.x, node.cy + off];
+    else [x, y] = [node.x + node.w, node.cy + off];
+    if (pt.end === 's') [pt.ed.sx, pt.ed.sy] = [x, y];
+    else [pt.ed.tx, pt.ed.ty] = [x, y];
+  });
+}
+
+/** Ports stay this many px inside the corners of their side. */
+const PORT_INSET = 8;
+/** Below this distance between neighbouring ports, a clamped side is reported as port-overflow. */
+const MIN_PORT_GAP = 6;
+const SIDE_NAMES: Record<Side, string> = { L: 'left', R: 'right', T: 'top', B: 'bottom' };
+const portLimit = (sp: SidePorts): number => (sp.side === 'T' || sp.side === 'B' ? sp.node.w : sp.node.h) / 2 - PORT_INSET;
+
+/** L4: port coordinates of every edge end; reports sides too crowded to keep MIN_PORT_GAP. */
+function assignPorts(work: readonly WorkEdge[], nodes: readonly WorkNode[]): LayoutWarning[] {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const sides = collectSides(work);
+  const groups = groupStraightSides(work, sides);
+  const straightOff = straightOffsets(groups, sides);
+  const perSide = new Map<string, SidePorts>();
   for (const [k, list] of sides) {
     const sep = k.lastIndexOf(':');
     const node = byId.get(k.slice(0, sep)) as WorkNode;
     const side = k.slice(sep + 1) as Side;
-    list.sort((a, b) => a.key - b.key || cmp(a.tie, b.tie));
-    const fixed = list.flatMap((p) => straightOff.get(p.ed) ?? []);
-    const before = list.filter((p) => p.key < 0);
-    const after = list.filter((p) => p.key > 0);
-    const offset = (pt: Port, i: number): number => {
-      if (fixed.length === 0) return (i - (list.length - 1) / 2) * LAYOUT.port;
-      const own = straightOff.get(pt.ed);
-      if (own !== undefined) return own;
-      if (pt.key < 0) return Math.min(...fixed) - (before.length - before.indexOf(pt)) * LAYOUT.port;
-      return Math.max(...fixed) + (after.indexOf(pt) + 1) * LAYOUT.port;
-    };
-    list.forEach((pt, i) => {
-      const off = offset(pt, i);
-      let x: number;
-      let y: number;
-      if (side === 'T') [x, y] = [node.cx + off, node.y];
-      else if (side === 'B') [x, y] = [node.cx + off, node.y + node.h];
-      else if (side === 'L') [x, y] = [node.x, node.cy + off];
-      else [x, y] = [node.x + node.w, node.cy + off];
-      if (pt.end === 's') [pt.ed.sx, pt.ed.sy] = [x, y];
-      else [pt.ed.tx, pt.ed.ty] = [x, y];
-    });
+    perSide.set(k, { node, side, list, offsets: sideOffsets(list, straightOff) });
   }
+  // Ports must stay PORT_INSET px inside the corners. One factor per straight group keeps
+  // straight edges at the same offset on both ends; crowding below MIN_PORT_GAP is reported.
+  const warnings: LayoutWarning[] = [];
+  for (const g of groups.values()) {
+    let scale = 1;
+    let binding: SidePorts | null = null;
+    for (const k of g.keys) {
+      const sp = perSide.get(k) as SidePorts;
+      const max = Math.max(0, ...sp.offsets.map(Math.abs));
+      if (max > 0 && portLimit(sp) / max < scale) {
+        scale = portLimit(sp) / max;
+        binding = sp;
+      }
+    }
+    if (binding === null) continue;
+    for (const k of g.keys) {
+      const sp = perSide.get(k) as SidePorts;
+      sp.offsets = sp.offsets.map((o) => o * scale + 0);
+    }
+    const gap = LAYOUT.port * scale;
+    if (gap < MIN_PORT_GAP) {
+      warnings.push({
+        code: 'port-overflow',
+        edge: binding.list[0].ed.id,
+        message: `${binding.list.length} connections on the ${SIDE_NAMES[binding.side]} side of ${binding.node.id} leave ${gap.toFixed(1)}px between ports (minimum ${MIN_PORT_GAP}); move cells to spread the connections`,
+      });
+    }
+  }
+  for (const sp of perSide.values()) placeSidePorts(sp);
   // both ends of a straight edge got the same offset and their nodes share a row (H) or column (V)
+  return warnings;
+}
 
-  // polylines
-  const routed = work.map((ed) => {
-    const { sx, sy, tx, ty } = ed;
+interface Routed {
+  ed: WorkEdge;
+  points: Point[];
+  segs: Segment[];
+  /** longest segment */
+  seg: Segment;
+}
+
+/** Orthogonal polylines between the assigned ports; points are rounded first, so segments, points and d agree. */
+function routePolylines(work: readonly WorkEdge[]): Routed[] {
+  return work.map((ed) => {
+    const [sx, sy, tx, ty] = [round(ed.sx), round(ed.sy), round(ed.tx), round(ed.ty)];
     const points: Point[] =
       ed.kind === 'VH' ? [[sx, sy], [sx, ty], [tx, ty]] : ed.kind === 'HV' ? [[sx, sy], [tx, sy], [tx, ty]] : [[sx, sy], [tx, ty]];
     const segs = segmentsOf(points);
     return { ed, points, segs, seg: longest(segs) };
   });
+}
 
-  // L5: labels, longest segment first (stable, id tie-break)
+interface LabelChoice {
+  candidates: LabelSlot[];
+  slot: number;
+  score: number;
+  tw: number;
+}
+
+/** L5: labels, longest segment first (stable, id tie-break). */
+function placeLabels(
+  routed: readonly Routed[],
+  nodes: readonly WorkNode[],
+  zones: readonly LayoutZone[],
+  width: number,
+  height: number,
+): { labels: Map<string, LabelChoice>; placed: Box[] } {
   const nodeBoxes: Box[] = nodes.map((n) => ({ x0: n.x - 1, y0: n.y - 1, x1: n.x + n.w + 1, y1: n.y + n.h + 1 }));
+  const zoneLabels = zones.map((z) => zoneLabelBox(z, estimateLabelWidth(z.label)));
   const placed: Box[] = [];
-  const order = routed
-    .slice()
-    .sort((a, b) => b.seg.length - a.seg.length || (a.ed.id < b.ed.id ? -1 : a.ed.id > b.ed.id ? 1 : 0));
-  const labels = new Map<string, { candidates: LabelSlot[]; slot: number; score: number; tw: number }>();
+  const order = routed.slice().sort((a, b) => b.seg.length - a.seg.length || cmp(a.ed.id, b.ed.id));
+  const labels = new Map<string, LabelChoice>();
   for (const r of order) {
     const tw = estimateLabelWidth(r.ed.label);
     const candidates = slotsFor(r.seg);
-    const foreignSegments = routed.filter((o) => o !== r).flatMap((o) => o.segs);
+    const foreignSegments = routed.flatMap((o) => o.segs).filter((s) => s !== r.seg);
     let best = 0;
     let bestScore = Number.POSITIVE_INFINITY;
     for (let i = 0; i < candidates.length; i++) {
-      const s = scoreBox(slotBox(candidates[i], tw).box, { width, height, nodeBoxes, placed, foreignSegments });
+      const s = scoreBox(slotBox(candidates[i], tw).box, { width, height, nodeBoxes, placed, foreignSegments, zoneLabels });
       if (s < bestScore) {
         bestScore = s;
         best = i;
@@ -504,8 +640,14 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
     placed.push(slotBox(candidates[best], tw).box);
     labels.set(r.ed.id, { candidates, slot: best, score: bestScore, tw });
   }
+  return { labels, placed };
+}
 
-  // L6: diagnostics
+/** L6: fallback routes, label collisions and crossings. */
+function diagnose(
+  routed: readonly Routed[],
+  labels: Map<string, LabelChoice>,
+): { warnings: LayoutWarning[]; crossings: number; collisions: number } {
   const warnings: LayoutWarning[] = [];
   let crossings = 0;
   let collisions = 0;
@@ -519,7 +661,7 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
     }
   }
   for (const r of routed) {
-    const l = labels.get(r.ed.id) as { score: number };
+    const l = labels.get(r.ed.id) as LabelChoice;
     if (l.score > 0) {
       collisions++;
       warnings.push({ code: 'label-collision', edge: r.ed.id, message: `label "${r.ed.label}" overlaps (score ${l.score})` });
@@ -535,9 +677,13 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
       }
     }
   }
+  return { warnings, crossings, collisions };
+}
 
-  const edges: LayoutEdge[] = routed.map((r) => {
-    const l = labels.get(r.ed.id) as { candidates: LabelSlot[]; slot: number; score: number; tw: number };
+/** Public edges in input order, with the chosen label slot and step badge. */
+function buildEdges(routed: readonly Routed[], labels: Map<string, LabelChoice>, placed: readonly Box[]): LayoutEdge[] {
+  return routed.map((r) => {
+    const l = labels.get(r.ed.id) as LabelChoice;
     const chosen = slotBox(l.candidates[l.slot], l.tw);
     return {
       id: r.ed.id,
@@ -545,7 +691,7 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
       to: r.ed.to,
       kind: r.ed.kind,
       fallback: r.ed.fallback,
-      points: r.points.map(([x, y]) => [round(x), round(y)] as Point),
+      points: r.points,
       d: pathD(r.points),
       segment: r.seg,
       labelWidth: l.tw,
@@ -556,17 +702,45 @@ export function layoutArchitecture(input: LayoutInput): LayoutResult {
       badge: badgeFor(r.seg, l.candidates[l.slot], l.tw, placed),
     };
   });
+}
 
-  const zones: LayoutZone[] = input.zones.map((z) => {
+/** Zone frames around their cell ranges. */
+function layoutZones(input: LayoutInput): LayoutZone[] {
+  return input.zones.map((z) => {
     const x = colX(z.cols[0]) - 12;
     const y = rowY(z.rows[0]) - 26;
     return { label: z.label, x, y, w: colX(z.cols[1]) + LAYOUT.w + 12 - x, h: rowY(z.rows[1]) + LAYOUT.h + 12 - y };
   });
+}
 
-  const ordered = nodes
+/** Nodes in reading order: row, then column (= tab order). */
+function readingOrder(nodes: readonly WorkNode[]): LayoutNode[] {
+  return nodes
     .slice()
     .sort((a, b) => a.row - b.row || a.col - b.col)
     .map(({ id, col, row, x, y, w, h }) => ({ id, col, row, x, y, w, h }));
+}
 
-  return { width, height, zones, nodes: ordered, edges, warnings, crossings, collisions };
+/** Deterministic layout of a validated architecture (spec L1-L7). */
+export function layoutArchitecture(input: LayoutInput): LayoutResult {
+  const { cols, rows } = input.grid;
+  const width = 2 * LAYOUT.mx + cols * LAYOUT.w + (cols - 1) * LAYOUT.gx;
+  const height = LAYOUT.mt + rows * LAYOUT.h + (rows - 1) * LAYOUT.gy + LAYOUT.mb;
+  const nodes = placeNodes(input);
+  const work = chooseRoutes(input, nodes);
+  const portWarnings = assignPorts(work, nodes);
+  const routed = routePolylines(work);
+  const zones = layoutZones(input);
+  const { labels, placed } = placeLabels(routed, nodes, zones, width, height);
+  const diag = diagnose(routed, labels);
+  return {
+    width,
+    height,
+    zones,
+    nodes: readingOrder(nodes),
+    edges: buildEdges(routed, labels, placed),
+    warnings: [...portWarnings, ...diag.warnings],
+    crossings: diag.crossings,
+    collisions: diag.collisions,
+  };
 }

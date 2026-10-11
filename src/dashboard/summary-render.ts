@@ -5,7 +5,7 @@ import { atomicWrite } from '../lib/atomic.js';
 import type { Phase } from '../lib/phase.js';
 import type { DashboardData } from './data.js';
 import { isDone } from './metrics.js';
-import { esc, jsonIsland, readTemplate } from './render.js';
+import { esc, fillTemplate, jsonIsland, readTemplate, tokensCss } from './render.js';
 import { collectSummaryFacts, type FactsDeps, type SummaryFacts } from './summary-facts.js';
 import {
   detectDrift,
@@ -44,6 +44,12 @@ export interface SummaryDrift {
   /** distinct finding codes in signal order */
   codes: DriftCode[];
   prompt: string;
+}
+
+/** Filled by buildSummaryModel as it goes, so the E3 fallback can reuse what was collected before an error. */
+export interface SummaryProgress {
+  facts?: SummaryFacts;
+  load?: ArchitectureLoadResult;
 }
 
 export interface SummaryDeps extends FactsDeps {
@@ -138,9 +144,16 @@ export function emptyFacts(): SummaryFacts {
 }
 
 /** Collects facts, loads and lays out the architecture file. Throws only on unexpected errors. */
-export function buildSummaryModel(cwd: string, data: DashboardData, deps: SummaryDeps = {}): SummaryModel {
+export function buildSummaryModel(
+  cwd: string,
+  data: DashboardData,
+  deps: SummaryDeps = {},
+  progress: SummaryProgress = {},
+): SummaryModel {
   const facts = collectSummaryFacts(cwd, deps);
+  progress.facts = facts;
   const load = (deps.loadArchitecture ?? loadArchitecture)(cwd, { taskIds: data.tasks.map((t) => t.id) });
+  progress.load = load;
   const layout = load.status === 'valid' ? (deps.layoutArchitecture ?? layoutArchitecture)(load.architecture) : null;
   const drift = load.status === 'valid' ? summaryDrift(cwd, data, deps) : null;
   return { facts, load, layout, renderError: null, drift };
@@ -205,27 +218,43 @@ function autoSource(data: DashboardData, facts: SummaryFacts): string[] {
   );
   const exts = facts.extensions.length > 0 ? ` (${facts.extensions.join(' ')})` : '';
   out.push(
-    `${facts.sourceFiles} source files${exts} from ${facts.fileSource === 'git' ? 'git ls-files' : 'a directory walk'}` +
+    `${facts.sourceFiles} ${plural(facts.sourceFiles, 'source file', 'source files')}${exts} from ${facts.fileSource === 'git' ? 'git ls-files' : 'a directory walk'}` +
       (facts.locApprox ? '; line count stopped at the 10 MB read budget' : ''),
   );
-  out.push(`${facts.dependencies} runtime and ${facts.devDependencies} development dependencies; versions from lockfiles where present`);
-  out.push(facts.releasesNote ? `Releases: ${facts.releasesNote}` : `${facts.releases} releases from git version tags`);
+  const depNoun = plural(facts.dependencies + facts.devDependencies, 'dependency', 'dependencies');
+  out.push(`${facts.dependencies} runtime and ${facts.devDependencies} development ${depNoun}; versions from lockfiles where present`);
+  out.push(
+    facts.releasesNote
+      ? `Releases: ${facts.releasesNote}`
+      : `${facts.releases} ${plural(facts.releases, 'release', 'releases')} from git version tags`,
+  );
   out.push(`${facts.workflows} GitHub Actions ${plural(facts.workflows, 'workflow', 'workflows')}`);
   out.push(data.source === 'backlog-json' ? 'Open work from backlog task list' : 'Open work: no backlog data');
   return out;
 }
 
-function curatedSource(load: ArchitectureLoadResult): string[] {
+function curatedSource(load: ArchitectureLoadResult, renderError: string | null): string[] {
   if (load.status === 'missing') return ['No curated file yet; this page shows the automatic facts only.'];
+  if (renderError !== null) {
+    return [`${ARCHITECTURE_PATH} was not shown because the summary could not be rendered; see the notice above.`];
+  }
   if (load.status === 'invalid') {
     const n = load.problems.filter((p) => p.level === 'error').length;
     return [`${ARCHITECTURE_PATH} has ${n} ${plural(n, 'problem', 'problems')}; see the notice above.`];
   }
   const a = load.architecture;
+  const count = (n: number, one: string, many: string): string => `${n} ${plural(n, one, many)}`;
+  const components = count(a.nodes.length, 'component', 'components');
+  const connections = count(a.edges.length, 'connection', 'connections');
+  const flows = count(a.flows.length, 'flow', 'flows');
+  const highlights = count(a.highlights.length, 'highlight', 'highlights');
+  const stack = count(a.stack.length, 'stack entry', 'stack entries');
+  const groups = count(Object.keys(a.commands).length, 'command group', 'command groups');
+  const mappings = count(Object.keys(a.tasks).length, 'task-to-component mapping', 'task-to-component mappings');
   return [
-    `Pitch, ${a.nodes.length} components, ${a.edges.length} connections, ${a.flows.length} flows`,
-    `${a.highlights.length} highlights, ${a.stack.length} stack entries, ${Object.keys(a.commands).length} command groups`,
-    `${Object.keys(a.tasks).length} task-to-component mappings (status comes from the backlog CLI)`,
+    `Pitch, ${components}, ${connections}, ${flows}`,
+    `${highlights}, ${stack}, ${groups}`,
+    `${mappings} (status comes from the backlog CLI)`,
   ];
 }
 
@@ -263,7 +292,7 @@ export function buildSummaryView(data: DashboardData, model: SummaryModel): Summ
     tasks,
     commands,
     stack: stackItems(arch, facts),
-    source: { auto: autoSource(data, facts), curated: curatedSource(load), warnings, file: ARCHITECTURE_PATH },
+    source: { auto: autoSource(data, facts), curated: curatedSource(load, model.renderError), warnings, file: ARCHITECTURE_PATH },
   };
 }
 
@@ -327,11 +356,12 @@ export function noticeHtml(model: SummaryModel): string {
 /** Fills the summary template (V1). Pure apart from reading the two template files. */
 export function renderSummary(data: DashboardData, model: SummaryModel): string {
   const view = buildSummaryView(data, model);
-  return readTemplate('summary.html')
-    .replaceAll('__SBL_TOKENS_CSS__', () => readTemplate('sbl-tokens.css').replace(/\r\n/g, '\n').trimEnd())
-    .replaceAll('__PROJECT_NAME__', () => esc(data.project.name))
-    .replaceAll('__SUMMARY_NOTICE__', () => noticeHtml(model))
-    .replaceAll('__SBL_SUMMARY_JSON__', () => jsonIsland(view));
+  return fillTemplate(readTemplate('summary.html'), {
+    __SBL_TOKENS_CSS__: tokensCss,
+    __PROJECT_NAME__: () => esc(data.project.name),
+    __SUMMARY_NOTICE__: () => noticeHtml(model),
+    __SBL_SUMMARY_JSON__: () => jsonIsland(view),
+  });
 }
 
 function minimalPage(data: DashboardData, message: string): string {
@@ -349,21 +379,18 @@ function minimalPage(data: DashboardData, message: string): string {
  */
 export function writeSummaryPage(cwd: string, data: DashboardData, dashboardFile: string, deps: SummaryDeps = {}): string {
   const file = summaryFileFor(dashboardFile);
+  const progress: SummaryProgress = {};
   let html: string;
   try {
-    html = renderSummary(data, buildSummaryModel(cwd, data, deps));
+    html = renderSummary(data, buildSummaryModel(cwd, data, deps, progress));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     try {
-      let facts: SummaryFacts;
-      try {
-        facts = collectSummaryFacts(cwd, deps);
-      } catch {
-        facts = emptyFacts();
-      }
+      // E3: reuse what was collected before the error. A throwing load means the
+      // file exists (a missing file returns 'missing'), so 'invalid' is honest.
       html = renderSummary(data, {
-        facts,
-        load: { status: 'missing', path: ARCHITECTURE_PATH },
+        facts: progress.facts ?? emptyFacts(),
+        load: progress.load ?? { status: 'invalid', path: ARCHITECTURE_PATH, problems: [] },
         layout: null,
         renderError: message,
         drift: null,
@@ -374,8 +401,9 @@ export function writeSummaryPage(cwd: string, data: DashboardData, dashboardFile
   }
   try {
     atomicWrite(file, html);
-  } catch {
-    /* the dashboard never depends on the summary page */
+  } catch (err) {
+    // the dashboard never depends on the summary page, but the user should know why it is stale
+    process.stderr.write(`sbl: could not write the summary page ${file}: ${err instanceof Error ? err.message : String(err)}\n`);
   }
   return file;
 }

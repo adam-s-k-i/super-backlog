@@ -228,6 +228,20 @@ describe('check 5: architecture.yml', () => {
     expect(out).toContain('layout route-fallback a>b: no straight or single-corner route from a to b');
   });
 
+  it('shows a port-overflow layout warning as a detail line of check 5', () => {
+    const load = checkArchitectureText(ARCH_OK, 'architecture.yml');
+    const d = makeDeps({
+      loadArchitecture: () => load,
+      layoutArchitecture: (a) => ({
+        ...layoutArchitecture(a),
+        warnings: [{ code: 'port-overflow', edge: 'a>b', message: '8 connections on the left side of b leave 5.7px between ports (minimum 6); move cells to spread the connections' }],
+      }),
+    });
+    runDoctor('/proj', d);
+    expect(d.lines.some((l) => l.includes('[warn] backlog/docs/architecture.yml valid with 1 warning(s)'))).toBe(true);
+    expect(d.lines.some((l) => l.includes('layout port-overflow a>b: 8 connections on the left side of b'))).toBe(true);
+  });
+
   it('replaces the ok line with one drift warning that points to sbl summary', () => {
     const d = makeDeps({
       detectDrift: () => ({
@@ -299,6 +313,16 @@ describe('check 5: architecture.yml', () => {
     });
     expect(runDoctor('/proj', d)).toBe(1);
     expect(d.lines).toContain('[fail] backlog/docs/architecture.yml layout failed (layout exploded)');
+  });
+
+  it('turns a throwing architecture load into a failure instead of crashing', () => {
+    const d = makeDeps({
+      loadArchitecture: () => {
+        throw new Error('load exploded');
+      },
+    });
+    expect(runDoctor('/proj', d)).toBe(1);
+    expect(d.lines).toContain('[fail] backlog/docs/architecture.yml check failed (load exploded)');
   });
 
   it('does not run the drift check for a missing file', () => {

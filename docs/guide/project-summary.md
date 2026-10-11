@@ -64,8 +64,8 @@ sbl doctor
 Check 5 validates `backlog/docs/architecture.yml`. It is skipped when the file
 does not exist, fails with every problem and its path when the file is invalid,
 and warns when the file is valid but the diagram cannot be drawn cleanly
-(an edge without a straight or single-corner route, an overlapping label, or a
-crossing).
+(an edge without a straight or single-corner route, an overlapping label, a
+crossing, or too many connections on one side of a box).
 On a valid file, check 5 also counts the drift findings described in
 [Keeping it current](#keeping-it-current) and points to `sbl summary`.
 
@@ -116,9 +116,20 @@ library:
 - plain, single-quoted and double-quoted scalars, integers, `true`/`false`,
   `>` and `|` block scalars, and `#` comments.
 
-Quote a value when it contains a comma inside `{ }` or `[ ]`, a colon followed
-by a space, or a `#`. Tabs, anchors, aliases, tags and multiple documents are
-rejected with the line and column of the problem.
+Quote a value when it contains a comma inside `{ }` or `[ ]`, a colon
+followed by a space, or a `#`, when it ends with a colon, or when it starts
+with a dash and a space. A `#` starts a comment only after a space, also after a
+quoted value or a flow collection.
+
+The parser rejects, with the line and column of the problem:
+
+- tabs, anchors, aliases, tags, directives and multiple documents;
+- empty entries in flow collections, such as `{ k: }` or `[a, , b]`;
+- the keys `__proto__`, `constructor` and `prototype`;
+- collections nested deeper than 32 levels.
+
+Two values are converted instead of rejected: `-0` reads as `0`, and trailing
+spaces at the end of lines inside `|` and `>` blocks are removed.
 
 ## Keeping it current
 

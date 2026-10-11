@@ -75,16 +75,27 @@ export function jsonIsland(value: unknown): string {
   return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
+/** The shared design tokens, LF-normalised, for both pages' __SBL_TOKENS_CSS__ placeholder. */
+export function tokensCss(): string {
+  return readTemplate('sbl-tokens.css').replace(/\r\n/g, '\n').trimEnd();
+}
+
+/** Single-pass fill: inserted values are never scanned again; unknown placeholders stay literal. */
+export function fillTemplate(template: string, values: Readonly<Record<string, () => string>>): string {
+  return template.replace(/__[A-Z][A-Z_]*__/g, (m) => (Object.hasOwn(values, m) ? values[m]() : m));
+}
+
 /** Fill the static template shell with data; all dynamic task/metric content stays in the JSON islands. */
 export function renderDashboard(data: DashboardData): string {
-  return readTemplate()
-    .replaceAll('__SBL_TOKENS_CSS__', () => readTemplate('sbl-tokens.css').replace(/\r\n/g, '\n').trimEnd())
-    .replaceAll('__PROJECT_NAME__', () => esc(data.project.name))
-    .replaceAll('__PROJECT_DESC__', () => esc(data.project.description))
-    .replaceAll('__GENERATED_AT__', () => esc(data.generatedAt))
-    .replaceAll('__KIT_VERSION__', () => esc(data.kitVersion))
-    .replaceAll('__STATUS_PILLS__', () => statusPillsHtml(data.statuses))
-    .replaceAll('__SBL_DATA_JSON__', () => jsonIsland(data))
-    .replaceAll('__SBL_GLOSSARY_JSON__', () => jsonIsland(data.glossary))
-    .replaceAll('__SBL_PHASES_JSON__', () => jsonIsland(PIPELINE_PHASES));
+  return fillTemplate(readTemplate(), {
+    __SBL_TOKENS_CSS__: tokensCss,
+    __PROJECT_NAME__: () => esc(data.project.name),
+    __PROJECT_DESC__: () => esc(data.project.description),
+    __GENERATED_AT__: () => esc(data.generatedAt),
+    __KIT_VERSION__: () => esc(data.kitVersion),
+    __STATUS_PILLS__: () => statusPillsHtml(data.statuses),
+    __SBL_DATA_JSON__: () => jsonIsland(data),
+    __SBL_GLOSSARY_JSON__: () => jsonIsland(data.glossary),
+    __SBL_PHASES_JSON__: () => jsonIsland(PIPELINE_PHASES),
+  });
 }

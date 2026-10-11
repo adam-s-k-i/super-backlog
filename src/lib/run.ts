@@ -3,12 +3,21 @@ import { join } from 'node:path';
 import process from 'node:process';
 import spawn from 'cross-spawn';
 
-export interface RunResult { status: number; stdout: string; stderr: string; }
+export const RUN_CAPTURE_MAX_BUFFER = 64 * 1024 * 1024; // git ls-files -z for ~50k paths fits with a wide margin
 
-export function runCapture(cmd: string, args: string[], cwd: string): RunResult {
-  const r = spawn.sync(cmd, args, { cwd, encoding: 'utf8' });
-  if (r.error && (r.status === null || r.status === undefined)) {
-    return { status: 127, stdout: '', stderr: String(r.error.message) };
+export interface RunResult {
+  status: number;
+  stdout: string;
+  stderr: string;
+  /** spawn error code, e.g. 'ENOENT' or 'ENOBUFS' */
+  errorCode?: string;
+}
+
+export function runCapture(cmd: string, args: string[], cwd: string, opts: { maxBuffer?: number } = {}): RunResult {
+  const r = spawn.sync(cmd, args, { cwd, encoding: 'utf8', maxBuffer: opts.maxBuffer ?? RUN_CAPTURE_MAX_BUFFER });
+  const errorCode = (r.error as NodeJS.ErrnoException | undefined)?.code;
+  if (r.error && (r.status === null || r.status === undefined || errorCode === 'ENOBUFS')) {
+    return { status: 127, stdout: '', stderr: String(r.error.message), ...(errorCode ? { errorCode } : {}) };
   }
   return {
     status: r.status ?? 1,

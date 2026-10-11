@@ -1,6 +1,6 @@
 {
   "name": "super-backlog",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "One command to equip any project with Backlog.md + Superpowers, plus a Project Dashboard.",
   "license": "MIT",
   "repository": {
@@ -36,6 +36,7 @@
     "@types/node": "^26.2.0",
     "backlog.md": "^1.50.1",
     "cspell": "^10.1.1",
+    "happy-dom": "20.14.5",
     "markdownlint-cli2": "^0.23.2",
     "super-backlog": "file:.",
     "typescript": "^7.0.2",

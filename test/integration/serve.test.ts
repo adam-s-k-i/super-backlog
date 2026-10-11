@@ -397,6 +397,8 @@ describe('summary page route', () => {
     const dash = await fetchRaw(handle.port, PROJECT_PATH);
     expect(dash.status).toBe(200);
     expect(dash.body.startsWith('<!doctype html>')).toBe(true);
-    expect((await fetchRaw(handle.port, SUMMARY_PATH)).status).toBe(404);
+    const summary = await fetchRaw(handle.port, SUMMARY_PATH);
+    expect(summary.status).toBe(404);
+    expect(summary.body).toBe('summary not generated yet');
   });
 });
