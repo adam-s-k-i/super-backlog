@@ -199,6 +199,7 @@ describe('model dashboard api', () => {
     });
     const res = await call(port, '/api/models/discover', 'POST');
     expect(res.status).toBe(500);
+    expect(res.json).toEqual({ ok: false, message: '.super-backlog/models.json is not valid JSON - left unchanged; fix or delete it' });
     expect(discovered).toBe(0);
   });
 

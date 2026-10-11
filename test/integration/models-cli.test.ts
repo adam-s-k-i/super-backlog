@@ -209,6 +209,16 @@ describe('sbl models CLI', () => {
     });
   });
 
+  it('show warns instead of crashing when models.json cannot be read at all', async () => {
+    const cwd = freshDir();
+    mkdirSync(join(cwd, '.super-backlog', 'models.json'), { recursive: true });
+    const { out, err } = capture();
+    expect(await models(cwd, 'show')).toBe(0);
+    expect(err).toHaveLength(1);
+    expect(err[0]).toMatch(/^warning: /);
+    expect(out.join('\n')).toBe('{\n  "version": 2,\n  "enabled": false,\n  "tiers": {}\n}');
+  });
+
   it('rejects unknown subcommands', async () => {
     const cwd = freshDir();
     const { err } = capture();

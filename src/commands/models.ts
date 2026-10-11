@@ -59,8 +59,8 @@ function runShow(cwd: string): number {
   try {
     readConfigStrict(cwd);
   } catch (err) {
-    if (!(err instanceof InvalidConfigError)) throw err;
-    console.error(`warning: ${err.message}`);
+    // like loadConfig, show never fails on a bad file; it only says why it shows the defaults
+    console.error(`warning: ${err instanceof Error ? err.message : String(err)}`);
   }
   console.log(serializeConfig(loadConfig(cwd)).trimEnd());
   return 0;
