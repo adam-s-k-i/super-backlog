@@ -361,6 +361,7 @@ function readZones(c: Collector, root: YamlMap, grid: ArchGrid | null, gridText:
   return zones;
 }
 
+/** For readNodes and readEdges: a `null` id set means "list not read", so cross-reference checks against it are skipped. */
 function readNodes(
   c: Collector,
   root: YamlMap,
@@ -535,12 +536,12 @@ function readFlows(c: Collector, root: YamlMap, edgeIds: ReadonlySet<string> | n
       if (edgeIds !== null && !edgeIds.has(s) && missing === null) missing = s;
       steps.push(s);
     });
-    if (!idOk || !colorOk || label === undefined || malformed || rawSteps.length === 0) return;
+    if (!idOk || typeof id !== 'string' || !colorOk || label === undefined || malformed || rawSteps.length === 0) return;
     if (missing !== null) {
       c.warn(`${path}.steps`, `no edge ${missing}; flow "${id}" dropped`);
       return;
     }
-    const flow: ArchFlow = { id: id as string, label, color: color ?? FLOW_COLORS[flows.length % FLOW_COLORS.length], steps };
+    const flow: ArchFlow = { id, label, color: color ?? FLOW_COLORS[flows.length % FLOW_COLORS.length], steps };
     if (command !== undefined) flow.command = command;
     if (text !== undefined) flow.text = text;
     flows.push(flow);

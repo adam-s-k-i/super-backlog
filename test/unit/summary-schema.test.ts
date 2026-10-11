@@ -392,3 +392,111 @@ describe('validateArchitecture: hardening (TASK-94)', () => {
     expectError(check([...BASE, ...groups(1, undefined, 9)]), 'commands.g0', /at most 8 entries \(found 9\)/);
   });
 });
+
+describe('validateArchitecture: every LIMITS boundary (TASK-94)', () => {
+  const errorsOf = (lines: string[]): SchemaProblem[] => problems(check(lines)).filter((p) => p.level === 'error');
+  const nodeLines = (n: number): string[] =>
+    Array.from({ length: n }, (_, i) => `  - { id: n${i}, label: N${i}, kind: core, cell: [${i % 8}, ${Math.floor(i / 8)}] }`);
+  /** An 8x8 file with `n` nodes (n0..) and one edge; `extra` is appended at the top level. */
+  const big = (n: number, extra: string[] = []): string[] => [
+    'schema: 1',
+    'pitch: p',
+    'grid: { cols: 8, rows: 8 }',
+    'nodes:',
+    ...nodeLines(n),
+    'edges:',
+    '  - { from: n0, to: n1, label: x }',
+    ...extra,
+  ];
+  /** The first `n` distinct ordered pairs over n0..n39, as edge lines. */
+  const edgeLines = (n: number): string[] => {
+    const out: string[] = [];
+    for (let a = 0; a < 40 && out.length < n; a++) {
+      for (let b = 0; b < 40 && out.length < n; b++) {
+        if (a !== b) out.push(`  - { from: n${a}, to: n${b}, label: x }`);
+      }
+    }
+    return out;
+  };
+  const nodeWith = (extra: string): string[] =>
+    withLine('  - { id: a,', `  - { id: a, label: Alpha, kind: core, cell: [0, 0], ${extra} }`);
+  /** BASE with node `a` written as a block mapping that ends in `commands:` followed by the given lines. */
+  const nodeCommands = (cmds: string[]): string[] => {
+    const i = BASE.findIndex((l) => l.startsWith('  - { id: a,'));
+    return [...BASE.slice(0, i), '  - id: a', '    label: Alpha', '    kind: core', '    cell: [0, 0]', '    commands:', ...cmds, ...BASE.slice(i + 1)];
+  };
+  const gridFile = (grid: string): string[] => [
+    'schema: 1',
+    'pitch: p',
+    grid,
+    'nodes:',
+    '  - { id: a, label: Alpha, kind: core, cell: [0, 0] }',
+    '  - { id: b, label: Beta, kind: output, cell: [1, 0] }',
+    'edges:',
+    '  - { from: a, to: b, label: x }',
+  ];
+  const ids = (n: number, prefix: string): string => Array.from({ length: n }, (_, i) => `${prefix}${i}`).join(', ');
+  const withKinds = (kindLines: string[]): string[] => [...BASE.slice(0, 3), 'kinds:', ...kindLines, ...BASE.slice(3)];
+
+  it.each([
+    ['kind label', (s: string) => withKinds([`  core: { label: ${s}, color: accent }`, '  output: { label: Out, color: ok }', '  external: { label: Ext, color: dim }']), 'kinds.core.label', 28],
+    ['node purpose', (s: string) => nodeWith(`purpose: ${s}`), 'nodes[0].purpose', 600],
+    ['node why', (s: string) => nodeWith(`why: ${s}`), 'nodes[0].why', 600],
+    ['node command run', (s: string) => nodeCommands([`      - { run: ${s} }`]), 'nodes[0].commands[0].run', 200],
+    ['node command note', (s: string) => nodeCommands([`      - { run: r, note: ${s} }`]), 'nodes[0].commands[0].note', 80],
+    ['edge text', (s: string) => withLine('  - { from: a, to: b', `  - { from: a, to: b, label: x, text: ${s} }`), 'edges[0].text', 300],
+    ['flow text', (s: string) => [...BASE, 'flows:', `  - { id: f, label: F, text: ${s}, steps: [a>b] }`], 'flows[0].text', 300],
+    ['flow command', (s: string) => [...BASE, 'flows:', `  - { id: f, label: F, command: ${s}, steps: [a>b] }`], 'flows[0].command', 200],
+    ['highlight text', (s: string) => [...BASE, 'highlights:', `  - { node: a, title: T, text: ${s} }`], 'highlights[0].text', 300],
+    ['stack group', (s: string) => [...BASE, 'stack:', `  - { name: S, group: ${s}, nodes: [a] }`], 'stack[0].group', 24],
+    ['stack role', (s: string) => [...BASE, 'stack:', `  - { name: S, group: G, role: ${s}, nodes: [a] }`], 'stack[0].role', 120],
+    ['stack version', (s: string) => [...BASE, 'stack:', `  - { name: S, group: G, version: ${s}, nodes: [a] }`], 'stack[0].version', 40],
+  ])('%s: accepts exactly the limit and rejects one over it', (_name, build, path, max) => {
+    expect(errorsOf(build('x'.repeat(max)))).toEqual([]);
+    expectError(check(build('x'.repeat(max + 1))), path, new RegExp(`at most ${max} characters \\(found ${max + 1}\\)`));
+  });
+
+  it('accepts a 200 character file path and rejects 201', () => {
+    expect(errorsOf(nodeWith(`files: [${'x'.repeat(200)}]`))).toEqual([]);
+    expectError(check(nodeWith(`files: [${'x'.repeat(201)}]`)), 'nodes[0].files[0]', /^at most 200 characters$/);
+  });
+
+  it.each([
+    ['kinds', (n: number) => withKinds(['  core: { label: C, color: accent }', '  output: { label: O, color: ok }', '  external: { label: E, color: dim }', ...Array.from({ length: n - 3 }, (_, i) => `  k${i}: { label: K${i}, color: muted }`)]), 'kinds', 6],
+    ['zones', (n: number) => big(2, ['zones:', ...Array.from({ length: n }, (_, i) => `  - { label: Z${i}, cols: [${i % 8}, ${i % 8}], rows: [${2 + Math.floor(i / 8)}, ${2 + Math.floor(i / 8)}] }`)]), 'zones', 16],
+    ['nodes', (n: number) => big(n), 'nodes', 40],
+    ['node files', (n: number) => nodeWith(`files: [${ids(n, 'f')}]`), 'nodes[0].files', 12],
+    ['node commands', (n: number) => nodeCommands(Array.from({ length: n }, (_, i) => `      - { run: c${i} }`)), 'nodes[0].commands', 6],
+    ['edges', (n: number) => [...big(40).slice(0, -1), ...edgeLines(n)], 'edges', 120],
+    ['flows', (n: number) => [...BASE, 'flows:', ...Array.from({ length: n }, (_, i) => `  - { id: f${i}, label: F${i}, steps: [a>b] }`)], 'flows', 12],
+    ['flow steps', (n: number) => [...BASE, 'flows:', `  - { id: f, label: F, steps: [${Array.from({ length: n }, () => 'a>b').join(', ')}] }`], 'flows[0].steps', 12],
+    ['highlights', (n: number) => big(13, ['highlights:', ...Array.from({ length: n }, (_, i) => `  - { node: n${i}, title: T${i}, text: t }`)]), 'highlights', 12],
+    ['stack', (n: number) => [...BASE, 'stack:', ...Array.from({ length: n }, (_, i) => `  - { name: S${i}, group: G, nodes: [a] }`)], 'stack', 40],
+  ])('%s: accepts exactly the maximum count and rejects one more', (_name, build, path, max) => {
+    expect(errorsOf(build(max))).toEqual([]);
+    expectError(check(build(max + 1)), path, new RegExp(`^at most ${max} entries \\(found ${max + 1}\\)$`));
+  });
+
+  it.each([
+    ['nodes', (n: number) => [...BASE.slice(0, 3), 'nodes:', ...BASE.slice(4, 4 + n), 'edges:', '  - { from: a, to: b, label: x }'], 'nodes', 2],
+    ['edges', (n: number) => (n === 0 ? [...BASE.slice(0, 7), 'edges: []'] : [...BASE.slice(0, 8), '  - { from: a, to: b, label: x }']), 'edges', 1],
+    ['flow steps', (n: number) => [...BASE, 'flows:', `  - { id: f, label: F, steps: [${Array.from({ length: n }, () => 'a>b').join(', ')}] }`], 'flows[0].steps', 1],
+    ['command group', (n: number) => [...BASE, 'commands:', ...(n === 0 ? ['  g: []'] : ['  g:', ...Array.from({ length: n }, () => '    - { run: r }')])], 'commands.g', 1],
+  ])('%s: accepts exactly the minimum count and rejects one fewer', (_name, build, path, min) => {
+    expect(errorsOf(build(min))).toEqual([]);
+    expectError(check(build(min - 1)), path, new RegExp(`^at least ${min} entries \\(found ${min - 1}\\)$`));
+  });
+
+  it.each(['cols', 'rows'])('grid %s: accepts 2 and 8, rejects 1 and 9', (key) => {
+    const grid = (v: number): string => `grid: { cols: ${key === 'cols' ? v : 2}, rows: ${key === 'rows' ? v : 2} }`;
+    expect(errorsOf(gridFile(grid(2)))).toEqual([]);
+    expect(errorsOf(gridFile(grid(8)))).toEqual([]);
+    expectError(check(gridFile(grid(1))), `grid.${key}`, /^expected an integer from 2 to 8$/);
+    expectError(check(gridFile(grid(9))), `grid.${key}`, /^expected an integer from 2 to 8$/);
+  });
+
+  it('suppresses the missing-edge warning for flows when the edges list overflowed', () => {
+    const lines = [...big(40).slice(0, -1), ...edgeLines(121), 'flows:', '  - { id: f, label: F, steps: [n39>n38] }'];
+    expect(problems(check(lines))).toEqual([{ path: 'edges', message: 'at most 120 entries (found 121)', level: 'error' }]);
+  });
+});
