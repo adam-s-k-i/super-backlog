@@ -20,7 +20,9 @@ function snapshot(cwd: string) {
 }
 
 function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+  // Only an Error's message reaches the browser; anything else thrown could
+  // carry internals, so it gets a fixed text.
+  return err instanceof Error ? err.message : 'unexpected error';
 }
 
 export interface ModelApiDeps {

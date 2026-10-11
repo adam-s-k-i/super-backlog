@@ -23,6 +23,12 @@ describe('verifyRelease', () => {
     expect(verifyRelease({ version: '0.2.0', changelogText: CL, remoteTagExists: true })).toEqual([]);
   });
 
+  it('treats regex characters in the version literally', () => {
+    const cl = '# Changelog\n\n## [1.0.0+build] - 2026-09-01\n';
+    expect(verifyRelease({ version: '1.0.0+build', changelogText: cl, remoteTagExists: true })).toEqual([]);
+    expect(verifyRelease({ version: '1.0.0+build', changelogText: '## [1.0.00build]\n', remoteTagExists: true })).toHaveLength(1);
+  });
+
   it('fails on missing changelog entry', () => {
     const problems = verifyRelease({ version: '0.3.0', changelogText: CL, remoteTagExists: true });
     expect(problems).toHaveLength(1);
