@@ -6,9 +6,10 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-10-11 08:06'
-updated_date: '2026-10-11 08:06'
+updated_date: '2026-10-11 08:24'
 labels:
   - bug
+  - phase/verify
 dependencies: []
 type: bug
 ordinal: 115000
