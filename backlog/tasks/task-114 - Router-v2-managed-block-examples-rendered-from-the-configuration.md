@@ -1,13 +1,13 @@
 ---
 id: TASK-114
 title: 'Router v2: managed-block examples rendered from the configuration'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 00:17'
-updated_date: '2026-10-11 00:17'
+updated_date: '2026-10-11 01:13'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies:
   - TASK-113
 references:
@@ -24,7 +24,7 @@ Unit 4: {{MODEL_EXAMPLES}} placeholder, renderModelExamples, agentsBlockContents
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 default rendering stays byte-identical to the current example paragraph
-- [ ] #2 enabled rendering lists configured tiers and wraps at 80 columns
-- [ ] #3 install-model-router is planned before inject-agents-block
+- [x] #1 default rendering stays byte-identical to the current example paragraph
+- [x] #2 enabled rendering lists configured tiers and wraps at 80 columns
+- [x] #3 install-model-router is planned before inject-agents-block
 <!-- AC:END -->

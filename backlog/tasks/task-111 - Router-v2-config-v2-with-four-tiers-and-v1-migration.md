@@ -1,13 +1,13 @@
 ---
 id: TASK-111
 title: 'Router v2: config v2 with four tiers and v1 migration'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 00:17'
-updated_date: '2026-10-11 00:17'
+updated_date: '2026-10-11 01:13'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-11-router-v2.md
@@ -23,8 +23,8 @@ Unit 1 of the router v2 plan: models.json v2 (tiers per harness, defaults, valid
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 loadConfig returns a normalized v2 config for missing, unparsable, v1 and v2 files without throwing
-- [ ] #2 v1 migration maps workhorse/budget to OpenCode standard/light and keeps discoveredAt
-- [ ] #3 resolveTier shim returns null; family.ts is removed
-- [ ] #4 unit tests cover defaults, validation and migration
+- [x] #1 loadConfig returns a normalized v2 config for missing, unparsable, v1 and v2 files without throwing
+- [x] #2 v1 migration maps workhorse/budget to OpenCode standard/light and keeps discoveredAt
+- [x] #3 resolveTier shim returns null; family.ts is removed
+- [x] #4 unit tests cover defaults, validation and migration
 <!-- AC:END -->

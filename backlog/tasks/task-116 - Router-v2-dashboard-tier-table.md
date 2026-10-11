@@ -1,13 +1,13 @@
 ---
 id: TASK-116
 title: 'Router v2: dashboard tier table'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 00:17'
-updated_date: '2026-10-11 00:17'
+updated_date: '2026-10-11 01:13'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies:
   - TASK-115
 references:
@@ -24,7 +24,7 @@ Unit 6: dashboard API and models dialog with the four-tier table.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 the models dialog shows Light/Standard/Strong/Top for Claude Code and OpenCode
-- [ ] #2 POST enable/disable/discover call applyRouter with block re-render
-- [ ] #3 dashboard snapshots updated
+- [x] #1 the models dialog shows Light/Standard/Strong/Top for Claude Code and OpenCode
+- [x] #2 POST enable/disable/discover call applyRouter with block re-render
+- [x] #3 dashboard snapshots updated
 <!-- AC:END -->

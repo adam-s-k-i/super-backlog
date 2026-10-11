@@ -1,13 +1,13 @@
 ---
 id: TASK-117
 title: 'Router v2: docs and dogfood'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 00:17'
-updated_date: '2026-10-11 00:17'
+updated_date: '2026-10-11 01:14'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies:
   - TASK-116
 references:
@@ -24,8 +24,8 @@ Unit 7: model-router guide, quickstart, harness support, index, README, architec
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 docs/guide/model-router.md exists with type frontmatter and a sidebar entry
-- [ ] #2 README, quickstart, harness-support and index describe four tiers
-- [ ] #3 architecture.yml lists match; sbl summary --check is clean
-- [ ] #4 all gates pass
+- [x] #1 docs/guide/model-router.md exists with type frontmatter and a sidebar entry
+- [x] #2 README, quickstart, harness-support and index describe four tiers
+- [x] #3 architecture.yml lists match; sbl summary --check is clean
+- [x] #4 all gates pass
 <!-- AC:END -->

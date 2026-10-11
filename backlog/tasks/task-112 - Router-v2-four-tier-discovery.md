@@ -1,13 +1,13 @@
 ---
 id: TASK-112
 title: 'Router v2: four-tier discovery'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-11 00:17'
-updated_date: '2026-10-11 00:17'
+updated_date: '2026-10-11 01:13'
 labels:
   - feature
-  - phase/impl
+  - phase/verify
 dependencies:
   - TASK-111
 references:
@@ -24,7 +24,7 @@ Unit 2: rankFourTiers over opencode models output with ordered preferences and l
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 rankFourTiers picks light/standard/strong/top by the spec's ordered patterns
-- [ ] #2 top falls back to strong; light patterns are excluded from higher tiers
-- [ ] #3 unit tests cover ranking and parsing
+- [x] #1 rankFourTiers picks light/standard/strong/top by the spec's ordered patterns
+- [x] #2 top falls back to strong; light patterns are excluded from higher tiers
+- [x] #3 unit tests cover ranking and parsing
 <!-- AC:END -->
