@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { collectSummaryFacts, isTestFile, readWordPressHeader } from '../../src/dashboard/summary-facts.js';
+import { collectSummaryFacts, gitFailure, isTestFile, readWordPressHeader } from '../../src/dashboard/summary-facts.js';
 import type { RunResult } from '../../src/lib/run.js';
 
 let cwd: string;
@@ -85,7 +85,7 @@ describe('collectSummaryFacts: manifests', () => {
     expect(f.extensions).toEqual(['.php']);
   });
 
-  it('prefers a theme style.css header and lets it fill the version composer.json lacks', () => {
+  it('lets a theme style.css header fill the version composer.json lacks', () => {
     put('style.css', '/*\nTheme Name: Kurs Theme\nVersion: 1.4.0\nLicense: GPL-2.0-or-later\n*/\n');
     put('composer.json', { name: 'acme/theme', require: {} });
     expect(readWordPressHeader(cwd)).toMatchObject({ type: 'theme', name: 'Kurs Theme', version: '1.4.0' });
@@ -109,6 +109,34 @@ describe('collectSummaryFacts: manifests', () => {
     expect(readWordPressHeader(cwd)).toMatchObject({ type: 'plugin', file: 'plugin.php', name: 'Fallback Plugin' });
     const f = collectSummaryFacts(cwd, { runCapture: noGit });
     expect(f).toMatchObject({ name: 'demo', version: '0.1.0', manifest: 'package.json', manifests: ['package.json', 'wordpress'] });
+  });
+
+  it('joins an array license with OR', () => {
+    put('package.json', { name: 'demo', license: ['MIT', 'Apache-2.0'] });
+    expect(collectSummaryFacts(cwd, { runCapture: noGit }).license).toBe('MIT OR Apache-2.0');
+  });
+
+  it('reads a CRLF theme header whose last field shares the line with */', () => {
+    put('style.css', '/*\r\nTheme Name: T\r\nVersion: 1.4.0 */\r\n');
+    expect(readWordPressHeader(cwd)).toMatchObject({ type: 'theme', name: 'T', version: '1.4.0' });
+  });
+
+  it('leads with the WordPress theme when it is the only manifest', () => {
+    put('style.css', '/*\nTheme Name: Solo Theme\nVersion: 2.0.0\n*/\n');
+    const f = collectSummaryFacts(cwd, { runCapture: noGit });
+    expect(f).toMatchObject({ name: 'Solo Theme', version: '2.0.0', manifest: 'wordpress', manifests: ['wordpress'] });
+    expect(f.extensions).toEqual(['.php']);
+  });
+
+  it('counts JS extensions only for a package.json + composer.json project (first manifest decides)', () => {
+    put('package.json', { name: 'front' });
+    put('composer.json', { name: 'acme/back' });
+    put('src/a.ts', 'a\n');
+    put('src/b.php', '<?php\n');
+    const f = collectSummaryFacts(cwd, { runCapture: noGit });
+    expect(f.extensions).not.toContain('.php');
+    expect(f.extensions).toContain('.ts');
+    expect(f.sourceFiles).toBe(1);
   });
 
   it('records a warning for a broken manifest instead of throwing', () => {
@@ -167,6 +195,40 @@ describe('collectSummaryFacts: repository facts', () => {
     const f = collectSummaryFacts(cwd, { runCapture: noGit });
     expect(f.releases).toBe(0);
     expect(f.releasesNote).toBe('git unavailable');
+  });
+
+  it('says "not a git repository" when git runs but fails', () => {
+    const notRepo = (): RunResult => ({ status: 128, stdout: '', stderr: 'fatal: not a git repository (or any of the parent directories): .git' });
+    expect(collectSummaryFacts(cwd, { runCapture: notRepo }).releasesNote).toBe('not a git repository');
+  });
+
+  it('does not call a dubious-ownership failure "not a git repository"', () => {
+    const dubious = (): RunResult => ({ status: 128, stdout: '', stderr: "fatal: detected dubious ownership in repository at '/x'" });
+    expect(collectSummaryFacts(cwd, { runCapture: dubious }).releasesNote).toBe('git failed');
+  });
+
+  it('reports an ENOBUFS ls-files failure as a warning and walks instead', () => {
+    put('package.json', { name: 'demo' });
+    put('src/a.ts', 'a\n');
+    const big = (_cmd: string, args: string[]): RunResult =>
+      args[0] === 'ls-files' ? { status: 127, stdout: '', stderr: 'spawnSync git ENOBUFS', errorCode: 'ENOBUFS' } : { status: 0, stdout: '', stderr: '' };
+    const f = collectSummaryFacts(cwd, { runCapture: big });
+    expect(f.fileSource).toBe('walk');
+    expect(f.sourceFiles).toBe(1);
+    expect(f.warnings).toContain('git ls-files: output exceeds the 64 MB buffer; files counted by a directory walk');
+  });
+
+  it.each([
+    [{ status: 127, stdout: '', stderr: 'spawn git ENOENT', errorCode: 'ENOENT' }, 'git unavailable'],
+    [{ status: 127, stdout: '', stderr: '' }, 'git unavailable'],
+    [{ status: 127, stdout: '', stderr: '', errorCode: 'ENOBUFS' }, 'git output exceeds the 64 MB buffer'],
+    [{ status: 128, stdout: '', stderr: 'fatal: not a git repository (or any of the parent directories): .git' }, 'not a git repository'],
+    [{ status: 129, stdout: '', stderr: 'Fatal: Not A Git Repository' }, 'not a git repository'],
+    [{ status: 128, stdout: '', stderr: "fatal: detected dubious ownership in repository at '/x'" }, 'git failed'],
+    [{ status: 1, stdout: '', stderr: 'error: cannot open .git/index: Permission denied' }, 'git failed'],
+    [{ status: 128, stdout: '', stderr: 'fatal' }, 'git failed'],
+  ] as [RunResult, string][])('gitFailure(%j) = %s', (r, text) => {
+    expect(gitFailure(r)).toBe(text);
   });
 
   it('counts workflow files', () => {

@@ -14,6 +14,20 @@ describe('runCapture', () => {
   });
 });
 
+describe('runCapture buffer limit', () => {
+  it('reports ENOBUFS distinctly when the output exceeds maxBuffer', () => {
+    const r = runCapture(process.execPath, ['-e', "process.stdout.write('x'.repeat(2048))"], process.cwd(), { maxBuffer: 1024 });
+    expect(r.errorCode).toBe('ENOBUFS');
+    expect(r.status).toBe(127);
+  });
+
+  it('captures normal output with the default buffer', () => {
+    const r = runCapture(process.execPath, ['-e', "process.stdout.write('ok')"], process.cwd());
+    expect(r).toMatchObject({ status: 0, stdout: 'ok' });
+    expect(r.errorCode).toBeUndefined();
+  });
+});
+
 describe('resolveBacklogBin', () => {
   it('returns null when nowhere to be found (fixture cwd)', () => {
     // Not guaranteed on machines with global backlog; acceptable flake-guard:
