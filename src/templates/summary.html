@@ -564,7 +564,7 @@ __SBL_TOKENS_CSS__
     }).concat(outs(n.id).map(function (e) {
       return '<li><span class="arr">→</span><button type="button" data-sel="' + esc(e.to) + '">' + esc(nodeById[e.to].label) + '</button><span class="el">' + esc(e.label) + '</span></li>';
     })).join('');
-    var badge = has(badgeByNode, n.id) ? '<span class="num" title="Highlight ' + badgeByNode[n.id] + '">' + badgeByNode[n.id] + '</span>' : '';
+    var badge = has(badgeByNode, n.id) ? '<span class="num" title="Highlight ' + esc(badgeByNode[n.id]) + '">' + esc(badgeByNode[n.id]) + '</span>' : '';
     return '<div class="ptitle"><h3><i class="kd" style="--kc:' + color(k.color) + '"></i>' + esc(n.label) + '</h3>' +
       (n.sub ? '<span class="sub">' + esc(n.sub) + '</span>' : '') + badge + closeBtn() + '</div>' +
       '<div class="pgrid"><div>' +
@@ -669,7 +669,7 @@ __SBL_TOKENS_CSS__
     if (A && A.highlights.length) {
       html += '<section class="sec"><h2>Highlights <small>numbers in the diagram</small></h2><ol class="specs">' +
         A.highlights.map(function (h) {
-          return '<li><span class="num">' + h.badge + '</span><button class="st" type="button" data-sel="' + esc(h.node) + '" data-scroll>' + esc(h.title) + '</button><span class="sd">' + esc(h.text) + '</span></li>';
+          return '<li><span class="num">' + esc(h.badge) + '</span><button class="st" type="button" data-sel="' + esc(h.node) + '" data-scroll>' + esc(h.title) + '</button><span class="sd">' + esc(h.text) + '</span></li>';
         }).join('') + '</ol></section>';
     }
     html += '<section class="sec"><h2>Open work <small>' + S.tasks.length + (S.tasks.length === 1 ? ' task' : ' tasks') + '</small></h2>' +

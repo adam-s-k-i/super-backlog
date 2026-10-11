@@ -117,7 +117,7 @@ describe('renderDashboard v2 structure', () => {
       expect(aside).toContain(`href="#sec-${num}"`);
     }
     for (const [, label] of SECTIONS) {
-      expect(aside).toContain(label.replace('&', '&amp;'));
+      expect(aside).toContain(label.replaceAll('&', '&amp;'));
     }
   });
 
@@ -136,7 +136,7 @@ describe('renderDashboard v2 structure', () => {
       expect(section).toContain('<div class="sec-head">');
       expect(section).toContain(`>${num}<`);
       expect(section).toContain('<h2>');
-      expect(section).toContain(label.replace('&', '&amp;'));
+      expect(section).toContain(label.replaceAll('&', '&amp;'));
       expect(section).toContain('class="tagline"');
     }
   });

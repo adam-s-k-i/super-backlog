@@ -1,9 +1,14 @@
 ﻿import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
+function versionHeader(version, flags) {
+  const escaped = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^## \\[[v]?${escaped}\\]`, flags);
+}
+
 export function verifyRelease({ version, changelogText, remoteTagExists }) {
   const problems = [];
-  const header = new RegExp(`^## \\[[v]?${version.replace(/\./g, '\\.')}\\]`, 'm');
+  const header = versionHeader(version, 'm');
   if (!header.test(changelogText)) problems.push(`CHANGELOG.md has no entry for ${version}`);
   if (!remoteTagExists) problems.push(`remote tag v${version} does not exist`);
   return problems;
@@ -11,9 +16,7 @@ export function verifyRelease({ version, changelogText, remoteTagExists }) {
 
 export function extractChangelogSection(text, version) {
   const lines = text.split(/\r?\n/);
-  const startIdx = lines.findIndex((l) =>
-    new RegExp(`^## \\[[v]?${version.replace(/\./g, '\\.')}\\]`).test(l)
-  );
+  const startIdx = lines.findIndex((l) => versionHeader(version).test(l));
   if (startIdx === -1) return null;
   const endIdx = lines.findIndex((l, i) => i > startIdx && /^## \[/.test(l));
   return lines.slice(startIdx + 1, endIdx === -1 ? lines.length : endIdx).join('\n').trim();
