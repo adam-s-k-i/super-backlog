@@ -145,7 +145,27 @@ describe('detectDrift', () => {
     const fs = fsDeps(ALL_FILES, ALL_DIRS);
     const cases: [ReturnType<typeof git>, string][] = [
       [git({ log: { status: 127, stdout: '', stderr: 'spawn git ENOENT' } }), 'stale-file skipped: git unavailable'],
+      [git({ log: { status: 1, stdout: '', stderr: 'spawn git EACCES', errorCode: 'EACCES' } }), 'stale-file skipped: git unavailable'],
+      [
+        git({ log: { status: 127, stdout: '', stderr: 'spawnSync git ENOBUFS', errorCode: 'ENOBUFS' } }),
+        'stale-file skipped: git output exceeds the 64 MB buffer',
+      ],
       [git({ log: { status: 128, stdout: '', stderr: 'fatal: not a git repository' } }), 'stale-file skipped: not a git repository'],
+      [
+        git({ log: { status: 128, stdout: '', stderr: 'fatal: Not A Git Repository (or any of the parent directories): .git\n' } }),
+        'stale-file skipped: not a git repository',
+      ],
+      [
+        git({
+          log: {
+            status: 128,
+            stdout: '',
+            stderr: "\nfatal: detected dubious ownership in repository at '/repo'\nTo add an exception for this directory, call:\n",
+          },
+        }),
+        "stale-file skipped: git failed (fatal: detected dubious ownership in repository at '/repo')",
+      ],
+      [git({ log: { status: 128, stdout: '', stderr: '' } }), 'stale-file skipped: git failed'],
       [git({ log: { status: 0, stdout: '\n', stderr: '' } }), 'stale-file skipped: architecture.yml has no commit history'],
       [git({ count: { status: 129, stdout: '', stderr: 'usage' } }), 'stale-file skipped: git rev-list failed (exit 129)'],
       [git({ count: { status: 0, stdout: 'n/a\n', stderr: '' } }), 'stale-file skipped: git rev-list printed no count'],

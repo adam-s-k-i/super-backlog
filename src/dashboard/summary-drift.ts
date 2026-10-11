@@ -6,6 +6,7 @@ import { join } from 'node:path';
 
 import { runCapture as defaultRunCapture, type RunResult } from '../lib/run.js';
 import { isDone } from './metrics.js';
+import { gitFailure } from './summary-facts.js';
 import { ARCHITECTURE_PATH, type Architecture } from './summary-schema.js';
 
 /** A stale-file finding needs at least this many commits since the file's last commit. */
@@ -61,6 +62,10 @@ export function driftCount(n: number): string {
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+function firstLine(text: string): string {
+  return text.trim().split(/\r?\n/)[0] ?? '';
 }
 
 function defaultIsDirectory(absPath: string): boolean {
@@ -131,12 +136,10 @@ function staleFile(
   notes: string[],
 ): DriftFinding[] {
   const log = run('git', ['log', '-1', '--format=%H', '--', ARCHITECTURE_PATH], cwd);
-  if (log.status === 127) {
-    notes.push('stale-file skipped: git unavailable');
-    return [];
-  }
   if (log.status !== 0) {
-    notes.push('stale-file skipped: not a git repository');
+    const reason = gitFailure(log);
+    const detail = reason === 'git failed' ? firstLine(log.stderr) : '';
+    notes.push(`stale-file skipped: ${reason}${detail ? ` (${detail})` : ''}`);
     return [];
   }
   const sha = log.stdout.trim();
