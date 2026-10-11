@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.10.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.9.0...v1.10.0) (2026-10-11)
+
+
+### Features
+
+* router v2 ([#88](https://github.com/adam-s-k-i/super-backlog/issues/88)) ([eac12ec](https://github.com/adam-s-k-i/super-backlog/commit/eac12ec384ad3b1e0ffff6e7c1498e5c411af325))
+
 ## [1.9.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.8.0...v1.9.0) (2026-10-10)
 
 
