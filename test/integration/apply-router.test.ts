@@ -128,6 +128,18 @@ describe('applyRouter', () => {
     expect(read(cwd, CONFIG)).toBe(pretty({ version: 2, enabled: true, tiers: { opencode: { standard: 'i/w' } } }));
   });
 
+  it('leaves installed agents alone while models.json has a newer version', () => {
+    const cwd = freshDir();
+    put(cwd, CONFIG, JSON.stringify({ version: 3, enabled: true, tiers: { claude: { top: 'future' } } }));
+    const agent = '---\nname: sbl-top\nmodel: future\n---\nbody\n';
+    put(cwd, '.claude/agents/sbl-top.md', agent);
+    expect(applyRouter(cwd, opts())).toEqual([
+      'warning: .super-backlog/models.json has version 3, which this super-backlog does not support - left unchanged; upgrade super-backlog or delete it',
+    ]);
+    expect(read(cwd, '.claude/agents/sbl-top.md')).toBe(agent);
+    expect(existsSync(join(cwd, '.claude/agents/sbl-light.md'))).toBe(false);
+  });
+
   it('never rewrites a file with a newer version and warns instead', () => {
     const cwd = freshDir();
     const v3 = JSON.stringify({ version: 3, enabled: true, tiers: { claude: { top: 'future' } } });
