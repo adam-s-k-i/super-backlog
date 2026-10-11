@@ -1,5 +1,5 @@
 // test/unit/atomic.test.ts
-import { mkdtempSync, existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, existsSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -74,6 +74,15 @@ describe('atomicWrite', () => {
       await failRenames(2, (src) => src.endsWith('.tmp') || src === p);
       expect(() => atomicWrite(p, 'two')).toThrow(/EPERM/);
       expect(readFileSync(p, 'utf8')).toBe('one');
+      expect(readdirSync(dir)).toEqual(['x.md']);
+    });
+
+    it('never moves a directory aside that sits where the file should go', () => {
+      const p = join(dir, 'x.md');
+      mkdirSync(join(p, 'inner'), { recursive: true });
+      expect(() => atomicWrite(p, 'two')).toThrow();
+      expect(statSync(p).isDirectory()).toBe(true);
+      expect(readdirSync(p)).toEqual(['inner']);
       expect(readdirSync(dir)).toEqual(['x.md']);
     });
 

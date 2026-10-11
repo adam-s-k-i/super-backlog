@@ -1,5 +1,5 @@
 // src/lib/atomic.ts
-import { existsSync, mkdirSync, renameSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, statSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 export function atomicWrite(filePath: string, contents: string): void {
@@ -8,14 +8,19 @@ export function atomicWrite(filePath: string, contents: string): void {
   writeFileSync(tmp, contents, 'utf8');
   try {
     renameSync(tmp, filePath);
-  } catch {
+  } catch (err) {
     // Windows rename over an existing file can fail on some filesystems:
     // move the target aside, retry, and put it back if the retry fails too.
-    replaceViaBackup(tmp, filePath);
+    replaceViaBackup(tmp, filePath, err);
   }
 }
 
-function replaceViaBackup(tmp: string, filePath: string): void {
+function replaceViaBackup(tmp: string, filePath: string, renameError: unknown): void {
+  if (statSync(filePath, { throwIfNoEntry: false })?.isDirectory()) {
+    // never move a directory out of the way to put a file in its place
+    rmSync(tmp, { force: true });
+    throw renameError;
+  }
   const backup = filePath + '.sbl-bak';
   let movedAside = false;
   try {
