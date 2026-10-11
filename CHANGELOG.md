@@ -3,6 +3,15 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.10.1](https://github.com/adam-s-k-i/super-backlog/compare/v1.10.0...v1.10.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* harden project summary parser, schema, facts, layout and render ([#89](https://github.com/adam-s-k-i/super-backlog/issues/89)) ([64aa58d](https://github.com/adam-s-k-i/super-backlog/commit/64aa58d45795bfbb60ccc45292b75f839ab29ece))
+* **models:** router v2 hardening from review findings ([#91](https://github.com/adam-s-k-i/super-backlog/issues/91)) ([bcb79de](https://github.com/adam-s-k-i/super-backlog/commit/bcb79ded0bd5ddfc615dace4dd11e1ba53c39c82))
+* **summary:** honest git failure wording in the drift stale-file check ([#93](https://github.com/adam-s-k-i/super-backlog/issues/93)) ([ccae695](https://github.com/adam-s-k-i/super-backlog/commit/ccae695aca5c5f15d82d15a1a1fb3f7da950cf64))
+
 ## [1.10.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.9.0...v1.10.0) (2026-10-11)
 
 
