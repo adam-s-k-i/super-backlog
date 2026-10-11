@@ -37,7 +37,7 @@ function refreshBlock(cwd: string, version: string): string[] {
   if (!existsSync(path)) return [];
   const current = readFileSync(path, 'utf8');
   if (!stripOwned(current).removed) return [];
-  const injected = injectBlock(current, version, agentsBlockContents(version));
+  const injected = injectBlock(current, version, agentsBlockContents(version, cwd));
   if (injected.action === 'unchanged') return [];
   atomicWrite(path, injected.content);
   return ['updated AGENTS.md'];

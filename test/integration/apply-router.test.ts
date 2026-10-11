@@ -40,6 +40,16 @@ afterEach(() => {
 });
 
 describe('applyRouter', () => {
+  it('renders configured examples into the managed block', () => {
+    const cwd = freshDir();
+    put(cwd, CONFIG, pretty({ version: 2, enabled: true, tiers: { claude: { top: 'mythos' } } }));
+    put(cwd, 'AGENTS.md', injectBlock('', '9.9.9', 'old body').content);
+    expect(applyRouter(cwd, opts({ block: true }))).toEqual(['updated AGENTS.md']);
+    const agents = read(cwd, 'AGENTS.md');
+    expect(agents).toContain('Examples (from `.super-backlog/models.json`; change them with');
+    expect(agents).toContain('top `mythos`');
+  });
+
   it('install writes four agents per harness with concrete models', () => {
     const cwd = freshDir();
     put(cwd, CONFIG, pretty({ version: 2, enabled: true, tiers: { opencode: { light: 'o/light' } } }));

@@ -24,6 +24,9 @@ describe('model router e2e lifecycle', () => {
         expect(existsSync(join(cwd, `.opencode/agents/sbl-${t}.md`))).toBe(true);
       }
       expect(existsSync(join(cwd, '.opencode/plugins/sbl-model-router.js'))).toBe(false);
+      const agentsMd = readFileSync(join(cwd, 'AGENTS.md'), 'utf8').replace(/\r\n/g, '\n');
+      expect(agentsMd).toContain('Examples (from `.super-backlog/models.json`; change them with');
+      expect(agentsMd).toContain('top `fable`');
 
       const uninstall = await runUninstall(cwd, args({}), { confirm: () => false, removeGlobal: () => 0 });
       expect(uninstall).toBe(0);

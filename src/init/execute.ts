@@ -147,7 +147,7 @@ function applyMergeJson(cwd: string, op: JsonOp): boolean {
 function applyInjectAgentsBlock(cwd: string, ctx: ExecuteContext): boolean {
   const path = join(cwd, 'AGENTS.md');
   const current = readTextIfExists(path) ?? '';
-  const injected = injectBlock(current, ctx.version, agentsBlockContents(ctx.version));
+  const injected = injectBlock(current, ctx.version, agentsBlockContents(ctx.version, cwd));
   if (injected.action === 'unchanged') return false;
   atomicWrite(path, injected.content);
   return true;

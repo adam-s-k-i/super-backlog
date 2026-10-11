@@ -1,7 +1,10 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { agentsBlockContents } from '../../src/init/planner.js';
+import { DEFAULT_MODEL_EXAMPLES } from '../../src/models/render.js';
 import { renderAgentFile } from '../../src/models/agents.js';
 
 const tplDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src', 'templates');
@@ -47,10 +50,32 @@ describe('workflow-block.md', () => {
     expect(t).toMatch(/"Independent\s+check"/);
     expect(t).toContain('`backlog/docs/critical-areas.md`');
     expect(t).toContain('6. Delegate by tier — every subtask goes to the cheapest model that solves it reliably (see "Model tiers and delegation" below).');
-    expect(t).toContain('- Claude Code: the Agent tool\'s `model` parameter — light `haiku`, standard');
-    expect(t).toContain('`sonnet`, strong `opus`, top = the strongest available model (e.g. Fable).');
-    expect(t).toContain('OpenCode:');
-    expect(t).toContain('Other harnesses:');
+    expect(t).toContain('{{MODEL_EXAMPLES}}');
+    expect(t).not.toContain('Examples (current as of this super-backlog release):');
+  });
+  it('renders today\'s example paragraph byte-identically without a router config', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'sbl-tpl-'));
+    try {
+      const rendered = agentsBlockContents('9.9.9', cwd);
+      expect(rendered).toContain(
+        [
+          'Examples (current as of this super-backlog release):',
+          '',
+          '- Claude Code: the Agent tool\'s `model` parameter — light `haiku`, standard',
+          '  `sonnet`, strong `opus`, top = the strongest available model (e.g. Fable).',
+          '- OpenCode: set the tier\'s model on the subagent, e.g. the `model` field of',
+          '  an agent in `.opencode/agents/`.',
+          '- Other harnesses: the equivalent per-subagent model setting.',
+        ].join('\n'),
+      );
+      expect(rendered).not.toContain('{{');
+      // nothing else in the block changes: undoing both substitutions gives the template back
+      expect(rendered.replace(DEFAULT_MODEL_EXAMPLES, '{{MODEL_EXAMPLES}}').replace(/9\.9\.9/g, '{{VERSION}}')).toBe(
+        t.replace(/\r\n/g, '\n'),
+      );
+    } finally {
+      rmSync(cwd, { recursive: true, force: true });
+    }
   });
   it('binds rule 8: respect the project profile, only with consent', () => {
     expect(t).toContain(
