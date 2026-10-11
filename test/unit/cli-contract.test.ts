@@ -6,7 +6,7 @@ vi.mock('../../src/lib/version-check.js', () => ({
     await new Promise((r) => setTimeout(r, 5));
     deps.log('HINT-MARKER');
   }),
-  defaultFetchLatest: vi.fn(async () => null),
+  spawnVersionRefresh: vi.fn(),
 }));
 
 vi.mock('../../src/commands/dashboard.js', () => ({
