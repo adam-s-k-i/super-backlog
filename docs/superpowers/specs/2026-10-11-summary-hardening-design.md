@@ -154,7 +154,9 @@ sets `locApprox` and continues without reading the file. A mocked
 
 - `'git output exceeds the 64 MB buffer'` for errorCode ENOBUFS
 - `'git unavailable'` for status 127 or any other spawn error code
-- `'not a git repository'` for any other non-zero status, for example 128
+- `'not a git repository'` only when git's stderr matches
+  `/not a git repository/i`
+- `'git failed'` for any other failure, for example another non-zero status
 
 **#4, cleanup.**
 
@@ -306,8 +308,9 @@ as `dash.html` is never deleted.
   - the command group sizes
   - the stack names
   - the source lines
-- `test/unit/summary-client.test.ts` runs under `happy-dom` (version 20.14.6,
-  devDependency). Rationale:
+- `test/unit/summary-client.test.ts` runs under `happy-dom` (version 20.14.5,
+  pinned exactly, devDependency; 20.14.6 is too new, because only releases at
+  least two weeks old are used). Rationale:
   - The repo has no DOM environment yet.
   - happy-dom has a handful of dependencies against about 20 for jsdom, and it
     starts faster.
