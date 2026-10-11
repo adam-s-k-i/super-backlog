@@ -403,6 +403,10 @@ __SBL_TOKENS_CSS__
   .phase-cmd:disabled { opacity: .6; cursor: default; }
   .models-head-title { font-weight: 700; }
   .models-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; flex-wrap: wrap; }
+  .models-table { width: 100%; border-collapse: collapse; margin: 6px 0 14px; font-size: 13px; }
+  .models-table th, .models-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  .models-table td { font-family: var(--mono); overflow-wrap: anywhere; }
+  .models-table td.empty { color: var(--dim); }
 
   /* ---------- Dependency flow ---------- */
   .sub-head {
@@ -485,7 +489,7 @@ __SBL_TOKENS_CSS__
   <div id="quickactions" class="mount">
     <div class="cmd-row" id="cmd-buttons">
       <button type="button" class="cmd-btn" id="backlog-btn"><span class="cmd-title">Backlog</span><span class="cmd-line">board &middot; tasks &middot; docs &middot; decisions</span></button>
-      <button type="button" class="cmd-btn" id="models-btn"><span class="cmd-title">Model Router</span><span class="cmd-line">workhorse &middot; budget &middot; tiers</span></button>
+      <button type="button" class="cmd-btn" id="models-btn"><span class="cmd-title">Model Router</span><span class="cmd-line">light &middot; standard &middot; strong &middot; top</span></button>
       <a class="cmd-btn" id="docs-btn" href="https://adam-s-k-i.github.io/super-backlog/" target="_blank" rel="noreferrer"><span class="cmd-title">Documentation</span><span class="cmd-line">quickstart &middot; phases &middot; guides</span></a>
     </div>
     <p class="hint">Opens the Backlog.md browser in an overlay &mdash; served locally per project, started on demand.</p>
@@ -899,11 +903,22 @@ __SBL_TOKENS_CSS__
   var modelsBtn = document.getElementById('models-btn');
   var modelsDialog = document.getElementById('models-dialog');
   var modelsBody = document.getElementById('models-body');
-  function tierCell(label, value) {
-    var c = el('div', 'meta-cell');
-    c.appendChild(el('span', 'meta-label', label));
-    c.appendChild(el('span', 'meta-value' + (value ? '' : ' empty'), value || '—'));
-    return c;
+  var TIER_ROWS = [['light', 'Light'], ['standard', 'Standard'], ['strong', 'Strong'], ['top', 'Top']];
+  function modelsTable(tiers) {
+    var table = el('table', 'models-table');
+    var head = el('tr');
+    ['Tier', 'Claude Code', 'OpenCode'].forEach(function (h) { head.appendChild(el('th', null, h)); });
+    table.appendChild(head);
+    var claude = (tiers && tiers.claude) || {};
+    var opencode = (tiers && tiers.opencode) || {};
+    TIER_ROWS.forEach(function (row) {
+      var tr = el('tr');
+      tr.appendChild(el('th', null, row[1]));
+      tr.appendChild(el('td', null, claude[row[0]] || '—'));
+      tr.appendChild(el('td', opencode[row[0]] ? null : 'empty', opencode[row[0]] || 'session model'));
+      table.appendChild(tr);
+    });
+    return table;
   }
   function actionButton(cmdLine, label, onClick) {
     var b = el('button', 'phase-cmd');
@@ -912,15 +927,6 @@ __SBL_TOKENS_CSS__
     b.appendChild(el('span', 'cmd-title', label));
     b.addEventListener('click', onClick);
     return b;
-  }
-  function renderTiers(mount, tiers) {
-    mount.textContent = '';
-    if (!tiers || tiers.error || (!tiers.workhorse && !tiers.budget)) {
-      mount.appendChild(el('p', 'hint', 'Discovery failed — is the OpenCode CLI available?'));
-      return;
-    }
-    mount.appendChild(tierCell('Workhorse', tiers.workhorse));
-    mount.appendChild(tierCell('Budget', tiers.budget));
   }
   function renderModelsDialog(info) {
     if (!modelsBody) return;
@@ -946,18 +952,16 @@ __SBL_TOKENS_CSS__
       cmdFeedback(discover, 'running…');
       fetch('api/models/discover', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
         .then(function (res) { return res.json(); })
-        .then(function (r) { renderTiers(document.getElementById('models-tiers'), r); })
+        .then(function (r) { if (r && r.ok) renderModelsDialog(r); else cmdFeedback(discover, 'no OpenCode ✗'); })
         .catch(function () { cmdFeedback(discover, 'failed ✗'); })
         .then(function () { discover.disabled = false; });
     });
     row.appendChild(discover);
     modelsBody.appendChild(row);
-    var tiers = el('div', 'detail-meta');
-    tiers.id = 'models-tiers';
-    var resolved = (info.config && info.config.resolved) || {};
-    tiers.appendChild(tierCell('Workhorse', resolved.workhorse));
-    tiers.appendChild(tierCell('Budget', resolved.budget));
-    modelsBody.appendChild(tiers);
+    modelsBody.appendChild(modelsTable(info.tiers));
+    var setCmd = 'sbl models set <harness> <tier> <model>';
+    var setHint = actionButton(setCmd, 'copy', function () { copyCommand(setHint, setCmd); });
+    modelsBody.appendChild(setHint);
     if (!info.installed) {
       modelsBody.appendChild(el('p', 'hint', 'Install the router first, then enable it:'));
       var hint = actionButton('sbl init --models', 'copy', function () { copyCommand(hint, 'sbl init --models'); });

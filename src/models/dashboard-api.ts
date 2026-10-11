@@ -2,7 +2,10 @@
 import { existsSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
-import { loadConfig } from './config.js';
+import { KIT_VERSION } from '../lib/version.js';
+import { applyRouter } from './apply.js';
+import { effectiveTiers, loadConfig } from './config.js';
+import { CONFIG_PATH } from './defaults.js';
 import { discoverModels } from './discovery.js';
 import { saveDiscovery, setRouterEnabled } from './install.js';
 
@@ -11,8 +14,13 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(JSON.stringify(body));
 }
 
-function routerInstalled(cwd: string): boolean {
-  return existsSync(join(cwd, '.super-backlog', 'models.json'));
+function snapshot(cwd: string) {
+  const config = loadConfig(cwd);
+  return { config, tiers: effectiveTiers(config), installed: existsSync(join(cwd, CONFIG_PATH)) };
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }
 
 export interface ModelApiDeps {
@@ -29,7 +37,7 @@ export function createModelApiHandler(
     const method = req.method ?? 'GET';
 
     if (method === 'GET' && url === '/api/models') {
-      sendJson(res, 200, { config: loadConfig(cwd), installed: routerInstalled(cwd), status: 'ok' });
+      sendJson(res, 200, { ...snapshot(cwd), status: 'ok' });
       return;
     }
 
@@ -37,23 +45,27 @@ export function createModelApiHandler(
       const enabled = url === '/api/models/enable';
       try {
         setRouterEnabled(cwd, enabled);
-        sendJson(res, 200, { ok: true, config: loadConfig(cwd), installed: routerInstalled(cwd) });
+        applyRouter(cwd, { install: enabled, block: true, version: KIT_VERSION });
+        sendJson(res, 200, { ok: true, ...snapshot(cwd) });
       } catch (err) {
-        sendJson(res, 500, { ok: false, message: err instanceof Error ? err.message : String(err) });
+        sendJson(res, 500, { ok: false, message: errorMessage(err) });
       }
       return;
     }
 
     if (method === 'POST' && url === '/api/models/discover') {
       const result = await discover(cwd);
-      if (result) {
-        try {
-          saveDiscovery(cwd, result.discoveredAt, result.tiers);
-        } catch {
-          // discovery result still returned; the modal just won't remember it
-        }
+      if (!result) {
+        sendJson(res, 200, { ok: false, error: 'discovery failed' });
+        return;
       }
-      sendJson(res, 200, result ?? { error: 'discovery failed' });
+      try {
+        saveDiscovery(cwd, result.discoveredAt, result.tiers);
+        applyRouter(cwd, { install: false, block: true, version: KIT_VERSION });
+        sendJson(res, 200, { ok: true, ...snapshot(cwd) });
+      } catch (err) {
+        sendJson(res, 500, { ok: false, message: errorMessage(err) });
+      }
       return;
     }
 

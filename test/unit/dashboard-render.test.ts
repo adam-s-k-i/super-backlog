@@ -799,6 +799,24 @@ describe('models modal', () => {
   it('honours prefers-reduced-motion for the models dialog', () => {
     expect(html).toMatch(/#models-dialog\[open\]\s*\{\s*animation:\s*none/);
   });
+  it('shows the four tiers as a Claude Code / OpenCode table', () => {
+    const app = appScript();
+    expect(app).toContain('function modelsTable(');
+    expect(app).toContain("['light', 'Light'], ['standard', 'Standard'], ['strong', 'Strong'], ['top', 'Top']");
+    expect(app).toContain("'Claude Code'");
+    expect(app).toContain("'session model'");
+    expect(app).toContain('modelsTable(info.tiers)');
+    expect(app).not.toMatch(/workhorse|budget/i);
+    expect(html).toContain('.models-table {');
+  });
+
+  it('offers a copyable sbl models set hint', () => {
+    expect(appScript()).toContain("'sbl models set <harness> <tier> <model>'");
+  });
+
+  it('names the four tiers in the button subtitle', () => {
+    expect(html).toContain('<span class="cmd-line">light &middot; standard &middot; strong &middot; top</span>');
+  });
 });
 
 describe('drafts rendering', () => {
