@@ -10,8 +10,10 @@ export const ARCHITECTURE_PATH = 'backlog/docs/architecture.yml';
 export const COLOR_TOKENS = ['accent', 'ok', 'warn', 'violet', 'rose', 'muted', 'dim'] as const;
 export type ColorToken = (typeof COLOR_TOKENS)[number];
 
-export const ID_RE = /^[a-z][a-z0-9-]{0,31}$/;
-const STEP_RE = /^([a-z][a-z0-9-]{0,31})>([a-z][a-z0-9-]{0,31})$/;
+const ID_BODY = '[a-z][a-z0-9-]{0,31}';
+const ID_PATTERN_MESSAGE = 'must match ^[a-z][a-z0-9-]{0,31}$';
+export const ID_RE = new RegExp(`^${ID_BODY}$`);
+const STEP_RE = new RegExp(`^(${ID_BODY})>(${ID_BODY})$`);
 const FLOW_COLORS: readonly ColorToken[] = ['accent', 'ok', 'warn', 'violet', 'rose'];
 
 export const LIMITS = {
@@ -45,6 +47,7 @@ export const LIMITS = {
   stack: 40,
   stackName: 40,
   stackGroup: 24,
+  stackPackage: 214, // npm's maximum package name length
   stackRole: 120,
   stackVersion: 40,
   commandGroups: 6,
@@ -62,6 +65,11 @@ export interface ArchZone {
   label: string;
   cols: [number, number];
   rows: [number, number];
+}
+
+export interface ArchGrid {
+  cols: number;
+  rows: number;
 }
 
 export interface ArchCommand {
@@ -274,7 +282,7 @@ function readKinds(c: Collector, root: YamlMap): Record<string, ArchKind> {
   for (const id of keys) {
     const path = `kinds.${id}`;
     if (!ID_RE.test(id)) {
-      c.error(path, 'kind id must match ^[a-z][a-z0-9-]{0,31}$');
+      c.error(path, `kind id ${ID_PATTERN_MESSAGE}`);
       continue;
     }
     const v = raw[id];
@@ -303,28 +311,8 @@ function inRange(n: number, max: number): boolean {
   return n >= 0 && n < max;
 }
 
-/**
- * Validates parsed YAML against the architecture schema. `taskIds` (from the
- * backlog) enables the unknown-task-id warning; pass undefined to skip it.
- */
-export function validateArchitecture(
-  value: YamlValue,
-  taskIds?: readonly string[],
-): { architecture: Architecture | null; problems: SchemaProblem[] } {
-  const c = new Collector();
-  if (!isMap(value)) {
-    c.error('(root)', 'expected a mapping with schema, pitch, grid, nodes and edges');
-    return { architecture: null, problems: c.problems };
-  }
-  const root = value;
-  c.unknownKeys(root, '', ['schema', 'pitch', 'grid', 'kinds', 'zones', 'nodes', 'edges', 'flows', 'highlights', 'stack', 'commands', 'tasks']);
-
-  if (root.schema === undefined || root.schema === null) c.error('schema', 'required (use schema: 1)');
-  else if (root.schema !== 1) c.error('schema', 'unsupported schema version (expected 1)');
-
-  const pitch = c.str(root, 'pitch', '', LIMITS.pitch, { required: true, singleLine: false });
-
-  let grid: { cols: number; rows: number } | null = null;
+function readGrid(c: Collector, root: YamlMap): { grid: ArchGrid | null; gridText: string } {
+  let grid: ArchGrid | null = null;
   if (!isMap(root.grid)) {
     c.error('grid', root.grid === undefined ? 'required' : 'expected { cols, rows }');
   } else {
@@ -337,10 +325,10 @@ export function validateArchitecture(
     if (ok(cols) && ok(rows)) grid = { cols, rows };
   }
   const gridText = grid ? `${grid.cols}x${grid.rows}` : '';
+  return { grid, gridText };
+}
 
-  const kinds = readKinds(c, root);
-
-  // zones
+function readZones(c: Collector, root: YamlMap, grid: ArchGrid | null, gridText: string): ArchZone[] {
   const zones: ArchZone[] = [];
   c.list(root, 'zones', '', LIMITS.zones).forEach((z, i) => {
     const path = `zones[${i}]`;
@@ -370,8 +358,16 @@ export function validateArchitecture(
     }
     zones.push({ label, cols, rows });
   });
+  return zones;
+}
 
-  // nodes
+function readNodes(
+  c: Collector,
+  root: YamlMap,
+  kinds: Record<string, ArchKind>,
+  grid: ArchGrid | null,
+  gridText: string,
+): { nodes: ArchNode[]; nodeIds: ReadonlySet<string> } {
   const nodes: ArchNode[] = [];
   const nodeIds = new Set<string>();
   const cells = new Map<string, string>();
@@ -385,7 +381,7 @@ export function validateArchitecture(
     let ok = true;
     const id = n.id;
     if (typeof id !== 'string' || !ID_RE.test(id)) {
-      c.error(`${path}.id`, id === undefined ? 'required' : 'must match ^[a-z][a-z0-9-]{0,31}$');
+      c.error(`${path}.id`, id === undefined ? 'required' : ID_PATTERN_MESSAGE);
       ok = false;
     } else if (nodeIds.has(id)) {
       c.error(`${path}.id`, `duplicate id "${id}"`);
@@ -438,8 +434,14 @@ export function validateArchitecture(
     if (why !== undefined) node.why = why;
     nodes.push(node);
   });
+  return { nodes, nodeIds };
+}
 
-  // edges
+function readEdges(
+  c: Collector,
+  root: YamlMap,
+  nodeIds: ReadonlySet<string>,
+): { edges: ArchEdge[]; edgeIds: ReadonlySet<string> } {
   const edges: ArchEdge[] = [];
   const edgeIds = new Set<string>();
   c.list(root, 'edges', '', LIMITS.edges, true, 1).forEach((e, i) => {
@@ -479,8 +481,10 @@ export function validateArchitecture(
     if (text !== undefined) edge.text = text;
     edges.push(edge);
   });
+  return { edges, edgeIds };
+}
 
-  // flows
+function readFlows(c: Collector, root: YamlMap, edgeIds: ReadonlySet<string>): ArchFlow[] {
   const flows: ArchFlow[] = [];
   const flowIds = new Set<string>();
   c.list(root, 'flows', '', LIMITS.flows).forEach((f, i) => {
@@ -492,7 +496,7 @@ export function validateArchitecture(
     c.unknownKeys(f, path, ['id', 'label', 'color', 'command', 'text', 'steps']);
     const id = f.id;
     if (typeof id !== 'string' || !ID_RE.test(id)) {
-      c.error(`${path}.id`, id === undefined ? 'required' : 'must match ^[a-z][a-z0-9-]{0,31}$');
+      c.error(`${path}.id`, id === undefined ? 'required' : ID_PATTERN_MESSAGE);
       return;
     }
     if (flowIds.has(id)) {
@@ -534,8 +538,10 @@ export function validateArchitecture(
     if (text !== undefined) flow.text = text;
     flows.push(flow);
   });
+  return flows;
+}
 
-  // highlights
+function readHighlights(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string>): ArchHighlight[] {
   const highlights: ArchHighlight[] = [];
   const badged = new Map<string, number>();
   c.list(root, 'highlights', '', LIMITS.highlights).forEach((h, i) => {
@@ -565,8 +571,10 @@ export function validateArchitecture(
     if (title === undefined || text === undefined) return;
     highlights.push({ badge: i + 1, node, title, text });
   });
+  return highlights;
+}
 
-  // stack
+function readStack(c: Collector, root: YamlMap, nodeIds: ReadonlySet<string>): ArchStackEntry[] {
   const stack: ArchStackEntry[] = [];
   c.list(root, 'stack', '', LIMITS.stack).forEach((s, i) => {
     const path = `stack[${i}]`;
@@ -577,7 +585,7 @@ export function validateArchitecture(
     c.unknownKeys(s, path, ['name', 'group', 'package', 'version', 'role', 'nodes']);
     const name = c.str(s, 'name', path, LIMITS.stackName, { required: true, singleLine: true });
     const group = c.str(s, 'group', path, LIMITS.stackGroup, { required: true, singleLine: true });
-    const pkg = c.str(s, 'package', path, 214, { singleLine: true });
+    const pkg = c.str(s, 'package', path, LIMITS.stackPackage, { singleLine: true });
     const version = c.str(s, 'version', path, LIMITS.stackVersion, { singleLine: true });
     const role = c.str(s, 'role', path, LIMITS.stackRole, { singleLine: true });
     const used: string[] = [];
@@ -593,8 +601,10 @@ export function validateArchitecture(
     if (role !== undefined) entry.role = role;
     stack.push(entry);
   });
+  return stack;
+}
 
-  // commands
+function readCommands(c: Collector, root: YamlMap): Record<string, ArchCommand[]> {
   const commands: Record<string, ArchCommand[]> = {};
   if (root.commands !== undefined && root.commands !== null) {
     if (!isMap(root.commands)) {
@@ -619,8 +629,15 @@ export function validateArchitecture(
       }
     }
   }
+  return commands;
+}
 
-  // tasks
+function readTasks(
+  c: Collector,
+  root: YamlMap,
+  nodeIds: ReadonlySet<string>,
+  taskIds?: readonly string[],
+): Record<string, string> {
   const tasks: Record<string, string> = {};
   if (root.tasks !== undefined && root.tasks !== null) {
     if (!isMap(root.tasks)) {
@@ -642,6 +659,39 @@ export function validateArchitecture(
       }
     }
   }
+  return tasks;
+}
+
+/**
+ * Validates parsed YAML against the architecture schema. `taskIds` (from the
+ * backlog) enables the unknown-task-id warning; pass undefined to skip it.
+ */
+export function validateArchitecture(
+  value: YamlValue,
+  taskIds?: readonly string[],
+): { architecture: Architecture | null; problems: SchemaProblem[] } {
+  const c = new Collector();
+  if (!isMap(value)) {
+    c.error('(root)', 'expected a mapping with schema, pitch, grid, nodes and edges');
+    return { architecture: null, problems: c.problems };
+  }
+  const root = value;
+  c.unknownKeys(root, '', ['schema', 'pitch', 'grid', 'kinds', 'zones', 'nodes', 'edges', 'flows', 'highlights', 'stack', 'commands', 'tasks']);
+
+  if (root.schema === undefined || root.schema === null) c.error('schema', 'required (use schema: 1)');
+  else if (root.schema !== 1) c.error('schema', 'unsupported schema version (expected 1)');
+
+  const pitch = c.str(root, 'pitch', '', LIMITS.pitch, { required: true, singleLine: false });
+  const { grid, gridText } = readGrid(c, root);
+  const kinds = readKinds(c, root);
+  const zones = readZones(c, root, grid, gridText);
+  const { nodes, nodeIds } = readNodes(c, root, kinds, grid, gridText);
+  const { edges, edgeIds } = readEdges(c, root, nodeIds);
+  const flows = readFlows(c, root, edgeIds);
+  const highlights = readHighlights(c, root, nodeIds);
+  const stack = readStack(c, root, nodeIds);
+  const commands = readCommands(c, root);
+  const tasks = readTasks(c, root, nodeIds, taskIds);
 
   if (c.hasErrors || pitch === undefined || grid === null) {
     return { architecture: null, problems: c.problems };
