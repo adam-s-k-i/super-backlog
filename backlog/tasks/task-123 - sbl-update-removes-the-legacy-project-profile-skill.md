@@ -1,13 +1,12 @@
 ---
 id: TASK-123
 title: sbl update removes the legacy project-profile skill
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-19 17:33'
-updated_date: '2026-10-19 18:12'
+updated_date: '2026-10-19 18:32'
 labels:
   - fix
-  - phase/impl
 dependencies:
   - TASK-121
 references:
@@ -24,6 +23,6 @@ applyCopySkills deletes .claude/skills/project-profile and .opencode/skill/proje
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 e2e: pre-seeded legacy skill dirs are removed and reported by sbl update
-- [ ] #2 uninstall keeps both paths in OWNED_SKILL_DIRS
+- [x] #1 e2e: pre-seeded legacy skill dirs are removed and reported by sbl update
+- [x] #2 uninstall keeps both paths in OWNED_SKILL_DIRS
 <!-- AC:END -->

@@ -1,13 +1,12 @@
 ---
 id: TASK-122
 title: Bind the managed block to the three gates only
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-19 17:32'
-updated_date: '2026-10-19 18:12'
+updated_date: '2026-10-19 18:32'
 labels:
   - fix
-  - phase/impl
 dependencies:
   - TASK-121
 references:
@@ -24,7 +23,7 @@ Rewrite rules 6, 7, 8 and the delegation section of src/templates/workflow-block
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rule 6, 7 and the new rule 8 match the spec text verbatim
-- [ ] #2 Block contains neither 'critical-areas.md' nor 'Independent check'; opening paragraph says 'Default is to do the work yourself in the session.'
-- [ ] #3 templates.test.ts and update.e2e.test.ts pass
+- [x] #1 Rule 6, 7 and the new rule 8 match the spec text verbatim
+- [x] #2 Block contains neither 'critical-areas.md' nor 'Independent check'; opening paragraph says 'Default is to do the work yourself in the session.'
+- [x] #3 templates.test.ts and update.e2e.test.ts pass
 <!-- AC:END -->

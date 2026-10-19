@@ -1,13 +1,12 @@
 ---
 id: TASK-125
 title: Bump dependencies and release 1.10.3
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-10-19 17:33'
-updated_date: '2026-10-19 18:12'
+updated_date: '2026-10-19 18:32'
 labels:
   - chore
-  - phase/impl
 dependencies:
   - TASK-121
   - TASK-122
@@ -28,6 +27,6 @@ backlog.md 1.54.0, cspell 10.4.0, vitest 5.0.5, happy-dom 21.0.3 (fall back to l
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 npm outdated lists nothing for these four packages; npm test and npm run lint pass
-- [ ] #2 PR merged with Release-As: 1.10.3; release-please tags v1.10.3 and npm publishes it
+- [x] #1 npm outdated lists nothing for these four packages; npm test and npm run lint pass
+- [x] #2 PR merged with Release-As: 1.10.3; release-please tags v1.10.3 and npm publishes it
 <!-- AC:END -->

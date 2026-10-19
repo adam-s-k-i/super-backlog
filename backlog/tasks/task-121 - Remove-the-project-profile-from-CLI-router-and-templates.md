@@ -1,13 +1,12 @@
 ---
 id: TASK-121
 title: 'Remove the project profile from CLI, router and templates'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-10-19 17:32'
-updated_date: '2026-10-19 18:12'
+updated_date: '2026-10-19 18:32'
 labels:
   - fix
-  - phase/impl
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-19-fewer-interruptions.md
@@ -23,8 +22,8 @@ Delete critical-areas.md support: project-profile skill template, src/lib/critic
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 skill-project-profile.md, critical-areas.ts and their tests are deleted; GLUE_SKILLS has four entries
-- [ ] #2 sbl doctor prints no critical-areas line; sbl init prints only the summary hint
-- [ ] #3 sbl-top agent description ends after 'where a mistake is costly'; claude-pointer.md does not mention critical-areas.md
-- [ ] #4 npm test passes
+- [x] #1 skill-project-profile.md, critical-areas.ts and their tests are deleted; GLUE_SKILLS has four entries
+- [x] #2 sbl doctor prints no critical-areas line; sbl init prints only the summary hint
+- [x] #3 sbl-top agent description ends after 'where a mistake is costly'; claude-pointer.md does not mention critical-areas.md
+- [x] #4 npm test passes
 <!-- AC:END -->
