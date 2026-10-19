@@ -1,5 +1,5 @@
 // src/init/execute.ts
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, basename, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
@@ -163,13 +163,22 @@ function applyClaudePointer(cwd: string): boolean {
   return true;
 }
 
-const GLUE_SKILLS = ['spec-to-backlog', 'backlog-status-report', 'task-review-gate', 'architecture-summary', 'project-profile'] as const;
+const GLUE_SKILLS = ['spec-to-backlog', 'backlog-status-report', 'task-review-gate', 'architecture-summary'] as const;
+
+/** Skill directories earlier releases installed and this release no longer ships; removed on every init/update. */
+const LEGACY_SKILL_DIRS = ['.claude/skills/project-profile', '.opencode/skill/project-profile'] as const;
 
 function applyCopySkills(cwd: string, version: string): boolean {
   for (const skill of GLUE_SKILLS) {
     const rendered = renderSkill(readTemplate(`skill-${skill}.md`), version);
     atomicWrite(join(cwd, '.opencode', 'skill', skill, 'SKILL.md'), rendered);
     atomicWrite(join(cwd, '.claude', 'skills', skill, 'SKILL.md'), rendered);
+  }
+  for (const rel of LEGACY_SKILL_DIRS) {
+    const abs = join(cwd, ...rel.split('/'));
+    if (!existsSync(abs)) continue;
+    rmSync(abs, { recursive: true, force: true });
+    console.log(`removed legacy ${rel}`);
   }
   return true;
 }

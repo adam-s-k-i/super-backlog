@@ -41,7 +41,7 @@ That's it. Everything else below is detail.
 | `sbl dashboard` | Live Project Dashboard on `http://localhost:6428` (alias: `sbl db`). |
 | `sbl phase TASK-1` | Show where a task stands: `phase/spec → plan → impl → verify`. |
 | `sbl phase TASK-1 plan` | Advance the phase after its gate is passed (`done` clears the label). |
-| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, `architecture.yml` and the `critical-areas.md` project profile. |
+| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene and `architecture.yml`. |
 | `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it (`--check` for CI). |
 | `sbl update` | Self-update the CLI, then refresh every injected file. |
 | `sbl models enable` | Optional model router: one subagent per tier (light, standard, strong, top) with a fixed model. |
@@ -63,7 +63,7 @@ Tasks carry their pipeline phase as a label (`phase/spec → plan → impl → v
 | --- | --- |
 | `backlog/` | Your Backlog.md data (created by `backlog init --defaults`) |
 | `AGENTS.md` / `CLAUDE.md` | Workflow block with pipeline, gates, phase rules, and the model-routing rule for subagents |
-| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report`, `architecture-summary`, `project-profile` |
+| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report`, `architecture-summary` |
 | `opencode.json` | Superpowers plugin entry |
 | `package.json` scripts | `tasks`, `board`, `browser`, `dashboard` |
 | `.git/hooks/pre-commit` | Integrity guard — opt-in via `--guard` |

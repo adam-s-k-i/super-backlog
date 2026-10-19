@@ -63,13 +63,12 @@ describe('installed backlog-status-report skills', () => {
 });
 
 describe('all glue skills exist', () => {
-  it('all five glue skill templates are present', () => {
+  it('all four glue skill templates are present', () => {
     for (const f of [
       'skill-spec-to-backlog.md',
       'skill-backlog-status-report.md',
       'skill-task-review-gate.md',
       'skill-architecture-summary.md',
-      'skill-project-profile.md',
     ]) {
       expect(existsSync(join(tplDir, f))).toBe(true);
     }
@@ -108,32 +107,5 @@ describe('skill-architecture-summary.md', () => {
   });
   it('links the schema reference', () => {
     expect(t).toContain('https://adam-s-k-i.github.io/super-backlog/guide/project-summary');
-  });
-});
-
-describe('skill-project-profile.md', () => {
-  const t = read('skill-project-profile.md');
-  it('has frontmatter with name and description', () => {
-    expect(t.startsWith('---')).toBe(true);
-    expect(t).toMatch(/^name: project-profile$/m);
-    expect(t).toMatch(/^description: .+/m);
-  });
-  it('writes the profile file in the spec format', () => {
-    expect(t).toContain('backlog/docs/critical-areas.md');
-    expect(t).toContain('# Critical areas');
-    expect(t).toContain('Always on the top tier:');
-    expect(t).toContain('Independent check:');
-    expect(t).toContain('May go to lower tiers:');
-    expect(t).toMatch(/150 words/);
-  });
-  it('keeps the assessment on the top tier and marks drafts provisional', () => {
-    expect(t).toMatch(/top-tier work only/i);
-    expect(t).toMatch(/hand both to a subagent on the top tier/i);
-    expect(t).toContain('`provisional`');
-  });
-  it('stops for review and never invents risks', () => {
-    expect(t).toMatch(/STOP/);
-    expect(t).toMatch(/never invent risks/i);
-    expect(t).toMatch(/do not re-check the profile every session/i);
   });
 });

@@ -45,7 +45,6 @@ function expectCleanExceptDrift({ out, status }: DoctorResult): void {
   const driftLines = lines.filter((l) => DRIFT_LINE.test(l));
   const rest = lines.filter((l) => !DRIFT_LINE.test(l)).join('\n');
   expect(rest).toContain('[ok]');
-  expect(rest).toMatch(/backlog\/docs\/critical-areas\.md (present|not present)/);
   expect(rest).not.toContain('[warn]');
   if (driftLines.length === 0) {
     expect(status).toBe(0);

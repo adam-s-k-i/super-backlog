@@ -4,7 +4,6 @@ import process from 'node:process';
 import { ARCHITECTURE_PATH, loadArchitecture, type ArchitectureLoadResult } from '../dashboard/summary-schema.js';
 import { detectDrift, driftCount } from '../dashboard/summary-drift.js';
 import { layoutArchitecture, type LayoutResult } from '../dashboard/summary-layout.js';
-import { CRITICAL_AREAS_PATH, readCriticalAreas, type CriticalAreasState } from '../lib/critical-areas.js';
 import { extractPhaseLabels, PHASES } from '../lib/phase.js';
 import {
   getEffectiveExecutionPolicy,
@@ -29,8 +28,6 @@ export interface DoctorDeps {
   layoutArchitecture?: typeof layoutArchitecture;
   /** Seam for check 5; defaults to the shared drift module. */
   detectDrift?: typeof detectDrift;
-  /** Seam for check 6; defaults to reading backlog/docs/critical-areas.md. */
-  readCriticalAreas?: (cwd: string) => CriticalAreasState;
   log?: (line: string) => void;
 }
 
@@ -188,26 +185,6 @@ export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
       if (warnings.length === 0 && driftError === null && findings === 0) {
         emit('ok', `${ARCHITECTURE_PATH} valid (${size}, layout clean)`);
       }
-    }
-  }
-
-  // check 6: per-project profile of critical areas (spec 2026-10-10). A
-  // missing file is a skip so existing projects keep their exit code.
-  let profile: CriticalAreasState | null = null;
-  try {
-    profile = (deps.readCriticalAreas ?? readCriticalAreas)(cwd);
-  } catch (err) {
-    emit('warn', `${CRITICAL_AREAS_PATH} check failed (${err instanceof Error ? err.message : String(err)})`);
-  }
-  if (profile !== null) {
-    if (profile.status === 'missing') {
-      emit('skip', `${CRITICAL_AREAS_PATH} not present (ask your agent to run the project-profile skill)`);
-    } else if (profile.provisional) {
-      emit('warn', `${CRITICAL_AREAS_PATH} is provisional – revise it on the top tier (project-profile skill)`);
-    } else if (profile.stamp === null) {
-      emit('warn', `${CRITICAL_AREAS_PATH} has no Status line – run the project-profile skill`);
-    } else {
-      emit('ok', `${CRITICAL_AREAS_PATH} present (${profile.stamp})`);
     }
   }
 

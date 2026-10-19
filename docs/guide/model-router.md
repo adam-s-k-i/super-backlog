@@ -44,7 +44,7 @@ A model id starts with a letter or digit, contains only letters, digits and `. _
 | `light` | Purely mechanical work: searching, listing, extracting, reformatting | `haiku` | session model |
 | `standard` | Clearly specified routine work: research, summaries, routine code, tests, documentation | `sonnet` | session model |
 | `strong` | Demanding work with clear boundaries: complex implementation, debugging, reviews | `opus` | session model |
-| `top` | Analysis, design, architecture, costly decisions, everything the [project profile](project-profile) lists as critical | `fable` | session model |
+| `top` | Analysis, design, architecture, decisions where a mistake is costly or hard to reverse | `fable` | session model |
 
 The Claude Code defaults are aliases that track Anthropic's current models. OpenCode has no defaults: a tier without a model gets no `model` line, and OpenCode uses the session model.
 

@@ -4,6 +4,7 @@ import { createServer, request as httpRequest, type IncomingMessage, type Server
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import process from 'node:process';
+import type { Duplex } from 'node:stream';
 
 import { createBrowserManager, type BrowserManagerDeps } from './backlog-browser.js';
 import { collectDashboardData } from './data.js';
@@ -116,6 +117,44 @@ function proxyToOrigin(
     else res.end();
   });
   req.pipe(upstream);
+}
+
+/** Pipe an HTTP upgrade (the browser's live-update websocket) to the backlog browser process. */
+function proxyUpgrade(origin: string, req: IncomingMessage, socket: Duplex, head: Buffer): void {
+  const target = new URL(origin);
+  const headers: Record<string, string> = {};
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (key === 'host' || value === undefined) continue;
+    headers[key] = Array.isArray(value) ? value.join(', ') : String(value);
+  }
+  const upstream = httpRequest({
+    host: target.hostname,
+    port: target.port,
+    method: req.method ?? 'GET',
+    path: req.url ?? '/',
+    headers,
+  });
+  upstream.on('upgrade', (up, upSocket, upHead) => {
+    const lines = [`HTTP/1.1 ${up.statusCode ?? 101} ${up.statusMessage ?? 'Switching Protocols'}`];
+    for (const [key, value] of Object.entries(up.headers)) {
+      if (value === undefined) continue;
+      for (const v of Array.isArray(value) ? value : [value]) lines.push(`${key}: ${v}`);
+    }
+    socket.write(`${lines.join('\r\n')}\r\n\r\n`);
+    if (upHead.length > 0) socket.write(upHead);
+    if (head.length > 0) upSocket.write(head);
+    upSocket.pipe(socket);
+    socket.pipe(upSocket);
+    // http sockets allow half-open; tear both ends down as soon as either side goes away
+    for (const [from, to] of [[upSocket, socket], [socket, upSocket]] as const) {
+      from.on('error', () => to.destroy());
+      from.on('end', () => to.destroy());
+      from.on('close', () => to.destroy());
+    }
+  });
+  upstream.on('response', () => socket.destroy());
+  upstream.on('error', () => socket.destroy());
+  upstream.end();
 }
 
 function projectUrl(port: number, slug: string): string {
@@ -292,7 +331,7 @@ export async function startHubServer(opts: {
       return;
     }
 
-    if (pathname === '/' && method === 'GET') {
+    if (pathname === '/' && method === 'GET' && cookieEntry === null) {
       const links = [...projects.keys()]
         .map((s) => `<li><a href="/p/${s}/">${s}</a></li>`)
         .join('\n');
@@ -399,11 +438,16 @@ export async function startHubServer(opts: {
         sendJson(res, result.code, result);
         return;
       }
+      // The browser is a history-routed SPA with <base href="/">: it only renders at the
+      // origin root, so hand it the hub root and let the cookie route every request.
       const browserPath = rest.slice('/bb'.length) || '/';
-      proxyToOrigin(result.url, browserPath + parsed.search, req, res, {
+      res.writeHead(302, {
+        location: browserPath + parsed.search,
         'set-cookie': `sbl_bb=${slug}; Path=/; SameSite=Lax`,
       });
-      return;    }
+      res.end();
+      return;
+    }
 
     if (rest.startsWith('/api/')) {
       req.url = rest;
@@ -441,6 +485,29 @@ export async function startHubServer(opts: {
   const server: Server = createServer((req, res) => {
     void handle(req, res);
   });
+  // Upgraded sockets leave the http parser, so server.close() would wait for them forever.
+  const upgradeSockets = new Set<Duplex>();
+  server.on('upgrade', (req, socket, head) => {
+    upgradeSockets.add(socket);
+    socket.on('close', () => upgradeSockets.delete(socket));
+    if (!isAllowedHost(req.headers.host)) {
+      socket.destroy();
+      return;
+    }
+    const slug = cookieValue(req, 'sbl_bb');
+    const entry = slug !== null ? projects.get(slug) : undefined;
+    if (!entry) {
+      socket.destroy();
+      return;
+    }
+    void entry.browser.ensure().then((result) => {
+      if (!result.ok) {
+        socket.destroy();
+        return;
+      }
+      proxyUpgrade(result.url, req, socket, head);
+    });
+  });
 
   const requestedPort = opts.port ?? DASHBOARD_PORT;
   port = await new Promise<number>((resolvePort, rejectPort) => {
@@ -462,6 +529,8 @@ export async function startHubServer(opts: {
     close(): Promise<void> {
       for (const entry of projects.values()) disposeEntry(entry);
       projects.clear();
+      for (const socket of upgradeSockets) socket.destroy();
+      upgradeSockets.clear();
       return new Promise((resolveClose) => {
         server.close(() => resolveClose());
       });

@@ -33,7 +33,7 @@ nodes:
     cell: [1, 2]
     purpose: Parses arguments and dispatches eight commands (init, uninstall, update, dashboard, models, phase, doctor, summary). Maps every outcome to an exit code and checks for a newer release.
     why: One global command for every project. Five exit codes keep CI and agents unambiguous.
-    files: [src/bin.ts, src/cli.ts, src/commands/, src/commands/doctor.ts, src/commands/summary.ts, src/lib/preflight.ts, src/lib/critical-areas.ts]
+    files: [src/bin.ts, src/cli.ts, src/commands/, src/commands/doctor.ts, src/commands/summary.ts, src/lib/preflight.ts]
     commands:
       - { run: sbl doctor, note: check the environment }
       - { run: sbl summary, note: check the summary for drift }
@@ -55,7 +55,7 @@ nodes:
     cell: [3, 1]
     purpose: Applies each action with an atomic write. File content comes from templates stamped with the kit version.
     why: Degraded situations turn into warnings or refusals, never into a silent overwrite.
-    files: [src/init/execute.ts, src/lib/atomic.ts, src/templates/, src/templates/skill-project-profile.md]
+    files: [src/init/execute.ts, src/lib/atomic.ts, src/templates/]
   - id: ownership
     label: Ownership
     sub: lib/ownership.ts

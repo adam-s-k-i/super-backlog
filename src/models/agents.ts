@@ -21,7 +21,7 @@ const TIER_DESCRIPTIONS: Record<Tier, string> = {
   light: 'purely mechanical work such as searching, listing, extracting and reformatting.',
   standard: 'clearly specified routine work such as research, summaries, routine code, tests and documentation.',
   strong: 'demanding work with clear boundaries such as complex implementation, debugging and reviews.',
-  top: 'analysis, design, architecture and every decision where a mistake is costly; everything backlog/docs/critical-areas.md lists as critical.',
+  top: 'analysis, design, architecture and every decision where a mistake is costly.',
 };
 
 const AGENT_BODY =

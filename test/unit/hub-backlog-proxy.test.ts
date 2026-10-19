@@ -141,7 +141,7 @@ describe('hub backlog-browser same-origin proxy', () => {
     });
   }
 
-  it('GET /p/<slug>/bb/ proxies the browser root and registers the routing cookie', async () => {
+  it('GET /p/<slug>/bb/ sets the routing cookie and redirects to the hub root', async () => {
     const browser = await fakeBrowser('alpha-root');
     browsers.push(browser);
     const hub = await startHub([browser.port]);
@@ -150,10 +150,89 @@ describe('hub backlog-browser same-origin proxy', () => {
     const reg = hub.register({ cwd, file: join(cwd, 'dash.html'), regenerate: () => {} });
     if (!reg.ok) throw new Error('register failed');
     const r = await req(hub.port, `/p/${reg.slug}/bb/`);
-    expect(r.status).toBe(200);
-    expect(r.body).toContain('alpha-root');
+    expect(r.status).toBe(302);
+    expect(r.headers.location).toBe('/');
     const setCookie = r.headers['set-cookie'];
     expect(String(Array.isArray(setCookie) ? setCookie[0] : setCookie)).toContain(`sbl_bb=${reg.slug}`);
+    expect(browser.hits).toHaveLength(0);
+  });
+
+  it('serves the proxied browser at / once the routing cookie is set', async () => {
+    const browser = await fakeBrowser('alpha-root');
+    browsers.push(browser);
+    const hub = await startHub([browser.port]);
+    handles.push(hub);
+    const cwd = projectDir('Alpha');
+    const reg = hub.register({ cwd, file: join(cwd, 'dash.html'), regenerate: () => {} });
+    if (!reg.ok) throw new Error('register failed');
+    const plain = await req(hub.port, '/');
+    expect(plain.status).toBe(200);
+    expect(plain.body).toContain('sbl hub');
+    const proxied = await req(hub.port, '/', { cookie: `sbl_bb=${reg.slug}` });
+    expect(proxied.status).toBe(200);
+    expect(proxied.body).toContain('alpha-root');
+    const ghost = await req(hub.port, '/', { cookie: 'sbl_bb=ghost' });
+    expect(ghost.status).toBe(200);
+    expect(ghost.body).toContain('sbl hub');
+  });
+
+  it('proxies websocket upgrades by cookie to the project browser', async () => {
+    const browser = await fakeBrowser('alpha-root');
+    browsers.push(browser);
+    browser.server.on('upgrade', (_req, socket) => {
+      socket.on('end', () => socket.destroy());
+      socket.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n\r\n');
+      socket.write('hello-from-browser');
+    });
+    const hub = await startHub([browser.port]);
+    handles.push(hub);
+    const cwd = projectDir('Alpha');
+    const reg = hub.register({ cwd, file: join(cwd, 'dash.html'), regenerate: () => {} });
+    if (!reg.ok) throw new Error('register failed');
+    const got = await new Promise<string>((resolve, reject) => {
+      const r = request({
+        host: '127.0.0.1',
+        port: hub.port,
+        path: '/',
+        headers: { host: '127.0.0.1', cookie: `sbl_bb=${reg.slug}`, connection: 'Upgrade', upgrade: 'websocket' },
+      });
+      r.on('upgrade', (_res, socket, head) => {
+        // bytes that follow the 101 headers arrive as `head`, later ones as data events
+        const done = (d: Buffer): void => {
+          socket.destroy();
+          resolve(d.toString('utf8'));
+        };
+        if (head.length > 0) done(head);
+        else socket.once('data', done);
+      });
+      r.on('error', reject);
+      r.on('response', () => reject(new Error('upgrade was answered with a plain response')));
+      r.end();
+    });
+    expect(got).toBe('hello-from-browser');
+  });
+
+  it('drops websocket upgrades without a valid routing cookie', async () => {
+    const browser = await fakeBrowser('alpha-root');
+    browsers.push(browser);
+    const hub = await startHub([browser.port]);
+    handles.push(hub);
+    const cwd = projectDir('Alpha');
+    const reg = hub.register({ cwd, file: join(cwd, 'dash.html'), regenerate: () => {} });
+    if (!reg.ok) throw new Error('register failed');
+    const outcome = await new Promise<string>((resolve) => {
+      const r = request({
+        host: '127.0.0.1',
+        port: hub.port,
+        path: '/',
+        headers: { host: '127.0.0.1', cookie: 'sbl_bb=ghost', connection: 'Upgrade', upgrade: 'websocket' },
+      });
+      r.on('upgrade', () => resolve('upgraded'));
+      r.on('error', () => resolve('closed'));
+      r.on('close', () => resolve('closed'));
+      r.end();
+    });
+    expect(outcome).toBe('closed');
   });
 
   it('routes absolute SPA paths by cookie to the right project browser', async () => {
