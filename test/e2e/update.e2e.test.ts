@@ -191,6 +191,24 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
     expect(claude).toContain('keep me below');
   });
 
+  it('removes the legacy project-profile skill directories and reports them', () => {
+    freshScaffold();
+    for (const rel of ['.claude/skills/project-profile', '.opencode/skill/project-profile']) {
+      mkdirSync(join(dir, rel), { recursive: true });
+      writeFileSync(join(dir, rel, 'SKILL.md'), '<!-- managed-by: super-backlog 1.10.2 -->\n# old\n');
+    }
+
+    const r = runUpdate(dir);
+
+    expect(r.status).toBe(4);
+    expect(r.out).toContain('removed legacy .claude/skills/project-profile');
+    expect(r.out).toContain('removed legacy .opencode/skill/project-profile');
+    expect(existsSync(join(dir, '.claude', 'skills', 'project-profile'))).toBe(false);
+    expect(existsSync(join(dir, '.opencode', 'skill', 'project-profile'))).toBe(false);
+    // a fresh scaffold never has the directories, so a second run stays silent
+    expect(runUpdate(dir).out).not.toContain('removed legacy');
+  });
+
   it('exits 1 naming opencode.json when it is malformed', () => {
     freshScaffold();
     writeFileSync(join(dir, 'opencode.json'), '{ not json');
