@@ -23,10 +23,10 @@ Do not edit Backlog task, draft, document, decision, or milestone markdown files
 
 </CRITICAL_INSTRUCTION>
 <!-- BACKLOG.MD GUIDELINES END -->
-<!-- SUPER-BACKLOG:1.9.0 START -->
+<!-- SUPER-BACKLOG:1.10.2 START -->
 ## Workflow system
 
-This section is managed by super-backlog 1.9.0.
+This section is managed by super-backlog 1.10.2.
 
 **Roles:** Backlog.md = WHAT — specs, acceptance criteria, status and history,
 managed exclusively through the `backlog` CLI. Superpowers = HOW — the
@@ -53,16 +53,18 @@ methodology skills that decide how the work is done.
 3. Task status changes always go through the CLI backed by verification evidence, never from memory.
 4. Skills take precedence over habit whenever a matching skill exists.
 5. Phase transitions only via `sbl phase <id> <phase>`, always at a gate passage — never edit phase labels by hand.
-6. Delegate by tier — every subtask goes to the cheapest model that solves it reliably (see "Model tiers and delegation" below).
-7. Keep the project summary current — at session start, if `backlog/docs/architecture.yml` is missing, offer once to run the architecture-summary skill. At the end of the pipeline, after a merge, run `sbl summary --check`; if it reports drift, offer a refresh. Never run the skill without the user's consent.
-8. Respect the project profile — read `backlog/docs/critical-areas.md` at session start; its entries override the tier rule. If the file is missing, offer once, before the first non-trivial task, to run the project-profile skill. Never run it without the user's consent.
+6. Delegate by tier — when you delegate, the subtask goes to the cheapest model that solves it reliably (see "Model tiers and delegation" below).
+7. Keep the project summary current — if `backlog/docs/architecture.yml` is missing or `sbl summary --check` reports drift after a merge, say so in the final report; run the architecture-summary skill only when the user asks for it.
+8. Human checkpoints are the three gates (3, 5, 6) and nothing else — outside them, do not ask for confirmation, make offers or present menus; decide, act and report at the end. Stop only when you are blocked or verification fails. This overrides any skill that asks for an integration or execution choice.
 
 ### Model tiers and delegation
 
-Goal: the best result at the lowest token cost. Every subtask goes to the
-cheapest model that solves it reliably, regardless of the session model:
-hand simpler work to a subagent on a cheaper model, and harder work to a
-subagent on a stronger model when the session runs on a lower tier.
+Goal: the best result at the lowest token cost.
+Default is to do the work yourself in the session.
+Delegate only when it pays off: the subtask is self-contained, can be
+briefed completely in a few sentences, and is large enough (many files or
+sources, much intermediate output). When you delegate, the subtask goes to
+the cheapest model that solves it reliably, regardless of the session model.
 
 Tiers (see the examples below for current model names; otherwise use the
 closest available equivalents):
@@ -73,18 +75,12 @@ closest available equivalents):
 - **Strong** — demanding work with clear boundaries: complex implementation,
   debugging, reviews.
 - **Top** — analysis, design, architecture, interpreting ambiguous results,
-  every decision where a mistake is costly or hard to reverse, and everything
-  `backlog/docs/critical-areas.md` lists as critical.
+  every decision where a mistake is costly or hard to reverse.
 
 When unsure between two tiers, take the higher one. In this pipeline:
 brainstorming, specs, plans and the final whole-branch review are Top;
 per-task reviews and debugging are Strong; fully specified plan steps,
 tests and docs are Standard; lookups and Backlog.md CLI bookkeeping are Light.
-
-Delegate only when it pays off: the task is self-contained, can be briefed
-completely in a few sentences, and is large enough (many files or sources,
-much intermediate output). Do small things and anything that needs the whole
-conversation context yourself — there the handover costs more than it saves.
 
 When delegating:
 
@@ -98,19 +94,19 @@ When delegating:
 Quality: responsibility for the result stays with you. Check returns before
 using them, the more carefully the costlier a mistake would be. If a result
 falls short, do not retry on the same tier — go one tier up or take over
-yourself. Anything `backlog/docs/critical-areas.md` lists under "Independent
-check" is additionally checked, before use, by a subagent on Strong or higher
-that did not see the work being produced.
+yourself.
 
 If the harness has no subagents or no per-dispatch model choice, work
 directly and without mentioning it.
 
-Examples (current as of this super-backlog release):
+Examples (from `.super-backlog/models.json`; change them with
+`sbl models set <harness> <tier> <model>`):
 
 - Claude Code: the Agent tool's `model` parameter — light `haiku`, standard
-  `sonnet`, strong `opus`, top = the strongest available model (e.g. Fable).
-- OpenCode: set the tier's model on the subagent, e.g. the `model` field of
-  an agent in `.opencode/agents/`.
+  `sonnet`, strong `opus`, top `fable`.
+- OpenCode: the `sbl-<tier>` agents in `.opencode/agents/` — light
+  `opencode/gemini-3.5-flash-lite`, standard `opencode/claude-opus-4-5`; tiers
+  without a model use the session model.
 - Other harnesses: the equivalent per-subagent model setting.
 
 Project-specific human gates are intentionally out of scope for this block.

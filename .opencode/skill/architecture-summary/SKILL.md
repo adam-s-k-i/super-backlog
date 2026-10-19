@@ -3,7 +3,7 @@ name: architecture-summary
 description: Create or refresh backlog/docs/architecture.yml, the curated source of the project summary page (architecture diagram, flows, highlights, tech stack, commands). Use when the user asks for a project summary, an architecture overview or diagram, or after structural changes to the codebase.
 ---
 
-<!-- managed-by: super-backlog 1.9.0 -->
+<!-- managed-by: super-backlog 1.10.2 -->
 # Architecture Summary: curate the project summary page
 
 Writes `backlog/docs/architecture.yml`. The dashboard hub renders it at
