@@ -1,12 +1,13 @@
 ---
 id: TASK-121
 title: 'Remove the project profile from CLI, router and templates'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-10-19 17:32'
+updated_date: '2026-10-19 18:12'
 labels:
   - fix
-  - phase/spec
+  - phase/impl
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-19-fewer-interruptions.md

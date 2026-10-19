@@ -4,10 +4,10 @@ title: Bind the managed block to the three gates only
 status: To Do
 assignee: []
 created_date: '2026-10-19 17:32'
-updated_date: '2026-10-19 17:35'
+updated_date: '2026-10-19 18:12'
 labels:
   - fix
-  - phase/spec
+  - phase/impl
 dependencies:
   - TASK-121
 references:

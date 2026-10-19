@@ -4,10 +4,10 @@ title: Bump dependencies and release 1.10.3
 status: To Do
 assignee: []
 created_date: '2026-10-19 17:33'
-updated_date: '2026-10-19 17:36'
+updated_date: '2026-10-19 18:12'
 labels:
   - chore
-  - phase/spec
+  - phase/impl
 dependencies:
   - TASK-121
   - TASK-122

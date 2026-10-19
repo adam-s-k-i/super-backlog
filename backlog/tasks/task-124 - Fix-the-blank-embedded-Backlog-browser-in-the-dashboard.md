@@ -4,9 +4,10 @@ title: Fix the blank embedded Backlog browser in the dashboard
 status: To Do
 assignee: []
 created_date: '2026-10-19 17:33'
+updated_date: '2026-10-19 18:12'
 labels:
   - fix
-  - phase/spec
+  - phase/impl
 dependencies: []
 references:
   - docs/superpowers/plans/2026-10-19-fewer-interruptions.md

@@ -45,11 +45,12 @@ describe('workflow-block.md', () => {
     }
     expect(t).toMatch(/When unsure between two tiers, take the higher one\./);
     expect(t).toMatch(/Set the model explicitly on every dispatch/);
+    expect(t).toMatch(/Default is to do the work yourself in the session\./);
     expect(t).toMatch(/Delegate only when it pays off/);
     expect(t).toMatch(/do not retry on the same tier/);
-    expect(t).toMatch(/"Independent\s+check"/);
-    expect(t).toContain('`backlog/docs/critical-areas.md`');
-    expect(t).toContain('6. Delegate by tier — every subtask goes to the cheapest model that solves it reliably (see "Model tiers and delegation" below).');
+    expect(t).not.toMatch(/Independent\s+check/);
+    expect(t).not.toContain('critical-areas.md');
+    expect(t).toContain('6. Delegate by tier — when you delegate, the subtask goes to the cheapest model that solves it reliably (see "Model tiers and delegation" below).');
     expect(t).toContain('{{MODEL_EXAMPLES}}');
     expect(t).not.toContain('Examples (current as of this super-backlog release):');
   });
@@ -77,19 +78,19 @@ describe('workflow-block.md', () => {
       rmSync(cwd, { recursive: true, force: true });
     }
   });
-  it('binds rule 8: respect the project profile, only with consent', () => {
+  it('binds rule 8: human checkpoints are the three gates only', () => {
     expect(t).toContain(
-      '8. Respect the project profile — read `backlog/docs/critical-areas.md` at session start; its entries override the tier rule. If the file is missing, offer once, before the first non-trivial task, to run the project-profile skill. Never run it without the user\'s consent.',
+      '8. Human checkpoints are the three gates (3, 5, 6) and nothing else — outside them, do not ask for confirmation, make offers or present menus; decide, act and report at the end. Stop only when you are blocked or verification fails. This overrides any skill that asks for an integration or execution choice.',
     );
-    expect(t.indexOf('8. Respect the project profile')).toBeGreaterThan(t.indexOf('7. Keep the project summary current'));
-    expect(t.indexOf('8. Respect the project profile')).toBeLessThan(t.indexOf('### Model tiers and delegation'));
+    expect(t.indexOf('8. Human checkpoints')).toBeGreaterThan(t.indexOf('7. Keep the project summary current'));
+    expect(t.indexOf('8. Human checkpoints')).toBeLessThan(t.indexOf('### Model tiers and delegation'));
   });
-  it('binds rule 7: keep the project summary current, only with consent', () => {
+  it('binds rule 7: keep the project summary current, only on request', () => {
     expect(t).toContain(
-      '7. Keep the project summary current — at session start, if `backlog/docs/architecture.yml` is missing, offer once to run the architecture-summary skill. At the end of the pipeline, after a merge, run `sbl summary --check`; if it reports drift, offer a refresh. Never run the skill without the user\'s consent.',
+      '7. Keep the project summary current — if `backlog/docs/architecture.yml` is missing or `sbl summary --check` reports drift after a merge, say so in the final report; run the architecture-summary skill only when the user asks for it.',
     );
     expect(t.indexOf('7. Keep the project summary current')).toBeGreaterThan(t.indexOf('6. Delegate by tier'));
-    expect(t.indexOf('7. Keep the project summary current')).toBeLessThan(t.indexOf('8. Respect the project profile'));
+    expect(t.indexOf('7. Keep the project summary current')).toBeLessThan(t.indexOf('8. Human checkpoints'));
   });
   it('keeps the project-gates note as the closing line', () => {
     expect(t.trimEnd().endsWith('Add project-specific human gates below the block.')).toBe(true);
@@ -123,9 +124,9 @@ describe('claude-pointer.md', () => {
   it('points at the AGENTS.md block', () => {
     expect(p).toMatch(/AGENTS\.md/);
   });
-  it('points at the delegation section, the profile and the explicit model parameter', () => {
+  it('points at the delegation section and the explicit model parameter', () => {
     expect(p).toContain('"Model tiers and delegation"');
-    expect(p).toContain('`backlog/docs/critical-areas.md`');
+    expect(p).not.toContain('critical-areas.md');
     expect(p).toContain("Agent tool's `model` explicitly");
   });
   it('is a single section (refresh ends the section at the next heading)', () => {

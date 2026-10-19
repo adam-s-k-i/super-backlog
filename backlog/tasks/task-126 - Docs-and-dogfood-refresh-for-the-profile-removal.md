@@ -4,9 +4,10 @@ title: Docs and dogfood refresh for the profile removal
 status: To Do
 assignee: []
 created_date: '2026-10-19 17:36'
+updated_date: '2026-10-19 18:12'
 labels:
   - docs
-  - phase/spec
+  - phase/impl
 dependencies:
   - TASK-122
   - TASK-123

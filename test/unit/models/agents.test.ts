@@ -59,7 +59,7 @@ describe('renderAgentFile', () => {
     expect(text.split('\n').slice(0, 5)).toEqual([
       '---',
       'name: sbl-top',
-      'description: Top tier — analysis, design, architecture and every decision where a mistake is costly; everything backlog/docs/critical-areas.md lists as critical.',
+      'description: Top tier — analysis, design, architecture and every decision where a mistake is costly.',
       'mode: subagent',
       '---',
     ]);

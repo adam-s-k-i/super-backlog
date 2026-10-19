@@ -4,10 +4,10 @@ title: sbl update removes the legacy project-profile skill
 status: To Do
 assignee: []
 created_date: '2026-10-19 17:33'
-updated_date: '2026-10-19 17:35'
+updated_date: '2026-10-19 18:12'
 labels:
   - fix
-  - phase/spec
+  - phase/impl
 dependencies:
   - TASK-121
 references:
