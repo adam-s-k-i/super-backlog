@@ -3,6 +3,13 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.10.3](https://github.com/adam-s-k-i/super-backlog/compare/v1.10.2...v1.10.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* fewer interruptions, embedded Backlog browser and 1.10.3 ([#104](https://github.com/adam-s-k-i/super-backlog/issues/104)) ([28d7d02](https://github.com/adam-s-k-i/super-backlog/commit/28d7d020dbee50683485768112db54ec1a50ea38))
+
 ## [1.10.2](https://github.com/adam-s-k-i/super-backlog/compare/v1.10.1...v1.10.2) (2026-10-11)
 
 
