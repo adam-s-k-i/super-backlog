@@ -37,7 +37,7 @@
     "backlog.md": "^1.54.0",
     "cspell": "^10.4.0",
     "happy-dom": "21.0.3",
-    "markdownlint-cli2": "^0.23.2",
+    "markdownlint-cli2": "^0.24.0",
     "super-backlog": "file:.",
     "typescript": "^7.0.2",
     "vitepress": "^1.6.4",
