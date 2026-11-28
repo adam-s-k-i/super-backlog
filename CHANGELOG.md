@@ -3,6 +3,22 @@
 All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.11.0](https://github.com/adam-s-k-i/super-backlog/compare/v1.10.3...v1.11.0) (2026-11-28)
+
+
+### Features
+
+* **doctor:** check 5 reads the Floorplan map status ([f086ac4](https://github.com/adam-s-k-i/super-backlog/commit/f086ac40c5425d1582b598f3defb08fd3dc8bb04))
+* **hub:** serve the Floorplan map at /p/&lt;slug&gt;/map/ ([09155b2](https://github.com/adam-s-k-i/super-backlog/commit/09155b24b22f44cf05967db957d771b9364088ca))
+* **init:** Floorplan hint, rule 7 and legacy architecture-summary cleanup ([2db33a1](https://github.com/adam-s-k-i/super-backlog/commit/2db33a1f97b7d83aacb071f195ac0d6da678747b))
+* **summary:** facts page with a Code map card ([0aea0d1](https://github.com/adam-s-k-i/super-backlog/commit/0aea0d15c41aee4e726859b89e859442081823c0))
+* **summary:** sbl summary becomes a deprecation stub with the map status ([363dfd9](https://github.com/adam-s-k-i/super-backlog/commit/363dfd98b0af8d00a4d435869271cc566b885f8f))
+
+
+### Bug Fixes
+
+* **hub:** sandbox the map page and harden the Floorplan reader ([7fc3a2e](https://github.com/adam-s-k-i/super-backlog/commit/7fc3a2e8d0c31625d43f10490aa9538394ffbfe8))
+
 ## [1.10.3](https://github.com/adam-s-k-i/super-backlog/compare/v1.10.2...v1.10.3) (2026-10-19)
 
 
