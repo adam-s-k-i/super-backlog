@@ -1,13 +1,12 @@
 ---
 id: TASK-132
 title: 'Floorplan: docs and dogfood'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-11-28T13:51:02Z'
-updated_date: '2026-11-28T15:19:12Z'
+updated_date: '2026-11-28T15:49:39Z'
 labels:
   - docs
-  - phase/verify
 dependencies:
   - TASK-129
   - TASK-130

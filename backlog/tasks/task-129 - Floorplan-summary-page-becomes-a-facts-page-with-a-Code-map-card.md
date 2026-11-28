@@ -1,13 +1,12 @@
 ---
 id: TASK-129
 title: 'Floorplan: summary page becomes a facts page with a Code map card'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-11-28T13:50:52Z'
-updated_date: '2026-11-28T15:19:10Z'
+updated_date: '2026-11-28T15:49:32Z'
 labels:
   - feature
-  - phase/verify
 dependencies:
   - TASK-127
   - TASK-128

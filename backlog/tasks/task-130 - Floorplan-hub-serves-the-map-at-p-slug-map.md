@@ -1,13 +1,12 @@
 ---
 id: TASK-130
 title: 'Floorplan: hub serves the map at /p/<slug>/map/'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-11-28T13:50:56Z'
-updated_date: '2026-11-28T15:19:11Z'
+updated_date: '2026-11-28T15:49:35Z'
 labels:
   - feature
-  - phase/verify
 dependencies:
   - TASK-127
 references:
@@ -43,4 +42,6 @@ Plan section 'Task 4 (TASK-130)' in docs/superpowers/plans/2026-11-28-floorplan-
 Browser check (2026-11-28, hub on port 6428, /p/super-backlog/map/): (1) the board renders (11 parts) and a click on 'Dashboard hub' focuses the part and opens its popover; (2) console: no errors; (3) network: only GET /p/super-backlog/map/ -> 200, no request to /api/ or another host. Response carries content-security-policy: connect-src 'none'; form-action 'none'; base-uri 'none' and cache-control: no-store. graph.json, serve.mjs and ../ paths below /map/ answer 404; /map redirects 302 to /map/. The page shows its own 'Asking is unavailable' banner, since serve.mjs is not running (expected).
 
 Verified on HEAD 330a1b7: npm test 76 files, 943 passed, 4 skipped; npx tsc --noEmit rc=0; npm run lint 0 issues; npx vitepress build docs ok. Commit 09155b2. Browser check at http://localhost:6428/p/super-backlog/map/: title 'super-backlog map', map renders with Recent work, Flows and Health; performance resource entries of the page are empty (no request other than the page itself), navigation status 200, no console errors raised by the map page. Route tests cover the 302, headers, CSP, 404 hint, path isolation and regeneration.
+
+Review follow-up 7fc3a2e: the map is served in a CSP sandbox without allow-same-origin (opaque origin, no popups); reader and route accept only regular files (lstat) up to 10 MB / 50 MB; the hub regenerates when graph.json or index.html changed. Verified in the browser under the hub: origin null, fetch/frame/image requests to the hub blocked, outside links show the copy-the-address dialog. Merged with PR #119.
 <!-- SECTION:NOTES:END -->
