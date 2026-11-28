@@ -28,7 +28,7 @@ Commands:
   models      Manage the model router (show, enable, disable, set, discover)
   phase       Show or advance a task's pipeline phase (spec|plan|impl|verify|done)
   doctor      Check the environment (node, PowerShell policy, backlog CLI)
-  summary     Check backlog/docs/architecture.yml for drift (missing paths, Done tasks, stale file)
+  summary     Deprecated: prints the Floorplan map status
 
   init options:
   --pm <auto|npm|pnpm|bun|skip>   Package manager to use (default: auto)
@@ -52,9 +52,6 @@ dashboard options:
 
 doctor options:
   (none)                          Prints one [ok]/[warn]/[skip]/[fail] line per check; exit 4 on any warn, 1 on any fail
-
-summary options:
-  --check                         Report only (no next-step prompt); same exit codes, for CI
 
 phase options:
   --json                          Print the query result as JSON (phase + labels)
@@ -158,17 +155,9 @@ export async function runCli(argv: string[]): Promise<number> {
     }
     case 'doctor':
       return runDoctor(process.cwd());
-    case 'summary': {
-      const parsed = parseArgs({
-        args: rest,
-        allowPositionals: true,
-        options: { check: { type: 'boolean' } },
-      });
-      return runSummary(process.cwd(), {
-        values: parsed.values as Record<string, string | boolean | undefined>,
-        positionals: parsed.positionals,
-      });
-    }
+    case 'summary':
+      // deprecated: arguments such as --check are accepted and ignored
+      return runSummary(process.cwd());
     case 'phase': {
       const parsed = parseArgs({
         args: rest,

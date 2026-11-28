@@ -1,10 +1,10 @@
 ---
 id: TASK-128
 title: 'Floorplan: sbl summary becomes a deprecation stub'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-11-28T13:50:48Z'
-updated_date: '2026-11-28T14:51:13Z'
+updated_date: '2026-11-28T14:53:53Z'
 labels:
   - feature
   - phase/impl
