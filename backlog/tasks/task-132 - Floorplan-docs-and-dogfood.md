@@ -4,9 +4,10 @@ title: 'Floorplan: docs and dogfood'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:51:02Z'
+updated_date: '2026-11-28T14:45:21Z'
 labels:
   - docs
-  - phase/spec
+  - phase/plan
 dependencies:
   - TASK-129
   - TASK-130
@@ -30,3 +31,9 @@ Apply spec decision 8: rewrite the project summary guide, update README, quickst
 - [ ] #3 backlog/docs/architecture.yml of this repo is deleted and AGENTS.md, CLAUDE.md and .claude/skills are refreshed with node dist/bin.js update --no-self
 - [ ] #4 npm run lint, test/docs.test.ts and npx vitepress build docs are green; docs/assets/project-summary.png shows the new page
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Plan section 'Task 6 (TASK-132)' in docs/superpowers/plans/2026-11-28-floorplan-integration.md: README, quickstart, harness support, rewrite of the project summary guide, delete backlog/docs/architecture.yml, sbl update --no-self, update the floorplan, retake the screenshot, lint/docs test/vitepress, commit. Runs last.
+<!-- SECTION:PLAN:END -->

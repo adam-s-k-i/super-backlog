@@ -4,9 +4,10 @@ title: 'Floorplan: map status reader and doctor check 5'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:50:45Z'
+updated_date: '2026-11-28T14:45:13Z'
 labels:
   - feature
-  - phase/spec
+  - phase/plan
 dependencies: []
 references:
   - docs/superpowers/specs/2026-11-28-floorplan-integration-design.md
@@ -27,3 +28,9 @@ Add src/lib/floorplan.ts, the only module that knows the Floorplan file layout (
 - [ ] #3 When backlog/docs/architecture.yml exists, sbl doctor adds a skip line saying the file is no longer used and safe to delete; the file itself is never deleted
 - [ ] #4 floorplanStatusLine is the single source of the status wording, covered by unit tests for every row
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Plan section 'Task 1 (TASK-127)' in docs/superpowers/plans/2026-11-28-floorplan-integration.md: failing tests for readFloorplanStatus/floorplanStatusLine, create src/lib/floorplan.ts, rewrite doctor check 5 with the legacy-file skip line, verify, commit.
+<!-- SECTION:PLAN:END -->

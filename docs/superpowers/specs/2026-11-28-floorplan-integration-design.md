@@ -54,7 +54,7 @@ The page at `/p/<slug>/summary/` shows what today's reduced view shows: name, ve
 
 A new **Code map** card sits above the open tasks:
 
-- Map present: "Floorplan map, built `<date>`, `<n>` files, `<m>` parts" and a link **Open map** to `../map/`. When `HEAD` has moved since the map was built: "`<k>` commits since".
+- Map present: "Floorplan map, built `<date>`, `<n>` files, `<m>` parts" and a link **Open map** to `../map/`. When `HEAD` has moved since the map was built: "`<k>` commits since". `<date>` is the UTC day (`YYYY-MM-DD`); the nouns follow the count (`1 file`, `1 part`, `1 commit`), here and in the status lines of decision 5.
 - No map: one sentence that Floorplan draws an interactive map of the codebase, the two install commands for Claude Code, the request to give the agent ("make a floorplan"), and a link to the Floorplan repository. No error styling: a missing map is a normal state.
 - Map unreadable: one neutral line "Floorplan map unreadable" with the reason.
 
@@ -96,9 +96,9 @@ export function floorplanStatusLine(status: FloorplanStatus): string; // shared 
 
 The response carries an additional header `Content-Security-Policy: connect-src 'none'; form-action 'none'; base-uri 'none'`. Browsers apply it together with the page's own `<meta>` policy and the stricter rule wins, so a map served by the hub cannot send requests to the hub's own API. It is the same connection rule Floorplan uses for exported copies.
 
-The hub serves exactly this one file. No other path under `floorplan/` is reachable, and the hub does not start, stop or talk to Floorplan's server. The map is not regenerated or watched by the hub; a browser reload shows a rebuilt map.
+The hub serves exactly this one file. No other path under `floorplan/` is reachable, and the hub does not start, stop or talk to Floorplan's server. The map is not regenerated or watched by the hub; a browser reload shows a rebuilt map. The summary page follows the map without a watcher: before the hub serves `/p/<slug>/summary/`, it compares the modification time of `floorplan/graph.json` with the value of its last check and regenerates the project pages when it changed, so a first or rebuilt map shows up on the next page load. A failing regeneration keeps the last good page.
 
-`sbl dashboard --out <file>` (the static export) does not copy the map; the Code map card then shows the status without the link.
+There is no static export of the pages (`sbl dashboard` always serves them through the hub), so the Code map card always shows the **Open map** link when a map is present.
 
 ### 5. `sbl doctor` check 5
 

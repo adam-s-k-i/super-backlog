@@ -4,9 +4,10 @@ title: 'Floorplan: summary page becomes a facts page with a Code map card'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:50:52Z'
+updated_date: '2026-11-28T14:45:19Z'
 labels:
   - feature
-  - phase/spec
+  - phase/plan
 dependencies:
   - TASK-127
   - TASK-128
@@ -29,3 +30,9 @@ Remove the curated architecture layer from the summary page (spec decisions 1 an
 - [ ] #3 src/dashboard/summary-schema.ts, summary-layout.ts and summary-drift.ts and their unit tests are deleted; summary-facts.ts and yamlmini.ts stay; build, tsc and the full test suite are green
 - [ ] #4 The Data source section names manifests, git, the backlog and, when present, floorplan/graph.json
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Plan section 'Task 5 (TASK-129)' in docs/superpowers/plans/2026-11-28-floorplan-integration.md: rewrite unit and integration tests, rewrite summary-render.ts, strip diagram markup/CSS/client code from summary.html, delete summary-schema/layout/drift with tests and fixtures, snapshot, browser check in three states, commit. Runs after TASK-130.
+<!-- SECTION:PLAN:END -->

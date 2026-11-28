@@ -4,9 +4,10 @@ title: 'Floorplan: templates, init hint and legacy skill cleanup'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:50:59Z'
+updated_date: '2026-11-28T14:45:16Z'
 labels:
   - feature
-  - phase/spec
+  - phase/plan
 dependencies:
   - TASK-127
 references:
@@ -28,3 +29,9 @@ Apply spec decision 7: remove the architecture-summary glue skill, rewrite rule 
 - [ ] #3 sbl init prints INIT_FLOORPLAN_HINT only when no map exists and claude is among the selected harnesses; it installs nothing and does not probe the plugin directory
 - [ ] #4 sbl uninstall still removes both legacy skill paths and does not touch floorplan/, CLAUDE.local.md or .git/info/exclude
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+Plan section 'Task 3 (TASK-131)' in docs/superpowers/plans/2026-11-28-floorplan-integration.md: rule 7 in the workflow block, delete the architecture-summary skill template, GLUE_SKILLS/LEGACY_SKILL_DIRS, INIT_FLOORPLAN_HINT, tests first, verify, commit. Runs after TASK-128 and before TASK-130/129.
+<!-- SECTION:PLAN:END -->
