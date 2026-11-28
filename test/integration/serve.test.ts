@@ -253,18 +253,6 @@ describe('startServeServer', () => {
 
 const SUMMARY_PATH = `${PROJECT_PATH}summary/`;
 
-const ARCH_YML = [
-  'schema: 1',
-  'pitch: A **small** demo.',
-  'grid: { cols: 2, rows: 2 }',
-  'nodes:',
-  '  - { id: core, label: Watcher Core, kind: core, cell: [0, 0] }',
-  '  - { id: out, label: Report Sink, kind: output, cell: [1, 0] }',
-  'edges:',
-  '  - { from: core, to: out, label: writes }',
-  '',
-].join('\n');
-
 /** Dashboard plus summary page, exactly like the hub's own regenerate chain. */
 async function writeProjectPages(dir: string): Promise<void> {
   const data = await collectDashboardData(dir, { kitVersion: 'test' });
@@ -273,10 +261,13 @@ async function writeProjectPages(dir: string): Promise<void> {
   writeSummaryPage(dir, data, file);
 }
 
-function writeArchitecture(dir: string, text: string): void {
-  mkdirSync(join(dir, 'backlog', 'docs'), { recursive: true });
-  writeFileSync(join(dir, 'backlog', 'docs', 'architecture.yml'), text);
+function writeMap(dir: string, graph: string): void {
+  mkdirSync(join(dir, 'floorplan'), { recursive: true });
+  writeFileSync(join(dir, 'floorplan', 'index.html'), '<!doctype html><title>map</title>');
+  writeFileSync(join(dir, 'floorplan', 'graph.json'), graph);
 }
+
+const GRAPH = JSON.stringify({ meta: { generatedAt: '2026-11-28T10:00:00.000Z', counts: { files: 7 } }, nodes: [{}, {}] });
 
 function fetchRaw(port: number, path: string): Promise<{ status: number; location: string; body: string }> {
   return new Promise((resolvePromise, rejectPromise) => {
@@ -305,7 +296,7 @@ describe('summary page route', () => {
     const res = await fetchRaw(handle.port, SUMMARY_PATH);
     expect(res.status).toBe(200);
     expect(res.body).toContain('<meta name="sbl-page" content="summary">');
-    expect(res.body).toContain('No architecture file yet');
+    expect(res.body).toContain('No code map yet');
     const viaIndex = await fetchRaw(handle.port, `${SUMMARY_PATH}index.html`);
     expect(viaIndex.status).toBe(200);
   });
@@ -330,7 +321,7 @@ describe('summary page route', () => {
     expect(res.body).toBe('summary not generated yet');
   });
 
-  it('shows architecture nodes after architecture.yml is written and pages regenerate', async () => {
+  it('shows the Code map card on the next request after a map was built', async () => {
     const dir = freshProject();
     await writeProjectPages(dir);
     const regenerate = async (): Promise<void> => {
@@ -339,51 +330,29 @@ describe('summary page route', () => {
     const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
     handles.push(handle);
 
-    expect((await fetchRaw(handle.port, SUMMARY_PATH)).body).not.toContain('Watcher Core');
-    writeArchitecture(dir, ARCH_YML);
-    await regenerate();
+    expect((await fetchRaw(handle.port, SUMMARY_PATH)).body).toContain('No code map yet');
+    writeMap(dir, GRAPH);
+    // no manual regenerate: the hub notices the new graph.json before it serves the page (Task 4)
     const res = await fetchRaw(handle.port, SUMMARY_PATH);
     expect(res.status).toBe(200);
-    expect(res.body).toContain('Watcher Core');
+    expect(res.body).toContain('Floorplan map, built 2026-11-28, 7 files, 2 parts.');
+    expect(res.body).toContain('<a class="maplink" href="../map/">Open map</a>');
+    const map = await fetchRaw(handle.port, `${PROJECT_PATH}map/`);
+    expect(map.status).toBe(200);
+    expect(map.body).toContain('<title>map</title>');
   });
 
-  watcherIt('regenerates and broadcasts a reload when architecture.yml changes', async () => {
+  it('serves an unreadable map as 200 with one neutral line', async () => {
     const dir = freshProject();
-    await writeProjectPages(dir);
-    const regenerate = vi.fn(async () => {
-      await writeProjectPages(dir);
-    });
-    const handle = await startServeServer(dir, { port: 0, regenerate, openBrowser: false });
-    handles.push(handle);
-
-    const received: string[] = [];
-    const req = request({ host: '127.0.0.1', port: handle.port, path: `${PROJECT_PATH}api/events`, method: 'GET' }, (res) => {
-      res.setEncoding('utf8');
-      res.on('data', (c: string) => received.push(c));
-    });
-    req.on('error', () => {});
-    req.end();
-    expect(await until(2000, () => received.join('').includes(':'))).toBe(true);
-
-    writeArchitecture(dir, ARCH_YML);
-
-    expect(await until(3000, () => received.join('').includes('event: reload'))).toBe(true);
-    const res = await fetchRaw(handle.port, SUMMARY_PATH);
-    expect(res.body).toContain('Watcher Core');
-    req.destroy();
-  });
-
-  it('serves an invalid architecture.yml as 200 with a notice', async () => {
-    const dir = freshProject();
-    writeArchitecture(dir, 'schema: 2\n');
+    writeMap(dir, '{ not json');
     await writeProjectPages(dir);
     const handle = await startServeServer(dir, { port: 0, openBrowser: false });
     handles.push(handle);
 
     const res = await fetchRaw(handle.port, SUMMARY_PATH);
     expect(res.status).toBe(200);
-    expect(res.body).toMatch(/class="notice[^"]*"/);
-    expect(res.body).toContain('backlog/docs/architecture.yml');
+    expect(res.body).toContain('Floorplan map unreadable (not valid JSON)');
+    expect(res.body).not.toMatch(/class="notice[^"]*"/);
   });
 
   it('keeps the dashboard intact when the summary chain fails', async () => {
