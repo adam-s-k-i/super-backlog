@@ -1,10 +1,10 @@
 ---
 id: TASK-131
 title: 'Floorplan: templates, init hint and legacy skill cleanup'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-11-28T13:50:59Z'
-updated_date: '2026-11-28T14:51:15Z'
+updated_date: '2026-11-28T14:55:10Z'
 labels:
   - feature
   - phase/impl

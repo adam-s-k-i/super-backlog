@@ -28,7 +28,7 @@ methodology skills that decide how the work is done.
 4. Skills take precedence over habit whenever a matching skill exists.
 5. Phase transitions only via `sbl phase <id> <phase>`, always at a gate passage — never edit phase labels by hand.
 6. Delegate by tier — when you delegate, the subtask goes to the cheapest model that solves it reliably (see "Model tiers and delegation" below).
-7. Keep the project summary current — if `backlog/docs/architecture.yml` is missing or `sbl summary --check` reports drift after a merge, say so in the final report; run the architecture-summary skill only when the user asks for it.
+7. Keep the code map current — if the project has a Floorplan map (`floorplan/` exists) and a merge changed the structure (new, moved or removed modules), update the floorplan with the Floorplan skill before the final report, or say in the report that the map is stale when the skill is not available. Never create a map unasked.
 8. Human checkpoints are the three gates (3, 5, 6) and nothing else — outside them, do not ask for confirmation, make offers or present menus; decide, act and report at the end. Stop only when you are blocked or verification fails. This overrides any skill that asks for an integration or execution choice.
 
 ### Model tiers and delegation

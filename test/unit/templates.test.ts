@@ -82,15 +82,15 @@ describe('workflow-block.md', () => {
     expect(t).toContain(
       '8. Human checkpoints are the three gates (3, 5, 6) and nothing else — outside them, do not ask for confirmation, make offers or present menus; decide, act and report at the end. Stop only when you are blocked or verification fails. This overrides any skill that asks for an integration or execution choice.',
     );
-    expect(t.indexOf('8. Human checkpoints')).toBeGreaterThan(t.indexOf('7. Keep the project summary current'));
+    expect(t.indexOf('8. Human checkpoints')).toBeGreaterThan(t.indexOf('7. Keep the code map current'));
     expect(t.indexOf('8. Human checkpoints')).toBeLessThan(t.indexOf('### Model tiers and delegation'));
   });
-  it('binds rule 7: keep the project summary current, only on request', () => {
+  it('binds rule 7: keep an existing code map current, never create one unasked', () => {
     expect(t).toContain(
-      '7. Keep the project summary current — if `backlog/docs/architecture.yml` is missing or `sbl summary --check` reports drift after a merge, say so in the final report; run the architecture-summary skill only when the user asks for it.',
+      '7. Keep the code map current — if the project has a Floorplan map (`floorplan/` exists) and a merge changed the structure (new, moved or removed modules), update the floorplan with the Floorplan skill before the final report, or say in the report that the map is stale when the skill is not available. Never create a map unasked.',
     );
-    expect(t.indexOf('7. Keep the project summary current')).toBeGreaterThan(t.indexOf('6. Delegate by tier'));
-    expect(t.indexOf('7. Keep the project summary current')).toBeLessThan(t.indexOf('8. Human checkpoints'));
+    expect(t.indexOf('7. Keep the code map current')).toBeGreaterThan(t.indexOf('6. Delegate by tier'));
+    expect(t.indexOf('7. Keep the code map current')).toBeLessThan(t.indexOf('8. Human checkpoints'));
   });
   it('keeps the project-gates note as the closing line', () => {
     expect(t.trimEnd().endsWith('Add project-specific human gates below the block.')).toBe(true);
@@ -177,6 +177,17 @@ describe('all templates exist', () => {
     for (const f of ['workflow-block.md', 'skill-spec-to-backlog.md', 'claude-pointer.md']) {
       expect(existsSync(join(tplDir, f))).toBe(true);
       expect(read(f)).not.toMatch(/TBD|TODO/);
+    }
+  });
+});
+
+describe('no template names the removed architecture layer', () => {
+  it('has no architecture.yml, architecture-summary or sbl summary reference in any markdown template', () => {
+    for (const f of readdirSync(tplDir).filter((n) => n.endsWith('.md'))) {
+      const t = read(f);
+      expect(t, f).not.toContain('architecture.yml');
+      expect(t, f).not.toContain('architecture-summary');
+      expect(t, f).not.toContain('sbl summary');
     }
   });
 });

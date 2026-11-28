@@ -38,6 +38,12 @@ describe('sbl uninstall (SBL_SKIP_INSTALL)', () => {
     );
     writeFileSync(join(dir, 'dashboard.html'), '<html>demo</html>'); // foreign, no kit markers
 
+    // an install made by 1.10 still carries the architecture-summary skill
+    for (const rel of ['.claude/skills/architecture-summary', '.opencode/skill/architecture-summary']) {
+      mkdirSync(join(dir, rel), { recursive: true });
+      writeFileSync(join(dir, rel, 'SKILL.md'), '<!-- managed-by: super-backlog 1.10.3 -->\n# old\n');
+    }
+
     const out = runCli(dir, ['uninstall']);
 
     const agents = readFileSync(join(dir, 'AGENTS.md'), 'utf8');

@@ -163,10 +163,15 @@ function applyClaudePointer(cwd: string): boolean {
   return true;
 }
 
-const GLUE_SKILLS = ['spec-to-backlog', 'backlog-status-report', 'task-review-gate', 'architecture-summary'] as const;
+const GLUE_SKILLS = ['spec-to-backlog', 'backlog-status-report', 'task-review-gate'] as const;
 
 /** Skill directories earlier releases installed and this release no longer ships; removed on every init/update. */
-const LEGACY_SKILL_DIRS = ['.claude/skills/project-profile', '.opencode/skill/project-profile'] as const;
+const LEGACY_SKILL_DIRS = [
+  '.claude/skills/project-profile',
+  '.opencode/skill/project-profile',
+  '.claude/skills/architecture-summary',
+  '.opencode/skill/architecture-summary',
+] as const;
 
 function applyCopySkills(cwd: string, version: string): boolean {
   for (const skill of GLUE_SKILLS) {

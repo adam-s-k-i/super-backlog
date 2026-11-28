@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { INIT_SUMMARY_HINT, runInit, type ParsedArgs } from '../../src/commands/init.js';
+import { INIT_FLOORPLAN_HINT, runInit, type ParsedArgs } from '../../src/commands/init.js';
 import type { PreflightDeps, PreflightResult, UnitReport } from '../../src/lib/preflight.js';
 
 function args(values: Record<string, unknown> = {}): ParsedArgs {
@@ -189,37 +189,57 @@ describe('sbl init preflight integration', () => {
     }
   });
 
-  it('ends with the summary hint while architecture.yml is missing', async () => {
-    const cwd = tempCwd('hint');
+  it('ends with the Floorplan hint when claude is selected and no map exists', async () => {
+    for (const harness of ['claude', 'opencode,claude']) {
+      const cwd = tempCwd(`hint-${harness.replace(',', '-')}`);
+      const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      try {
+        await runInit(cwd, args({ harness }), { preflight: () => okResult(), doctor: () => 0 });
+        expect(INIT_FLOORPLAN_HINT).toBe(
+          'next step (optional): install the Floorplan plugin for an interactive code map (claude plugin marketplace add haydenschmitty/floorplan; claude plugin install floorplan@floorplan), then ask your agent to make a floorplan',
+        );
+        const lines = spy.mock.calls.map((c) => String(c[0]));
+        expect(lines.slice(-1)).toEqual([INIT_FLOORPLAN_HINT]);
+        expect(lines.findIndex((l) => l.startsWith('super-backlog init complete'))).toBeLessThan(
+          lines.indexOf(INIT_FLOORPLAN_HINT),
+        );
+      } finally {
+        spy.mockRestore();
+        rmSync(cwd, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it('prints no Floorplan hint for an opencode-only init', async () => {
+    const cwd = tempCwd('hint-opencode');
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
-      await runInit(cwd, args(), { preflight: () => okResult(), doctor: () => 0 });
-      expect(INIT_SUMMARY_HINT).toBe(
-        'next step: ask your agent to run the architecture-summary skill (writes backlog/docs/architecture.yml for the summary page)',
-      );
-      const lines = spy.mock.calls.map((c) => String(c[0]));
-      expect(lines.slice(-1)).toEqual([INIT_SUMMARY_HINT]);
-      expect(lines.findIndex((l) => l.startsWith('super-backlog init complete'))).toBeLessThan(lines.indexOf(INIT_SUMMARY_HINT));
+      await runInit(cwd, args({ harness: 'opencode' }), { preflight: () => okResult(), doctor: () => 0 });
+      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_FLOORPLAN_HINT);
     } finally {
       spy.mockRestore();
       rmSync(cwd, { recursive: true, force: true });
     }
   });
 
-  it('prints no summary hint when architecture.yml exists', async () => {
+  it('prints no Floorplan hint when a map already exists', async () => {
     const cwd = tempCwd('hint-present');
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
-      await runInit(cwd, args(), {
+      await runInit(cwd, args({ harness: 'claude' }), {
         preflight: () => okResult(),
         // the doctor seam runs after the init actions and before the hint check
         doctor: (c) => {
-          mkdirSync(join(c, 'backlog', 'docs'), { recursive: true });
-          writeFileSync(join(c, 'backlog', 'docs', 'architecture.yml'), 'schema: 1\n');
+          mkdirSync(join(c, 'floorplan'), { recursive: true });
+          writeFileSync(join(c, 'floorplan', 'index.html'), '<!doctype html>');
+          writeFileSync(
+            join(c, 'floorplan', 'graph.json'),
+            JSON.stringify({ meta: { generatedAt: '2026-11-28T13:46:30.507Z', counts: { files: 3 } }, nodes: [{}] }),
+          );
           return 0;
         },
       });
-      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_SUMMARY_HINT);
+      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_FLOORPLAN_HINT);
     } finally {
       spy.mockRestore();
       rmSync(cwd, { recursive: true, force: true });
@@ -230,8 +250,8 @@ describe('sbl init preflight integration', () => {
     const cwd = tempCwd('hint-dryrun');
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     try {
-      await runInit(cwd, args({ 'dry-run': true }), { preflight: () => okResult(), doctor: () => 0 });
-      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_SUMMARY_HINT);
+      await runInit(cwd, args({ harness: 'claude', 'dry-run': true }), { preflight: () => okResult(), doctor: () => 0 });
+      expect(spy.mock.calls.map((c) => String(c[0]))).not.toContain(INIT_FLOORPLAN_HINT);
     } finally {
       spy.mockRestore();
       rmSync(cwd, { recursive: true, force: true });
