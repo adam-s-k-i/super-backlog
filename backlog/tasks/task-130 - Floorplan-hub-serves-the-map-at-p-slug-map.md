@@ -4,10 +4,10 @@ title: 'Floorplan: hub serves the map at /p/<slug>/map/'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:50:56Z'
-updated_date: '2026-11-28T14:45:18Z'
+updated_date: '2026-11-28T14:51:15Z'
 labels:
   - feature
-  - phase/plan
+  - phase/impl
 dependencies:
   - TASK-127
 references:

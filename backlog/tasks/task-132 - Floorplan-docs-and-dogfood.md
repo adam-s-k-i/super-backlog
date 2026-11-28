@@ -4,10 +4,10 @@ title: 'Floorplan: docs and dogfood'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:51:02Z'
-updated_date: '2026-11-28T14:45:21Z'
+updated_date: '2026-11-28T14:51:16Z'
 labels:
   - docs
-  - phase/plan
+  - phase/impl
 dependencies:
   - TASK-129
   - TASK-130

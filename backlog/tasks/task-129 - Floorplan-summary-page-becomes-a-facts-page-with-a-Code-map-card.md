@@ -4,10 +4,10 @@ title: 'Floorplan: summary page becomes a facts page with a Code map card'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:50:52Z'
-updated_date: '2026-11-28T14:45:19Z'
+updated_date: '2026-11-28T14:51:14Z'
 labels:
   - feature
-  - phase/plan
+  - phase/impl
 dependencies:
   - TASK-127
   - TASK-128

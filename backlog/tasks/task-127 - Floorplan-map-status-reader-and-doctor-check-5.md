@@ -1,13 +1,13 @@
 ---
 id: TASK-127
 title: 'Floorplan: map status reader and doctor check 5'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-11-28T13:50:45Z'
-updated_date: '2026-11-28T14:45:13Z'
+updated_date: '2026-11-28T14:51:18Z'
 labels:
   - feature
-  - phase/plan
+  - phase/impl
 dependencies: []
 references:
   - docs/superpowers/specs/2026-11-28-floorplan-integration-design.md

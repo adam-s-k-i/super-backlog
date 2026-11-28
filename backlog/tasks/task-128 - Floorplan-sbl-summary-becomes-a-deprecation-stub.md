@@ -4,10 +4,10 @@ title: 'Floorplan: sbl summary becomes a deprecation stub'
 status: To Do
 assignee: []
 created_date: '2026-11-28T13:50:48Z'
-updated_date: '2026-11-28T14:45:15Z'
+updated_date: '2026-11-28T14:51:13Z'
 labels:
   - feature
-  - phase/plan
+  - phase/impl
 dependencies:
   - TASK-127
 references:

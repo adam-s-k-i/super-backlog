@@ -1,9 +1,14 @@
 // src/commands/doctor.ts
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import process from 'node:process';
 
-import { ARCHITECTURE_PATH, loadArchitecture, type ArchitectureLoadResult } from '../dashboard/summary-schema.js';
-import { detectDrift, driftCount } from '../dashboard/summary-drift.js';
-import { layoutArchitecture, type LayoutResult } from '../dashboard/summary-layout.js';
+import {
+  floorplanStatusLine,
+  LEGACY_ARCHITECTURE_PATH,
+  readFloorplanStatus,
+  type FloorplanStatus,
+} from '../lib/floorplan.js';
 import { extractPhaseLabels, PHASES } from '../lib/phase.js';
 import {
   getEffectiveExecutionPolicy,
@@ -22,12 +27,10 @@ export interface DoctorDeps {
   executor?: Executor;
   resolveBacklog?: (cwd: string) => string | null;
   readTaskLabels?: (cwd: string) => TaskLabelRow[] | null;
-  /** Seam for check 5; defaults to reading backlog/docs/architecture.yml. */
-  loadArchitecture?: (cwd: string) => ArchitectureLoadResult;
-  /** Seam for check 5; defaults to the summary page's layout engine. */
-  layoutArchitecture?: typeof layoutArchitecture;
-  /** Seam for check 5; defaults to the shared drift module. */
-  detectDrift?: typeof detectDrift;
+  /** Seam for check 5; defaults to reading floorplan/graph.json. */
+  readFloorplanStatus?: (cwd: string) => FloorplanStatus;
+  /** Seam for check 5; defaults to checking backlog/docs/architecture.yml on disk. */
+  legacyArchitectureExists?: (cwd: string) => boolean;
   log?: (line: string) => void;
 }
 
@@ -136,56 +139,19 @@ export function runDoctor(cwd: string, deps: DoctorDeps = {}): number {
     }
   }
 
-  // check 5: curated architecture file of the summary page. Task ids are not
-  // passed: the schema would drop unknown ids before drift reports them.
-  let arch: ArchitectureLoadResult | null = null;
-  try {
-    arch = (deps.loadArchitecture ?? ((c: string) => loadArchitecture(c)))(cwd);
-  } catch (err) {
-    emit('fail', `${ARCHITECTURE_PATH} check failed (${err instanceof Error ? err.message : String(err)})`);
-  }
-  if (arch === null) {
-    // reported above
-  } else if (arch.status === 'missing') {
-    emit('skip', `${ARCHITECTURE_PATH} not present (summary page shows the reduced view)`);
-  } else if (arch.status === 'invalid') {
-    const errors = arch.problems.filter((p) => p.level === 'error').length;
-    emit('fail', `${ARCHITECTURE_PATH}: ${errors} error(s)`, [
-      ...arch.problems.map((p) => `${p.level}: ${p.path}: ${p.message}`),
-      'fix: edit the file or run the architecture-summary skill, then sbl doctor again',
-    ]);
+  // check 5: Floorplan code map (optional). A map behind HEAD is information, not a warning.
+  const map = (deps.readFloorplanStatus ?? ((c: string) => readFloorplanStatus(c)))(cwd);
+  if (map.state === 'missing') {
+    emit('skip', floorplanStatusLine(map));
+  } else if (map.state === 'invalid') {
+    emit('warn', floorplanStatusLine(map), ['fix: ask your agent to update the floorplan']);
   } else {
-    let layout: LayoutResult | null = null;
-    try {
-      layout = (deps.layoutArchitecture ?? layoutArchitecture)(arch.architecture);
-    } catch (err) {
-      emit('fail', `${ARCHITECTURE_PATH} layout failed (${err instanceof Error ? err.message : String(err)})`);
-    }
-    if (layout !== null) {
-      const warnings = [
-        ...arch.problems.map((p) => `warning: ${p.path}: ${p.message}`),
-        ...layout.warnings.map((w) => `layout ${w.code} ${w.edge}: ${w.message}`),
-      ];
-      const size = `${arch.architecture.nodes.length} nodes, ${arch.architecture.edges.length} edges`;
-      let findings = 0;
-      let driftError: string | null = null;
-      try {
-        findings = (deps.detectDrift ?? detectDrift)(cwd, arch.architecture, { tasks: taskRows }).findings.length;
-      } catch (err) {
-        driftError = err instanceof Error ? err.message : String(err);
-      }
-      if (warnings.length > 0) {
-        emit('warn', `${ARCHITECTURE_PATH} valid with ${warnings.length} warning(s) (${size})`, warnings);
-      }
-      if (driftError !== null) {
-        emit('warn', `architecture.yml drift check failed (${driftError})`);
-      } else if (findings > 0) {
-        emit('warn', `architecture.yml valid, ${driftCount(findings)} – run sbl summary for details`);
-      }
-      if (warnings.length === 0 && driftError === null && findings === 0) {
-        emit('ok', `${ARCHITECTURE_PATH} valid (${size}, layout clean)`);
-      }
-    }
+    emit('ok', floorplanStatusLine(map));
+  }
+  const legacyExists =
+    deps.legacyArchitectureExists ?? ((c: string) => existsSync(join(c, ...LEGACY_ARCHITECTURE_PATH.split('/'))));
+  if (legacyExists(cwd)) {
+    emit('skip', `${LEGACY_ARCHITECTURE_PATH} is no longer used (Floorplan replaces it; safe to delete)`);
   }
 
   log(`doctor summary: ${okCount} ok, ${warnCount} warn, ${skipCount} skip, ${failCount} fail`);
