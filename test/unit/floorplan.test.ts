@@ -1,11 +1,12 @@
 // test/unit/floorplan.test.ts
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, truncateSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   FLOORPLAN_INSTALL_COMMANDS,
+  FLOORPLAN_MAX_PAGE_BYTES,
   floorplanBuiltDate,
   floorplanPagePath,
   floorplanStamp,
@@ -83,6 +84,10 @@ describe('readFloorplanStatus', () => {
     expect(status).toMatchObject({ state: 'map', files: 0, nodes: 0, commitsSince: 0 });
   });
 
+  it.each([-3, 2.5, Number.POSITIVE_INFINITY])('counts a file count of %s as 0', (files) => {
+    expect(readFloorplanStatus(project(graph({ counts: { files } })), git('0'))).toMatchObject({ state: 'map', files: 0 });
+  });
+
   it.each([
     ['no repos entry', { repos: undefined }],
     ['no entry with path "."', { repos: [{ path: 'packages/a', head: HEAD }] }],
@@ -110,6 +115,13 @@ describe('readFloorplanStatus', () => {
       reason: 'no build date (meta.generatedAt)',
     });
     expect(readFloorplanStatus(project(graph({ generatedAt: 1764337590507 })))).toMatchObject({ state: 'invalid' });
+    // Date.parse accepts these; an ISO timestamp is required
+    for (const generatedAt of ['November 28, 2026', '2026', '11/28/2026']) {
+      expect(readFloorplanStatus(project(graph({ generatedAt }))), generatedAt).toEqual({
+        state: 'invalid',
+        reason: 'no build date (meta.generatedAt)',
+      });
+    }
   });
 
   it('is invalid for a graph.json above 10 MB and does not parse it', () => {
@@ -117,10 +129,44 @@ describe('readFloorplanStatus', () => {
     expect(readFloorplanStatus(cwd)).toEqual({ state: 'invalid', reason: 'graph.json is larger than 10 MB' });
   });
 
-  it('never throws when graph.json is a directory', () => {
-    const cwd = project(null, true);
-    mkdirSync(join(cwd, 'floorplan', 'graph.json'));
-    expect(readFloorplanStatus(cwd).state).toBe('invalid');
+  it('is invalid when graph.json or index.html is not a regular file', () => {
+    const noGraph = project(null, true);
+    mkdirSync(join(noGraph, 'floorplan', 'graph.json'));
+    expect(readFloorplanStatus(noGraph)).toEqual({ state: 'invalid', reason: 'graph.json is not a regular file' });
+    const noPage = project(graph(), false);
+    mkdirSync(join(noPage, 'floorplan', 'index.html'));
+    expect(readFloorplanStatus(noPage)).toEqual({ state: 'invalid', reason: 'index.html is not a regular file' });
+  });
+
+  it('does not follow a linked graph.json or index.html', () => {
+    const cwd = project(null, false);
+    mkdirSync(join(cwd, 'floorplan'));
+    writeFileSync(join(cwd, 'real-graph.json'), JSON.stringify(graph()));
+    writeFileSync(join(cwd, 'real-page.html'), '<!doctype html>');
+    try {
+      symlinkSync(join(cwd, 'real-graph.json'), join(cwd, 'floorplan', 'graph.json'));
+    } catch {
+      return; // this platform or account cannot create links
+    }
+    writeFileSync(join(cwd, 'floorplan', 'index.html'), '<!doctype html>');
+    expect(readFloorplanStatus(cwd)).toEqual({ state: 'invalid', reason: 'graph.json is not a regular file' });
+    rmSync(join(cwd, 'floorplan', 'graph.json'));
+    rmSync(join(cwd, 'floorplan', 'index.html'));
+    writeFileSync(join(cwd, 'floorplan', 'graph.json'), JSON.stringify(graph()));
+    symlinkSync(join(cwd, 'real-page.html'), join(cwd, 'floorplan', 'index.html'));
+    expect(readFloorplanStatus(cwd)).toEqual({ state: 'invalid', reason: 'index.html is not a regular file' });
+  });
+
+  it('is invalid for an index.html above 50 MB', () => {
+    const cwd = project(graph());
+    truncateSync(join(cwd, 'floorplan', 'index.html'), FLOORPLAN_MAX_PAGE_BYTES + 1);
+    expect(readFloorplanStatus(cwd)).toEqual({ state: 'invalid', reason: 'index.html is larger than 50 MB' });
+  });
+
+  it('is missing when floorplan is a file, not a folder', () => {
+    const cwd = project(null, false);
+    writeFileSync(join(cwd, 'floorplan'), 'not a folder');
+    expect(readFloorplanStatus(cwd)).toEqual({ state: 'missing' });
   });
 });
 
@@ -139,7 +185,7 @@ describe('floorplanStatusLine', () => {
       'no floorplan map (optional: install the Floorplan plugin and ask your agent to make a floorplan)',
     );
     expect(floorplanStatusLine({ state: 'invalid', reason: 'not valid JSON' })).toBe(
-      'floorplan/graph.json unreadable (not valid JSON)',
+      'floorplan map unreadable (not valid JSON)',
     );
     expect(floorplanStatusLine(map())).toBe('floorplan map current (built 2026-11-28, 165 files, 11 parts)');
     expect(floorplanStatusLine(map({ commitsSince: 3 }))).toBe(
@@ -164,9 +210,14 @@ describe('helpers', () => {
     expect(floorplanPagePath(join('a', 'b'))).toBe(join('a', 'b', 'floorplan', 'index.html'));
   });
 
-  it('floorplanStamp is 0 without a map and the graph mtime with one', () => {
-    expect(floorplanStamp(project(null, false))).toBe(0);
-    expect(floorplanStamp(project(graph()))).toBeGreaterThan(0);
+  it('floorplanStamp covers graph.json and index.html', () => {
+    expect(floorplanStamp(project(null, false))).toBe('0:0');
+    const cwd = project(graph(), false);
+    const graphOnly = floorplanStamp(cwd);
+    expect(graphOnly).toMatch(/^[1-9][0-9.]*:0$/);
+    writeFileSync(join(cwd, 'floorplan', 'index.html'), '<!doctype html>');
+    expect(floorplanStamp(cwd)).toMatch(/^[1-9][0-9.]*:[1-9][0-9.]*$/);
+    expect(floorplanStamp(cwd)).not.toBe(graphOnly);
   });
 
   it('lists the two install commands', () => {

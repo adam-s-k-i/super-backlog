@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSync, truncateSync } from 'node:fs';
 import { request, type IncomingHttpHeaders } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -11,6 +11,7 @@ vi.mock('../../src/dashboard/server.js', async (importOriginal) => {
 });
 
 import { startHubServer } from '../../src/dashboard/hub.js';
+import { FLOORPLAN_MAX_PAGE_BYTES } from '../../src/lib/floorplan.js';
 import { summaryFileFor } from '../../src/dashboard/summary-render.js';
 import { KIT_VERSION } from '../../src/lib/version.js';
 import { computeBuildFingerprint } from '../../src/lib/build-fingerprint.js';
@@ -354,6 +355,53 @@ describe('startHubServer', () => {
       expect(res.location).toBe(`/p/${slug}/map/`);
     });
 
+    it('keeps the map off the hub origin: sandbox without allow-same-origin', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-h-', 'map-h');
+      dirs.push(cwd);
+      withMap(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      const policy = String((await req(hub.port, `/p/${slug}/map/`)).headers['content-security-policy']);
+      const sandbox = policy.split(';')[0].trim().split(' ');
+      expect(sandbox[0]).toBe('sandbox');
+      expect(sandbox).not.toContain('allow-same-origin');
+      expect(sandbox).not.toContain('allow-forms');
+      expect(sandbox).not.toContain('allow-top-navigation');
+      expect(sandbox).not.toContain('allow-popups');
+      // the dashboard itself stays unsandboxed
+      expect((await req(hub.port, `/p/${slug}/`)).headers['content-security-policy']).toBeUndefined();
+    });
+
+    it('answers 404 when index.html is not a regular file or is too large', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-i-', 'map-i');
+      dirs.push(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      const page = join(cwd, 'floorplan', 'index.html');
+      mkdirSync(page, { recursive: true });
+      expect((await req(hub.port, `/p/${slug}/map/`)).status).toBe(404);
+      rmSync(page, { recursive: true });
+      writeFileSync(page, MAP_HTML);
+      truncateSync(page, FLOORPLAN_MAX_PAGE_BYTES + 1);
+      const big = await req(hub.port, `/p/${slug}/map/`);
+      expect(big.status).toBe(404);
+      expect(big.body).not.toContain('floorplan-map-marker');
+    });
+
+    it('does not follow a linked index.html', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-j-', 'map-j');
+      dirs.push(cwd);
+      mkdirSync(join(cwd, 'floorplan'), { recursive: true });
+      writeFileSync(join(cwd, 'elsewhere.html'), '<p>linked-file-marker</p>');
+      try {
+        symlinkSync(join(cwd, 'elsewhere.html'), join(cwd, 'floorplan', 'index.html'));
+      } catch {
+        return; // this platform or account cannot create links
+      }
+      const { hub, slug } = await hubWith(cwd, file);
+      const res = await req(hub.port, `/p/${slug}/map/`);
+      expect(res.status).toBe(404);
+      expect(res.body).not.toContain('linked-file-marker');
+    });
+
     it('serves floorplan/index.html with the restrictive headers', async () => {
       const { cwd, file } = fixture('sbl-hub-map-b-', 'map-b');
       dirs.push(cwd);
@@ -366,8 +414,11 @@ describe('startHubServer', () => {
         expect(res.headers['content-type']).toBe('text/html; charset=utf-8');
         expect(res.headers['cache-control']).toBe('no-store');
         expect(res.headers['content-security-policy']).toBe(
-          "connect-src 'none'; form-action 'none'; base-uri 'none'",
+          "sandbox allow-scripts allow-downloads; default-src 'none'; " +
+            "script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; " +
+            "connect-src 'none'; form-action 'none'; base-uri 'none'",
         );
+        expect(res.headers['x-content-type-options']).toBe('nosniff');
       }
     });
 
@@ -434,6 +485,22 @@ describe('startHubServer', () => {
       await req(hub.port, `/p/${slug}/`);
       await req(hub.port, `/p/${slug}/map/`);
       expect(regenerate).toHaveBeenCalledTimes(1); // only the summary route checks
+    });
+
+    it('regenerates again when index.html arrives after graph.json', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-k-', 'map-k');
+      dirs.push(cwd);
+      const regenerate = vi.fn();
+      const { hub, slug } = await hubWith(cwd, file, regenerate);
+      mkdirSync(join(cwd, 'floorplan'), { recursive: true });
+      writeFileSync(join(cwd, 'floorplan', 'graph.json'), '{}');
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(1); // half a map: graph.json only
+      writeFileSync(join(cwd, 'floorplan', 'index.html'), MAP_HTML);
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(2); // the page completes the map
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(2);
     });
 
     it('still serves the summary when the regeneration throws', async () => {

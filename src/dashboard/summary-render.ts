@@ -98,7 +98,6 @@ export function emptyFacts(): SummaryFacts {
     dependencies: 0,
     devDependencies: 0,
     packages: [],
-    versions: {},
     extensions: [],
     fileSource: 'walk',
     sourceFiles: 0,

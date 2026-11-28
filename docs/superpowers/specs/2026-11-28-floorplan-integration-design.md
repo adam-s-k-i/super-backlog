@@ -56,7 +56,7 @@ A new **Code map** card sits above the open tasks:
 
 - Map present: "Floorplan map, built `<date>`, `<n>` files, `<m>` parts" and a link **Open map** to `../map/`. When `HEAD` has moved since the map was built: "`<k>` commits since". `<date>` is the UTC day (`YYYY-MM-DD`); the nouns follow the count (`1 file`, `1 part`, `1 commit`), here and in the status lines of decision 5.
 - No map: one sentence that Floorplan draws an interactive map of the codebase, the two install commands for Claude Code, the request to give the agent ("make a floorplan"), and a link to the Floorplan repository. No error styling: a missing map is a normal state.
-- Map unreadable: one neutral line "Floorplan map unreadable" with the reason.
+- Map unreadable: one neutral line "Floorplan map unreadable" with the reason, followed by the advice "Ask your agent to update the floorplan."
 
 The **Data source** section at the bottom names the manifests, git, the backlog and, when present, `floorplan/graph.json`.
 
@@ -83,8 +83,8 @@ export function floorplanStatusLine(status: FloorplanStatus): string; // shared 
 ```
 
 - `missing`: `floorplan/graph.json` or `floorplan/index.html` does not exist.
-- `invalid`: `graph.json` is larger than 10 MB, is not JSON, or lacks a string `meta.generatedAt` that parses as a date.
-- `map`: `builtAt` from `meta.generatedAt`; `files` from `meta.counts.files` (0 when absent or not a number); `nodes` from the length of `nodes` (0 when absent). `commitsSince` is the output of `git rev-list --count <head>..HEAD` for the entry in `meta.repos` whose `path` is `.`; it is `null` when there is no such entry, the head is not a 40-character hex string, or git fails (for example after a rebase removed the commit).
+- `invalid`: `graph.json` or `index.html` is not a regular file (both are checked with `lstat`, so a link is never followed), `graph.json` is larger than 10 MB, `index.html` is larger than 50 MB, `graph.json` is not JSON, or it lacks a string `meta.generatedAt` that starts like an ISO timestamp (`YYYY-MM-DDT`) and parses as a date.
+- `map`: `builtAt` from `meta.generatedAt`; `files` from `meta.counts.files` (0 when absent or not a non-negative integer); `nodes` from the length of `nodes` (0 when absent). `commitsSince` is the output of `git rev-list --count <head>..HEAD` for the entry in `meta.repos` whose `path` is `.`; it is `null` when there is no such entry, the head is not a 40-character hex string, or git fails (for example after a rebase removed the commit).
 - The reader never executes anything from `floorplan/` and never follows the content of `graph.json` to other paths. git runs through the existing `run` seam with an argument array.
 
 ### 4. The hub serves the map
@@ -92,11 +92,16 @@ export function floorplanStatusLine(status: FloorplanStatus): string; // shared 
 `src/dashboard/hub.ts` gets two routes next to the summary routes:
 
 - `/p/<slug>/map` redirects (302) to `/p/<slug>/map/`.
-- `GET /p/<slug>/map/` and `/p/<slug>/map/index.html` send `<project>/floorplan/index.html` with `content-type: text/html; charset=utf-8` and `cache-control: no-store`. When the file is missing the answer is 404 with the text `no floorplan map - install the Floorplan plugin and ask your agent to make a floorplan`.
+- `GET /p/<slug>/map/` and `/p/<slug>/map/index.html` send `<project>/floorplan/index.html` with `content-type: text/html; charset=utf-8` and `cache-control: no-store`. When the file is missing, is not a regular file (a link is never followed) or is larger than 50 MB, the answer is 404 with the text `no floorplan map - install the Floorplan plugin and ask your agent to make a floorplan`.
 
-The response carries an additional header `Content-Security-Policy: connect-src 'none'; form-action 'none'; base-uri 'none'`. Browsers apply it together with the page's own `<meta>` policy and the stricter rule wins, so a map served by the hub cannot send requests to the hub's own API. It is the same connection rule Floorplan uses for exported copies.
+The response carries two additional headers: `X-Content-Type-Options: nosniff` and `Content-Security-Policy: sandbox allow-scripts allow-downloads; default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'`.
 
-The hub serves exactly this one file. No other path under `floorplan/` is reachable, and the hub does not start, stop or talk to Floorplan's server. The map is not regenerated or watched by the hub; a browser reload shows a rebuilt map. The summary page follows the map without a watcher: before the hub serves `/p/<slug>/summary/`, it compares the modification time of `floorplan/graph.json` with the value of its last check and regenerates the project pages when it changed, so a first or rebuilt map shows up on the next page load. A failing regeneration keeps the last good page.
+- `sandbox` without `allow-same-origin` gives the page an opaque origin. It cannot read or call anything on the hub's origin, not even through a frame. This matters because a repository can ship its own `floorplan/index.html`; a policy that only forbids network requests would leave such a page on the hub's origin.
+- Browsers apply the other directives together with the page's own `<meta>` policy and the stricter rule wins: the page's scripts stay pinned by hash, and the page can load nothing from the network.
+- The sandbox has no `allow-popups`. A window opened from an opaque origin cannot be given a clean address by the page, so the flag would bring nothing; Floorplan falls back to its built-in dialog that shows the address to copy.
+- Two visible effects under the hub follow from this: the map does not remember settings such as the theme between visits (an opaque origin has no storage), and a link to another site shows the address instead of opening it. Both work as usual under Floorplan's own server.
+
+The hub serves exactly this one file. No other path under `floorplan/` is reachable, and the hub does not start, stop or talk to Floorplan's server. The map is not regenerated or watched by the hub; a browser reload shows a rebuilt map. The summary page follows the map without a watcher: before the hub serves `/p/<slug>/summary/`, it compares the modification times of `floorplan/graph.json` and `floorplan/index.html` with the values of its last check and regenerates the project pages when either changed (Floorplan writes the two files one after the other), so a first or rebuilt map shows up on the next page load. A failing regeneration keeps the last good page.
 
 There is no static export of the pages (`sbl dashboard` always serves them through the hub), so the Code map card always shows the **Open map** link when a map is present.
 
@@ -107,7 +112,7 @@ Check 5 keeps its position and reports the map:
 | State | Status | Line |
 |---|---|---|
 | `missing` | `skip` | `no floorplan map (optional: install the Floorplan plugin and ask your agent to make a floorplan)` |
-| `invalid` | `warn` | `floorplan/graph.json unreadable (<reason>)` with detail `fix: ask your agent to update the floorplan` |
+| `invalid` | `warn` | `floorplan map unreadable (<reason>)` with detail `fix: ask your agent to update the floorplan` |
 | `map`, `commitsSince` 0 | `ok` | `floorplan map current (built <date>, <n> files, <m> parts)` |
 | `map`, `commitsSince` > 0 | `ok` | `floorplan map built <date>, <k> commits behind HEAD (<n> files, <m> parts)` |
 | `map`, `commitsSince` null | `ok` | `floorplan map built <date> (<n> files, <m> parts)` |
@@ -154,18 +159,18 @@ map status: <the line from the check 5 table, without the status prefix>
 
 ## Security
 
-- Third-party content: `floorplan/index.html` is generated by a plugin the user installed, from the user's own repository. The hub adds a response policy that forbids network requests, so the page cannot call hub endpoints even though it shares the origin. Scripts in the page are already pinned by hash through its own policy.
+- Third-party content: `floorplan/index.html` is generated by a plugin the user installed, from the user's own repository. A repository can also ship its own `floorplan/index.html`, so the hub treats the page as untrusted: it serves it in a sandbox without `allow-same-origin` (opaque origin) and with a policy that forbids network requests, so the page cannot read or call hub endpoints. Scripts in the page are already pinned by hash through its own policy.
 - Path handling: the served path is fixed (`floorplan/index.html` below the registered project root); no request input becomes part of a file path.
-- `graph.json` is read with a size limit and only four fields are used; values are escaped like every other value on the summary page.
+- `graph.json` and `index.html` are accepted only as regular files below a size limit (a link is never followed), and only four fields of `graph.json` are used; values are escaped like every other value on the summary page.
 - `sbl` never runs Floorplan scripts and never sends anything to Floorplan Cloud. The hints name the plugin; whether to install it is the user's decision.
 
 ## Testing
 
-- `test/unit/floorplan.test.ts`: every state of `readFloorplanStatus` (no folder, page without graph, oversized file, broken JSON, missing date, map with and without matching repo entry, git failure, a non-hex head never reaches git) and every row of `floorplanStatusLine`.
+- `test/unit/floorplan.test.ts`: every state of `readFloorplanStatus` (no folder, page without graph, oversized graph or page, linked or non-regular files, broken JSON, missing or lenient date, file counts that are not non-negative integers, map with and without matching repo entry, git failure, a non-hex head never reaches git) and every row of `floorplanStatusLine`.
 - `test/unit/doctor.test.ts`: the five rows of the check 5 table and the legacy-file line; the exit code stays 0 for a map behind `HEAD`.
 - `test/unit/summary-command.test.ts`, `test/integration/summary-cli.test.ts`: stub output, exit 0 with old flags, outside a project.
 - `test/unit/summary-render.test.ts` and its snapshot: facts page with map, without map and with an unreadable map, escaped values, no trace of the diagram markup.
-- `test/unit/hub.test.ts`, `test/integration/serve.test.ts`: redirect, 200 with the three headers, 404 without map, no other file under `floorplan/` reachable.
+- `test/unit/hub.test.ts`, `test/integration/serve.test.ts`: redirect, 200 with content type, `no-store`, the sandbox policy and `nosniff`, 404 without map and for a linked, non-regular or oversized page, regeneration when either map file changes, no other file under `floorplan/` reachable.
 - `test/unit/templates.test.ts`, `glue-skills.test.ts`, `test/e2e/{init,doctor,uninstall}.e2e.test.ts`, `test/docs.test.ts`: skill list, rule 7 wording, init hint, legacy skill removal on update, docs references.
 - Full verification before the PR: `npm run build && npm test && npm run lint && npx tsc --noEmit` and `npx vitepress build docs`.
 

@@ -1,5 +1,5 @@
 import { rmSync, watch, type FSWatcher } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { lstat, readFile } from 'node:fs/promises';
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -18,7 +18,7 @@ import {
 } from './server.js';
 import { atomicWrite } from '../lib/atomic.js';
 import { defaultBuildFingerprint } from '../lib/build-fingerprint.js';
-import { floorplanPagePath, floorplanStamp } from '../lib/floorplan.js';
+import { FLOORPLAN_MAX_PAGE_BYTES, floorplanPagePath, floorplanStamp } from '../lib/floorplan.js';
 import { projectSlug, realpathKey } from '../lib/slug.js';
 import { KIT_VERSION } from '../lib/version.js';
 import { createModelApiHandler } from '../models/dashboard-api.js';
@@ -53,8 +53,8 @@ type ProjectEntry = {
   browser: ReturnType<typeof createBrowserManager>;
   modelApi: ReturnType<typeof createModelApiHandler>;
   regenerate: () => void | Promise<void>;
-  /** mtime of floorplan/graph.json at the last check; 0 while the project has no map. */
-  mapStamp: number;
+  /** floorplanStamp() at the last check. */
+  mapStamp: string;
 };
 
 const WATCH_WARN =
@@ -63,10 +63,25 @@ const WATCH_WARN =
 const MAP_NOT_FOUND = 'no floorplan map - install the Floorplan plugin and ask your agent to make a floorplan';
 
 /**
- * The map is third-party HTML served from the hub's origin. This policy is added to the page's
- * own <meta> policy (policies intersect), so the page cannot call hub endpoints or post forms.
+ * The map is third-party HTML, and a repository can ship its own floorplan/index.html. `sandbox`
+ * without allow-same-origin gives the page an opaque origin: it cannot read or call anything on
+ * the hub's origin, not even through a frame. It gets no allow-popups either: a window opened
+ * from an opaque origin cannot be handed a clean address by the page, so Floorplan shows the
+ * address to copy instead. The other directives are added to the page's own <meta> policy
+ * (policies intersect): inline code only, no network requests, no form posts.
  */
-const MAP_HEADERS = { 'content-security-policy': "connect-src 'none'; form-action 'none'; base-uri 'none'" };
+const MAP_CSP = [
+  'sandbox allow-scripts allow-downloads',
+  "default-src 'none'",
+  "script-src 'unsafe-inline'",
+  "style-src 'unsafe-inline'",
+  'img-src data: blob:',
+  'font-src data:',
+  "connect-src 'none'",
+  "form-action 'none'",
+  "base-uri 'none'",
+].join('; ');
+const MAP_HEADERS = { 'content-security-policy': MAP_CSP, 'x-content-type-options': 'nosniff' };
 
 const ALLOWED_HOST = /^(127\.0\.0\.1|localhost)(:\d+)?$/;
 
@@ -224,6 +239,21 @@ function serveFile(
     .catch(() => {
       sendText(res, 404, notFound);
     });
+}
+
+/** Sends floorplan/index.html only when it is a regular file of sane size; a link is never followed. */
+async function serveMapPage(file: string, res: ServerResponse): Promise<void> {
+  try {
+    const info = await lstat(file);
+    if (!info.isFile() || info.size > FLOORPLAN_MAX_PAGE_BYTES) {
+      sendText(res, 404, MAP_NOT_FOUND);
+      return;
+    }
+  } catch {
+    sendText(res, 404, MAP_NOT_FOUND);
+    return;
+  }
+  serveFile(file, res, MAP_NOT_FOUND, MAP_HEADERS);
 }
 
 function generateDashboard(cwd: string, file: string): void {
@@ -525,7 +555,7 @@ export async function startHubServer(opts: {
 
     // Exactly one file: the path is fixed, nothing from the request becomes part of it.
     if (method === 'GET' && (rest === '/map/' || rest === '/map/index.html')) {
-      serveFile(floorplanPagePath(entry.cwd), res, MAP_NOT_FOUND, MAP_HEADERS);
+      await serveMapPage(floorplanPagePath(entry.cwd), res);
       return;
     }
 

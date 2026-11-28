@@ -57,7 +57,7 @@ The date is the UTC day the map was built. "Commits since" counts the commits
 between the commit the map was built from and the current `HEAD`. It is
 computed when the page is generated, so it is as fresh as the rest of the
 page: the hub regenerates the page when the backlog changes and when the map
-file changed since the last time the page was served.
+changed since the last time the page was served.
 
 ## Get a map
 
@@ -95,9 +95,16 @@ is not committed and every checkout builds its own.
 the self-contained map page `floorplan/index.html`. Parts, connections, flows
 and the search work as usual.
 
-Two features need Floorplan's own server and are off under the hub: the
-**Ask** bar and saving flows. For those, start the server that ships with the
-map and open the address it prints:
+The hub serves the map in a browser sandbox, cut off from the hub itself: the
+map page cannot read or call anything on the hub's address. Three things
+differ from a map opened through Floorplan's own server:
+
+- The **Ask** bar and saving flows are off; they need Floorplan's server.
+- Settings such as the theme are not remembered between visits.
+- A link to another site does not open; the map shows the address to copy.
+
+For the full feature set, start the server that ships with the map and open
+the address it prints:
 
 ```bash
 node floorplan/serve.mjs
@@ -112,7 +119,7 @@ node floorplan/serve.mjs
 | No map | `[skip] no floorplan map (optional: install the Floorplan plugin and ask your agent to make a floorplan)` |
 | Map built from the current commit | `[ok] floorplan map current (built 2026-11-28, 165 files, 11 parts)` |
 | Map older than the current commit | `[ok] floorplan map built 2026-11-28, 3 commits behind HEAD (165 files, 11 parts)` |
-| Map cannot be read | `[warn] floorplan/graph.json unreadable (not valid JSON)` |
+| Map cannot be read | `[warn] floorplan map unreadable (not valid JSON)` |
 
 A missing or older map never changes the exit code of `sbl doctor`; the map
 is optional.
@@ -139,8 +146,9 @@ curated file, `backlog/docs/architecture.yml`, written by the
 
 - **The card says the map is unreadable:** ask your agent to update the
   floorplan. The rest of the page is not affected.
-- **`/p/<slug>/map/` answers "no floorplan map":** the project has no
-  `floorplan/index.html`. Build a map first.
+- **`/p/<slug>/map/` answers "no floorplan map":** the project has no usable
+  `floorplan/index.html`. The hub serves only a regular file of up to 50 MB
+  and never follows a link. Build the map, or ask your agent to update it.
 - **The card still shows an old state:** reload the summary page. The hub
   picks up a new or rebuilt map on the next page load.
 - **Unexpected render error:** the page shows the facts it could collect and

@@ -167,7 +167,7 @@ describe('check 5: floorplan map', () => {
   it('warns with the fix line for an unreadable graph.json (exit 4)', () => {
     const d = makeDeps({ readFloorplanStatus: () => ({ state: 'invalid', reason: 'not valid JSON' }) });
     expect(runDoctor('/proj', d)).toBe(4);
-    const at = d.lines.indexOf('[warn] floorplan/graph.json unreadable (not valid JSON)');
+    const at = d.lines.indexOf('[warn] floorplan map unreadable (not valid JSON)');
     expect(at).toBeGreaterThan(-1);
     expect(d.lines[at + 1]).toBe('        fix: ask your agent to update the floorplan');
   });

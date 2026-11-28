@@ -59,7 +59,6 @@ const FACTS: SummaryFacts = {
   dependencies: 3,
   devDependencies: 9,
   packages: [{ name: 'cross-spawn', group: 'Runtime', version: '7.0.6' } as SummaryFacts['packages'][number]],
-  versions: { typescript: '7.0.2', vitest: '5.0.3', 'cross-spawn': '7.0.6' },
   extensions: ['.ts', '.mjs'],
   fileSource: 'git',
   sourceFiles: 212,

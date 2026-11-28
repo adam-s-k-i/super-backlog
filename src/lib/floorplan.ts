@@ -1,7 +1,7 @@
 // src/lib/floorplan.ts
 // Reads the map the Floorplan plugin (https://github.com/haydenschmitty/floorplan)
 // writes to <project>/floorplan/. Read-only: sbl never creates or changes that folder.
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { lstatSync, readFileSync, type Stats } from 'node:fs';
 import { join } from 'node:path';
 
 import { runCapture as defaultRunCapture, type RunResult } from './run.js';
@@ -15,6 +15,8 @@ export const FLOORPLAN_INSTALL_COMMANDS = [
 /** The curated file Floorplan replaced; doctor only reports it. */
 export const LEGACY_ARCHITECTURE_PATH = 'backlog/docs/architecture.yml';
 export const FLOORPLAN_MAX_GRAPH_BYTES = 10 * 1024 * 1024;
+/** Floorplan pages are a few MB; anything far above that is not a map. */
+export const FLOORPLAN_MAX_PAGE_BYTES = 50 * 1024 * 1024;
 
 export type FloorplanStatus =
   | { state: 'missing' }
@@ -26,6 +28,8 @@ export interface FloorplanDeps {
 }
 
 const FULL_SHA = /^[0-9a-f]{40}$/;
+/** Date.parse alone also accepts "2026" or "November 28, 2026"; Floorplan writes ISO timestamps. */
+const ISO_DATE_TIME = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T/;
 
 function graphPath(cwd: string): string {
   return join(cwd, FLOORPLAN_DIR, 'graph.json');
@@ -35,12 +39,30 @@ export function floorplanPagePath(cwd: string): string {
   return join(cwd, FLOORPLAN_DIR, 'index.html');
 }
 
-/** Change marker for the hub: mtime of graph.json, 0 when there is no map. Never throws. */
-export function floorplanStamp(cwd: string): number {
+function mtime(file: string): number {
   try {
-    return statSync(graphPath(cwd)).mtimeMs;
+    return lstatSync(file).mtimeMs;
   } catch {
     return 0;
+  }
+}
+
+/**
+ * Change marker for the hub: the mtimes of graph.json and index.html, '0:0' when there is no map.
+ * Both files count because Floorplan writes them one after the other. Never throws.
+ */
+export function floorplanStamp(cwd: string): string {
+  return `${mtime(graphPath(cwd))}:${mtime(floorplanPagePath(cwd))}`;
+}
+
+/** lstat, so a link is seen as a link and never followed; null when nothing is there. */
+function lstatOrNull(file: string): Stats | null {
+  try {
+    return lstatSync(file);
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') return null;
+    throw err;
   }
 }
 
@@ -66,8 +88,13 @@ function commitsSince(cwd: string, meta: Record<string, unknown>, run: NonNullab
 export function readFloorplanStatus(cwd: string, deps: FloorplanDeps = {}): FloorplanStatus {
   try {
     const file = graphPath(cwd);
-    if (!existsSync(file) || !existsSync(floorplanPagePath(cwd))) return { state: 'missing' };
-    if (statSync(file).size > FLOORPLAN_MAX_GRAPH_BYTES) return { state: 'invalid', reason: 'graph.json is larger than 10 MB' };
+    const graphInfo = lstatOrNull(file);
+    const pageInfo = lstatOrNull(floorplanPagePath(cwd));
+    if (!graphInfo || !pageInfo) return { state: 'missing' };
+    if (!graphInfo.isFile()) return { state: 'invalid', reason: 'graph.json is not a regular file' };
+    if (!pageInfo.isFile()) return { state: 'invalid', reason: 'index.html is not a regular file' };
+    if (graphInfo.size > FLOORPLAN_MAX_GRAPH_BYTES) return { state: 'invalid', reason: 'graph.json is larger than 10 MB' };
+    if (pageInfo.size > FLOORPLAN_MAX_PAGE_BYTES) return { state: 'invalid', reason: 'index.html is larger than 50 MB' };
     let parsed: unknown;
     try {
       parsed = JSON.parse(readFileSync(file, 'utf8'));
@@ -76,11 +103,16 @@ export function readFloorplanStatus(cwd: string, deps: FloorplanDeps = {}): Floo
       throw err;
     }
     const meta = isRecord(parsed) ? parsed.meta : undefined;
-    if (!isRecord(meta) || typeof meta.generatedAt !== 'string' || Number.isNaN(Date.parse(meta.generatedAt))) {
+    if (
+      !isRecord(meta) ||
+      typeof meta.generatedAt !== 'string' ||
+      !ISO_DATE_TIME.test(meta.generatedAt) ||
+      Number.isNaN(Date.parse(meta.generatedAt))
+    ) {
       return { state: 'invalid', reason: 'no build date (meta.generatedAt)' };
     }
     const counts = isRecord(meta.counts) ? meta.counts : {};
-    const files = typeof counts.files === 'number' && Number.isFinite(counts.files) ? counts.files : 0;
+    const files = typeof counts.files === 'number' && Number.isInteger(counts.files) && counts.files >= 0 ? counts.files : 0;
     const nodes = isRecord(parsed) && Array.isArray(parsed.nodes) ? parsed.nodes.length : 0;
     return {
       state: 'map',
@@ -107,7 +139,7 @@ export function floorplanStatusLine(status: FloorplanStatus): string {
   if (status.state === 'missing') {
     return 'no floorplan map (optional: install the Floorplan plugin and ask your agent to make a floorplan)';
   }
-  if (status.state === 'invalid') return `floorplan/graph.json unreadable (${status.reason})`;
+  if (status.state === 'invalid') return `floorplan map unreadable (${status.reason})`;
   const date = floorplanBuiltDate(status.builtAt);
   const size = `${count(status.files, 'file')}, ${count(status.nodes, 'part')}`;
   if (status.commitsSince === 0) return `floorplan map current (built ${date}, ${size})`;

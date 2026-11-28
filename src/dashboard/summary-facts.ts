@@ -34,8 +34,6 @@ export interface SummaryFacts {
   dependencies: number;
   devDependencies: number;
   packages: FactPackage[];
-  /** Lookup for stack[].package / stack[].name: resolved version or declared range. */
-  versions: Record<string, string>;
   extensions: string[];
   fileSource: 'git' | 'walk';
   sourceFiles: number;
@@ -300,7 +298,6 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
   const npmLock = pkg ? npmLockVersions(cwd, warnings) : {};
   const composerLock = composer ? composerLockVersions(cwd, warnings) : {};
   const packages: FactPackage[] = [];
-  const versions: Record<string, string> = {};
   const add = (map: Record<string, string>, group: FactPackage['group'], source: ManifestKind, lock: Record<string, string>, keep: (n: string) => boolean): number => {
     let count = 0;
     for (const [dep, range] of Object.entries(map).sort(([a], [b]) => byCodeUnit(a, b))) {
@@ -308,7 +305,6 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
       count++;
       const v = lock[dep] ?? range;
       packages.push({ name: dep, group, version: v, source });
-      versions[dep] ??= v;
     }
     return count;
   };
@@ -320,7 +316,6 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
   }
   if (composer) {
     const require = strMap(composer.require);
-    if (require.php) versions.php ??= require.php;
     dependencies += add(require, 'Runtime', 'composer.json', composerLock, composerCounts);
     devDependencies += add(strMap(composer['require-dev']), 'Development', 'composer.json', composerLock, composerCounts);
   }
@@ -389,7 +384,6 @@ export function collectSummaryFacts(cwd: string, deps: FactsDeps = {}): SummaryF
     dependencies,
     devDependencies,
     packages,
-    versions,
     extensions,
     fileSource: listed.source,
     sourceFiles,

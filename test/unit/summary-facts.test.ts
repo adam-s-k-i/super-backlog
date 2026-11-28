@@ -57,7 +57,10 @@ describe('collectSummaryFacts: manifests', () => {
     put('package.json', { name: 'demo', dependencies: { 'cross-spawn': '^7.0.6', other: '~1.0.0' } });
     put('package-lock.json', { packages: { '': {}, 'node_modules/cross-spawn': { version: '7.0.6' }, 'node_modules/a/node_modules/other': { version: '9.9.9' } } });
     const f = collectSummaryFacts(cwd, { runCapture: noGit });
-    expect(f.versions).toEqual({ 'cross-spawn': '7.0.6', other: '~1.0.0' });
+    expect(f.packages.map((p) => [p.name, p.version])).toEqual([
+      ['cross-spawn', '7.0.6'],
+      ['other', '~1.0.0'],
+    ]);
   });
 
   it('reads composer.json, ignores php and ext-* in the count and resolves composer.lock versions', () => {
@@ -73,8 +76,10 @@ describe('collectSummaryFacts: manifests', () => {
     expect(f).toMatchObject({ name: 'acme/kursbuchung', version: null, license: 'GPL-2.0-or-later', manifest: 'composer.json' });
     expect(f.dependencies).toBe(1);
     expect(f.devDependencies).toBe(1);
-    expect(f.versions['mollie/mollie-api-php']).toBe('v2.79.1');
-    expect(f.versions.php).toBe('>=8.3');
+    expect(f.packages.map((p) => [p.name, p.version])).toEqual([
+      ['mollie/mollie-api-php', 'v2.79.1'],
+      ['phpunit/phpunit', '11.5.2'],
+    ]);
     expect(f.commands).toEqual([{ group: 'composer.json scripts', entries: [{ run: 'composer test' }, { run: 'composer lint' }] }]);
   });
 

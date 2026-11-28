@@ -11,7 +11,7 @@ import {
 } from '../lib/powershell.js';
 import { runPreflight, type PreflightDeps, type PreflightResult } from '../lib/preflight.js';
 import { runDoctor } from './doctor.js';
-import { readFloorplanStatus } from '../lib/floorplan.js';
+import { FLOORPLAN_INSTALL_COMMANDS, readFloorplanStatus } from '../lib/floorplan.js';
 import { KIT_VERSION } from '../lib/version.js';
 import { executeActions, InvalidJsonError, RefusalError, UpstreamError } from '../init/execute.js';
 import { planInit, type Action, type InitOptions, type InitState } from '../init/planner.js';
@@ -32,8 +32,7 @@ export interface InitDeps {
 const INIT_PREFLIGHT_UNITS = ['node-version', 'execution-policy', 'npm-command'];
 
 /** Printed after a real init for Claude Code while the project has no Floorplan map. sbl never installs the plugin. */
-export const INIT_FLOORPLAN_HINT =
-  'next step (optional): install the Floorplan plugin for an interactive code map (claude plugin marketplace add haydenschmitty/floorplan; claude plugin install floorplan@floorplan), then ask your agent to make a floorplan';
+export const INIT_FLOORPLAN_HINT = `next step (optional): install the Floorplan plugin for an interactive code map (${FLOORPLAN_INSTALL_COMMANDS.join('; ')}), then ask your agent to make a floorplan`;
 
 const HARNESS_VALUES = ['opencode', 'claude'] as const;
 type Harness = (typeof HARNESS_VALUES)[number];
