@@ -41,8 +41,8 @@ That's it. Everything else below is detail.
 | `sbl dashboard` | Live Project Dashboard on `http://localhost:6428` (alias: `sbl db`). |
 | `sbl phase TASK-1` | Show where a task stands: `phase/spec → plan → impl → verify`. |
 | `sbl phase TASK-1 plan` | Advance the phase after its gate is passed (`done` clears the label). |
-| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene and `architecture.yml`. |
-| `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it (`--check` for CI). |
+| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene and the Floorplan map status. |
+| `sbl summary` | Deprecated: prints the Floorplan map status (the summary page's `architecture.yml` was replaced by Floorplan). |
 | `sbl update` | Self-update the CLI, then refresh every injected file. |
 | `sbl models enable` | Optional model router: one subagent per tier (light, standard, strong, top) with a fixed model. |
 | `sbl uninstall` | Remove everything super-backlog owns — your `backlog/` data stays. |
@@ -63,7 +63,7 @@ Tasks carry their pipeline phase as a label (`phase/spec → plan → impl → v
 | --- | --- |
 | `backlog/` | Your Backlog.md data (created by `backlog init --defaults`) |
 | `AGENTS.md` / `CLAUDE.md` | Workflow block with pipeline, gates, phase rules, and the model-routing rule for subagents |
-| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report`, `architecture-summary` |
+| `.opencode/skill/` + `.claude/skills/` | Glue skills: `spec-to-backlog`, `task-review-gate`, `backlog-status-report` |
 | `opencode.json` | Superpowers plugin entry |
 | `package.json` scripts | `tasks`, `board`, `browser`, `dashboard` |
 | `.git/hooks/pre-commit` | Integrity guard — opt-in via `--guard` |
@@ -80,7 +80,7 @@ A live cockpit rendered from your backlog data: status KPIs, milestones, phase p
 
 ![Project Dashboard](docs/assets/dashboard.png)
 
-Next to the dashboard, every project gets a summary page with an architecture diagram, tech stack, commands and open work: [docs/guide/project-summary.md](docs/guide/project-summary.md).
+Next to the dashboard, every project gets a summary page with project facts, tech stack, commands, open work and a link to the project's [Floorplan](https://github.com/haydenschmitty/floorplan) code map: [docs/guide/project-summary.md](docs/guide/project-summary.md).
 
 ## Requirements
 
