@@ -33,15 +33,15 @@
   },
   "devDependencies": {
     "@types/cross-spawn": "^6.0.6",
-    "@types/node": "^26.2.0",
-    "backlog.md": "^1.54.0",
-    "cspell": "^10.4.0",
+    "@types/node": "^26.6.11",
+    "backlog.md": "^1.57.4",
+    "cspell": "^10.6.0",
     "happy-dom": "21.0.4",
-    "markdownlint-cli2": "^0.24.0",
+    "markdownlint-cli2": "^0.24.2",
     "super-backlog": "file:.",
     "typescript": "^7.0.2",
     "vitepress": "^1.6.4",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.2"
   },
   "overrides": {
     "vitepress": {
