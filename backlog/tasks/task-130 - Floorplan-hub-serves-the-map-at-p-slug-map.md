@@ -1,10 +1,10 @@
 ---
 id: TASK-130
 title: 'Floorplan: hub serves the map at /p/<slug>/map/'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-11-28T13:50:56Z'
-updated_date: '2026-11-28T14:51:15Z'
+updated_date: '2026-11-28T15:01:24Z'
 labels:
   - feature
   - phase/impl
@@ -36,3 +36,9 @@ Add the two map routes to src/dashboard/hub.ts (spec decision 4). The hub serves
 <!-- SECTION:PLAN:BEGIN -->
 Plan section 'Task 4 (TASK-130)' in docs/superpowers/plans/2026-11-28-floorplan-integration.md: failing hub tests, /map routes with fixed path and CSP header, refreshIfMapChanged before /summary/, browser check, commit. Runs after TASK-131.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Browser check (2026-11-28, hub on port 6428, /p/super-backlog/map/): (1) the board renders (11 parts) and a click on 'Dashboard hub' focuses the part and opens its popover; (2) console: no errors; (3) network: only GET /p/super-backlog/map/ -> 200, no request to /api/ or another host. Response carries content-security-policy: connect-src 'none'; form-action 'none'; base-uri 'none' and cache-control: no-store. graph.json, serve.mjs and ../ paths below /map/ answer 404; /map redirects 302 to /map/. The page shows its own 'Asking is unavailable' banner, since serve.mjs is not running (expected).
+<!-- SECTION:NOTES:END -->
