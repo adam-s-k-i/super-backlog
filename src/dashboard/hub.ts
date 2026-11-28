@@ -1,5 +1,5 @@
 import { rmSync, watch, type FSWatcher } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { lstat, readFile } from 'node:fs/promises';
 import { createServer, request as httpRequest, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -18,6 +18,7 @@ import {
 } from './server.js';
 import { atomicWrite } from '../lib/atomic.js';
 import { defaultBuildFingerprint } from '../lib/build-fingerprint.js';
+import { FLOORPLAN_MAX_PAGE_BYTES, floorplanPagePath, floorplanStamp } from '../lib/floorplan.js';
 import { projectSlug, realpathKey } from '../lib/slug.js';
 import { KIT_VERSION } from '../lib/version.js';
 import { createModelApiHandler } from '../models/dashboard-api.js';
@@ -51,10 +52,36 @@ type ProjectEntry = {
   watcher: FSWatcher | null;
   browser: ReturnType<typeof createBrowserManager>;
   modelApi: ReturnType<typeof createModelApiHandler>;
+  regenerate: () => void | Promise<void>;
+  /** floorplanStamp() at the last check. */
+  mapStamp: string;
 };
 
 const WATCH_WARN =
   'warning: live reload is disabled because Node 24+ on Windows cannot reliably watch directories recursively (libuv fs-event bug); use Node 22 or Linux/macOS for live reload';
+
+const MAP_NOT_FOUND = 'no floorplan map - install the Floorplan plugin and ask your agent to make a floorplan';
+
+/**
+ * The map is third-party HTML, and a repository can ship its own floorplan/index.html. `sandbox`
+ * without allow-same-origin gives the page an opaque origin: it cannot read or call anything on
+ * the hub's origin, not even through a frame. It gets no allow-popups either: a window opened
+ * from an opaque origin cannot be handed a clean address by the page, so Floorplan shows the
+ * address to copy instead. The other directives are added to the page's own <meta> policy
+ * (policies intersect): inline code only, no network requests, no form posts.
+ */
+const MAP_CSP = [
+  'sandbox allow-scripts allow-downloads',
+  "default-src 'none'",
+  "script-src 'unsafe-inline'",
+  "style-src 'unsafe-inline'",
+  'img-src data: blob:',
+  'font-src data:',
+  "connect-src 'none'",
+  "form-action 'none'",
+  "base-uri 'none'",
+].join('; ');
+const MAP_HEADERS = { 'content-security-policy': MAP_CSP, 'x-content-type-options': 'nosniff' };
 
 const ALLOWED_HOST = /^(127\.0\.0\.1|localhost)(:\d+)?$/;
 
@@ -194,12 +221,18 @@ function removePageFiles(file: string): void {
   }
 }
 
-function serveFile(file: string, res: ServerResponse, notFound = 'dashboard not generated yet'): void {
+function serveFile(
+  file: string,
+  res: ServerResponse,
+  notFound = 'dashboard not generated yet',
+  extraHeaders: Record<string, string> = {},
+): void {
   readFile(file)
     .then((bytes) => {
       res.writeHead(200, {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
+        ...extraHeaders,
       });
       res.end(bytes);
     })
@@ -208,10 +241,40 @@ function serveFile(file: string, res: ServerResponse, notFound = 'dashboard not 
     });
 }
 
+/** Sends floorplan/index.html only when it is a regular file of sane size; a link is never followed. */
+async function serveMapPage(file: string, res: ServerResponse): Promise<void> {
+  try {
+    const info = await lstat(file);
+    if (!info.isFile() || info.size > FLOORPLAN_MAX_PAGE_BYTES) {
+      sendText(res, 404, MAP_NOT_FOUND);
+      return;
+    }
+  } catch {
+    sendText(res, 404, MAP_NOT_FOUND);
+    return;
+  }
+  serveFile(file, res, MAP_NOT_FOUND, MAP_HEADERS);
+}
+
 function generateDashboard(cwd: string, file: string): void {
   const data = collectDashboardData(cwd, { kitVersion: KIT_VERSION });
   atomicWrite(file, renderDashboard(data));
   writeSummaryPage(cwd, data, file);
+}
+
+/**
+ * The hub does not watch floorplan/. A first or rebuilt map is picked up here, right before the
+ * summary page is served. A failing regeneration keeps the last good page.
+ */
+async function refreshIfMapChanged(entry: ProjectEntry): Promise<void> {
+  const stamp = floorplanStamp(entry.cwd);
+  if (stamp === entry.mapStamp) return;
+  entry.mapStamp = stamp;
+  try {
+    await entry.regenerate();
+  } catch {
+    /* serve the last good page */
+  }
 }
 
 export async function startHubServer(opts: {
@@ -287,6 +350,8 @@ export async function startHubServer(opts: {
       existing.cwd = project.cwd;
       if (existing.file !== project.file) removePageFiles(existing.file);
       existing.file = project.file;
+      existing.regenerate = project.regenerate;
+      existing.mapStamp = floorplanStamp(project.cwd);
       existing.reloader.cancel();
       existing.watcher?.close();
       existing.reloader = createDebouncedReloader(project.regenerate, () => existing.broker.broadcast('reload'), 300);
@@ -306,6 +371,8 @@ export async function startHubServer(opts: {
       watcher: watchBacklog(project.cwd, reloader),
       browser: createBrowserManager(project.cwd, opts.browserDeps),
       modelApi: createModelApiHandler(project.cwd),
+      regenerate: project.regenerate,
+      mapStamp: floorplanStamp(project.cwd),
     };
     projects.set(slug, entry);
     return { ok: true, slug, url };
@@ -475,7 +542,20 @@ export async function startHubServer(opts: {
     }
 
     if (method === 'GET' && (rest === '/summary/' || rest === '/summary/index.html')) {
+      await refreshIfMapChanged(entry);
       serveFile(summaryFileFor(entry.file), res, 'summary not generated yet');
+      return;
+    }
+
+    if (rest === '/map') {
+      res.writeHead(302, { location: `/p/${slug}/map/` });
+      res.end();
+      return;
+    }
+
+    // Exactly one file: the path is fixed, nothing from the request becomes part of it.
+    if (method === 'GET' && (rest === '/map/' || rest === '/map/index.html')) {
+      await serveMapPage(floorplanPagePath(entry.cwd), res);
       return;
     }
 

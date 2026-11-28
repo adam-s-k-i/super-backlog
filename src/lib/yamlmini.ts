@@ -16,8 +16,10 @@ export function readSimpleKeys(filePath: string, keys: string[]): Record<string,
 }
 
 /* ---------------------------------------------------------------------------
- * parseYamlSubset: the documented YAML subset used by backlog/docs/architecture.yml
- * (spec 2026-10-09-project-summary-design.md, D7). Supported: block mappings and
+ * parseYamlSubset: a documented YAML subset (block and flow collections, scalars,
+ * block scalars, comments). Its first user, the summary page's architecture.yml,
+ * was replaced by the Floorplan map in 1.11.0; the parser stays as a library
+ * function. Supported: block mappings and
  * sequences (two-space indentation), single-line flow sequences/mappings, plain,
  * single- and double-quoted scalars, integers, booleans, null, `|`/`>` block
  * scalars (with optional `-` chomping) and `#` comments. Rejected with line and

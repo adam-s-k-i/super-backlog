@@ -32,26 +32,11 @@ function runDoctor(env: Record<string, string> = {}): DoctorResult {
   }
 }
 
-/** Check 5 drift line; its `–` is an en dash (U+2013). */
-const DRIFT_LINE = /^\[warn\] architecture\.yml valid, \d+ drift findings? – run sbl summary for details$/;
-
-/**
- * Doctor runs at the repo root, so check 5 sees the repo's live drift (Done
- * tasks, renamed files, commit count). Accept exactly that one warning with
- * exit 4; any other warning, or any other exit code, still fails.
- */
-function expectCleanExceptDrift({ out, status }: DoctorResult): void {
-  const lines = out.split(/\r?\n/);
-  const driftLines = lines.filter((l) => DRIFT_LINE.test(l));
-  const rest = lines.filter((l) => !DRIFT_LINE.test(l)).join('\n');
-  expect(rest).toContain('[ok]');
-  expect(rest).not.toContain('[warn]');
-  if (driftLines.length === 0) {
-    expect(status).toBe(0);
-  } else {
-    expect(driftLines).toHaveLength(1);
-    expect(status).toBe(4);
-  }
+function expectClean({ out, status }: DoctorResult): void {
+  expect(out).toContain('[ok]');
+  expect(out).not.toContain('[warn]');
+  expect(out).not.toContain('[fail]');
+  expect(status).toBe(0);
 }
 
 describe('sbl doctor', () => {
@@ -63,11 +48,11 @@ describe('sbl doctor', () => {
     expect(out).toContain('Set-ExecutionPolicy -Scope CurrentUser RemoteSigned');
   });
 
-  it('exits 0 when policy is permissive (4 only for live check-5 drift)', () => {
-    expectCleanExceptDrift(runDoctor({ SBL_FAKE_POLICY: 'RemoteSigned' }));
+  it('exits 0 when policy is permissive', () => {
+    expectClean(runDoctor({ SBL_FAKE_POLICY: 'RemoteSigned' }));
   });
 
-  it('exits 0 for an Undefined policy on Windows (4 only for live check-5 drift)', () => {
-    expectCleanExceptDrift(runDoctor({ SBL_FAKE_POLICY: 'Undefined' }));
+  it('exits 0 for an Undefined policy on Windows', () => {
+    expectClean(runDoctor({ SBL_FAKE_POLICY: 'Undefined' }));
   });
 });

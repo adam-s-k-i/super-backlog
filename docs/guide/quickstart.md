@@ -39,7 +39,7 @@ node ./node_modules/super-backlog/dist/bin.js init
 
 Add `--models` to also enable the optional [model router](#model-router-opt-in).
 
-Every initialized project also gets a binding delegation rule in its `AGENTS.md` block: the agent does the work itself by default and, when it delegates, sends the subtask to the cheapest of four model tiers that solves it reliably. The block's only human checkpoints are the three pipeline gates (design, spec review, plan). After a real init, `sbl` prints a next step to ask your agent for the summary page's `architecture.yml` while the file is missing. This rule is independent of the opt-in router.
+Every initialized project also gets a binding delegation rule in its `AGENTS.md` block: the agent does the work itself by default and, when it delegates, sends the subtask to the cheapest of four model tiers that solves it reliably. The block's only human checkpoints are the three pipeline gates (design, spec review, plan). After a real init for Claude Code, `sbl` prints an optional next step: install the Floorplan plugin for an interactive code map (see [project summary page](./project-summary)). This rule is independent of the opt-in router.
 
 ## Daily commands
 
@@ -55,8 +55,8 @@ Every initialized project also gets a binding delegation rule in its `AGENTS.md`
 | `sbl phase TASK-1` | Show where the task stands in the pipeline (`phase/spec` → `plan` → `impl` → `verify`). |
 | `sbl phase TASK-1 plan` | Advance the phase after the gate is passed (`done` clears the label). |
 | `sbl update` | First self-updates a globally installed CLI to the latest npm version and re-runs itself (opt out with `--no-self` or `SBL_SKIP_UPDATE_CHECK`), then refreshes all injected files and prints harness/plugin versions. |
-| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, and the summary page's `architecture.yml`. |
-| `sbl summary` | Check the summary page's `architecture.yml` for drift and print the prompt that refreshes it; `--check` for CI. |
+| `sbl doctor` | Check Node, PowerShell policy, the `backlog` CLI, phase-label hygiene, and the Floorplan map status. |
+| `sbl summary` | Deprecated: prints the Floorplan map status. |
 | `sbl uninstall` | Remove everything super-backlog owns; keep your `backlog/` data. |
 | `sbl uninstall --with-backlog` | Remove everything, including task data. |
 
@@ -91,7 +91,7 @@ sbl dashboard --port 8080 --no-open
 
 There is no static `dashboard.html` written to your project.
 
-Each project also gets a [project summary page](./project-summary) at `/p/<slug>/summary/`: architecture diagram, tech stack, commands and open work at a glance. While its `backlog/docs/architecture.yml` is missing, `sbl init` ends with a hint to ask your agent for the `architecture-summary` skill.
+Each project also gets a [project summary page](./project-summary) at `/p/<slug>/summary/`: project facts, tech stack, commands and open work at a glance, plus a link to the project's Floorplan code map when one was built.
 
 ### Backlog button
 

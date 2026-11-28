@@ -1,5 +1,5 @@
-import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
-import { request } from 'node:http';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, symlinkSync, truncateSync } from 'node:fs';
+import { request, type IncomingHttpHeaders } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,6 +11,7 @@ vi.mock('../../src/dashboard/server.js', async (importOriginal) => {
 });
 
 import { startHubServer } from '../../src/dashboard/hub.js';
+import { FLOORPLAN_MAX_PAGE_BYTES } from '../../src/lib/floorplan.js';
 import { summaryFileFor } from '../../src/dashboard/summary-render.js';
 import { KIT_VERSION } from '../../src/lib/version.js';
 import { computeBuildFingerprint } from '../../src/lib/build-fingerprint.js';
@@ -21,14 +22,16 @@ function req(
   method = 'GET',
   body?: string,
   extraHeaders: Record<string, string> = {},
-): Promise<{ status: number; location?: string; body: string }> {
+): Promise<{ status: number; location?: string; body: string; headers: IncomingHttpHeaders }> {
   return new Promise((resolve, reject) => {
     const headers: Record<string, string> = { 'content-type': 'application/json', ...extraHeaders };
     const r = request({ host: '127.0.0.1', port, path, method, headers }, (res) => {
       let b = '';
       res.setEncoding('utf8');
       res.on('data', (c) => { b += c; });
-      res.on('end', () => resolve({ status: res.statusCode ?? 0, location: res.headers.location, body: b }));
+      res.on('end', () =>
+        resolve({ status: res.statusCode ?? 0, location: res.headers.location, body: b, headers: res.headers }),
+      );
     });
     r.on('error', reject);
     if (body) r.write(body);
@@ -322,6 +325,196 @@ describe('startHubServer', () => {
     hub.register({ cwd: p.cwd, file: second, regenerate: () => {} });
     expect(existsSync(first)).toBe(false);
     expect(existsSync(second)).toBe(true);
+  });
+
+  describe('floorplan map route', () => {
+    const MAP_HTML = '<!doctype html><title>map</title><p>floorplan-map-marker</p>';
+
+    function withMap(cwd: string): void {
+      mkdirSync(join(cwd, 'floorplan'), { recursive: true });
+      writeFileSync(join(cwd, 'floorplan', 'index.html'), MAP_HTML);
+      writeFileSync(join(cwd, 'floorplan', 'graph.json'), '{"secret":"graph-json-marker"}');
+      writeFileSync(join(cwd, 'floorplan', 'serve.mjs'), '// serve-mjs-marker');
+    }
+
+    async function hubWith(cwd: string, file: string, regenerate: () => void = () => {}) {
+      const hub = await startHubServer({ port: 0, token: 't' });
+      handles.push(hub);
+      const reg = hub.register({ cwd, file, regenerate });
+      if (!reg.ok) throw new Error('register failed');
+      return { hub, slug: reg.slug };
+    }
+
+    it('redirects /map to /map/', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-a-', 'map-a');
+      dirs.push(cwd);
+      withMap(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      const res = await req(hub.port, `/p/${slug}/map`);
+      expect(res.status).toBe(302);
+      expect(res.location).toBe(`/p/${slug}/map/`);
+    });
+
+    it('keeps the map off the hub origin: sandbox without allow-same-origin', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-h-', 'map-h');
+      dirs.push(cwd);
+      withMap(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      const policy = String((await req(hub.port, `/p/${slug}/map/`)).headers['content-security-policy']);
+      const sandbox = policy.split(';')[0].trim().split(' ');
+      expect(sandbox[0]).toBe('sandbox');
+      expect(sandbox).not.toContain('allow-same-origin');
+      expect(sandbox).not.toContain('allow-forms');
+      expect(sandbox).not.toContain('allow-top-navigation');
+      expect(sandbox).not.toContain('allow-popups');
+      // the dashboard itself stays unsandboxed
+      expect((await req(hub.port, `/p/${slug}/`)).headers['content-security-policy']).toBeUndefined();
+    });
+
+    it('answers 404 when index.html is not a regular file or is too large', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-i-', 'map-i');
+      dirs.push(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      const page = join(cwd, 'floorplan', 'index.html');
+      mkdirSync(page, { recursive: true });
+      expect((await req(hub.port, `/p/${slug}/map/`)).status).toBe(404);
+      rmSync(page, { recursive: true });
+      writeFileSync(page, MAP_HTML);
+      truncateSync(page, FLOORPLAN_MAX_PAGE_BYTES + 1);
+      const big = await req(hub.port, `/p/${slug}/map/`);
+      expect(big.status).toBe(404);
+      expect(big.body).not.toContain('floorplan-map-marker');
+    });
+
+    it('does not follow a linked index.html', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-j-', 'map-j');
+      dirs.push(cwd);
+      mkdirSync(join(cwd, 'floorplan'), { recursive: true });
+      writeFileSync(join(cwd, 'elsewhere.html'), '<p>linked-file-marker</p>');
+      try {
+        symlinkSync(join(cwd, 'elsewhere.html'), join(cwd, 'floorplan', 'index.html'));
+      } catch {
+        return; // this platform or account cannot create links
+      }
+      const { hub, slug } = await hubWith(cwd, file);
+      const res = await req(hub.port, `/p/${slug}/map/`);
+      expect(res.status).toBe(404);
+      expect(res.body).not.toContain('linked-file-marker');
+    });
+
+    it('serves floorplan/index.html with the restrictive headers', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-b-', 'map-b');
+      dirs.push(cwd);
+      withMap(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      for (const path of [`/p/${slug}/map/`, `/p/${slug}/map/index.html`]) {
+        const res = await req(hub.port, path);
+        expect(res.status).toBe(200);
+        expect(res.body).toBe(MAP_HTML);
+        expect(res.headers['content-type']).toBe('text/html; charset=utf-8');
+        expect(res.headers['cache-control']).toBe('no-store');
+        expect(res.headers['content-security-policy']).toBe(
+          "sandbox allow-scripts allow-downloads; default-src 'none'; " +
+            "script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; " +
+            "connect-src 'none'; form-action 'none'; base-uri 'none'",
+        );
+        expect(res.headers['x-content-type-options']).toBe('nosniff');
+      }
+    });
+
+    it('answers 404 with the install hint while the project has no map', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-c-', 'map-c');
+      dirs.push(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      const res = await req(hub.port, `/p/${slug}/map/`);
+      expect(res.status).toBe(404);
+      expect(res.body).toBe(
+        'no floorplan map - install the Floorplan plugin and ask your agent to make a floorplan',
+      );
+    });
+
+    it('serves no other file below floorplan/', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-d-', 'map-d');
+      dirs.push(cwd);
+      withMap(cwd);
+      writeFileSync(join(cwd, 'outside.txt'), 'outside-marker');
+      const { hub, slug } = await hubWith(cwd, file);
+      for (const tail of [
+        'graph.json',
+        'serve.mjs',
+        'query.mjs',
+        '.cache/x',
+        '../outside.txt',
+        '..%2foutside.txt',
+        '%2e%2e/outside.txt',
+        'index.html/',
+        'index.html%00',
+      ]) {
+        const res = await req(hub.port, `/p/${slug}/map/${tail}`);
+        expect(res.status, tail).toBe(404);
+        expect(res.body, tail).not.toContain('marker');
+      }
+    });
+
+    it('answers only GET on the map page', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-e-', 'map-e');
+      dirs.push(cwd);
+      withMap(cwd);
+      const { hub, slug } = await hubWith(cwd, file);
+      const res = await req(hub.port, `/p/${slug}/map/`, 'POST', '{}');
+      expect(res.status).toBe(404);
+      expect(res.body).not.toContain('floorplan-map-marker');
+    });
+
+    it('regenerates the project pages once when the map changed before /summary/ is served', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-f-', 'map-f');
+      dirs.push(cwd);
+      const regenerate = vi.fn();
+      const { hub, slug } = await hubWith(cwd, file, regenerate);
+
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(0); // no map at registration, none now
+
+      withMap(cwd);
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(1); // the map appeared
+
+      await req(hub.port, `/p/${slug}/summary/index.html`);
+      expect(regenerate).toHaveBeenCalledTimes(1); // unchanged map, no second run
+
+      await req(hub.port, `/p/${slug}/`);
+      await req(hub.port, `/p/${slug}/map/`);
+      expect(regenerate).toHaveBeenCalledTimes(1); // only the summary route checks
+    });
+
+    it('regenerates again when index.html arrives after graph.json', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-k-', 'map-k');
+      dirs.push(cwd);
+      const regenerate = vi.fn();
+      const { hub, slug } = await hubWith(cwd, file, regenerate);
+      mkdirSync(join(cwd, 'floorplan'), { recursive: true });
+      writeFileSync(join(cwd, 'floorplan', 'graph.json'), '{}');
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(1); // half a map: graph.json only
+      writeFileSync(join(cwd, 'floorplan', 'index.html'), MAP_HTML);
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(2); // the page completes the map
+      await req(hub.port, `/p/${slug}/summary/`);
+      expect(regenerate).toHaveBeenCalledTimes(2);
+    });
+
+    it('still serves the summary when the regeneration throws', async () => {
+      const { cwd, file } = fixture('sbl-hub-map-g-', 'map-g');
+      dirs.push(cwd);
+      writeFileSync(summaryFileFor(file), '<html>last-good-summary</html>');
+      const { hub, slug } = await hubWith(cwd, file, () => {
+        throw new Error('boom');
+      });
+      withMap(cwd);
+      const res = await req(hub.port, `/p/${slug}/summary/`);
+      expect(res.status).toBe(200);
+      expect(res.body).toContain('last-good-summary');
+    });
   });
 });
 

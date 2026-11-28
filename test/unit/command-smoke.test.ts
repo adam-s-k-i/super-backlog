@@ -46,10 +46,10 @@ describe('command smoke', () => {
     expect(typeof code).toBe('number');
   });
 
-  it('summary exits 1 outside a project', () => {
+  it('summary exits 0 outside a project (deprecation stub)', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'sbl-smoke-'));
     dirs.push(cwd);
-    const code = runSummary(cwd, { values: {}, positionals: [] }, { error: () => {} });
-    expect(code).toBe(1);
+    const code = runSummary(cwd, { log: () => {} });
+    expect(code).toBe(0);
   });
 });

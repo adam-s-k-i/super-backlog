@@ -1,61 +1,37 @@
 // src/dashboard/summary-render.ts
-// Project summary page (spec 2026-10-09, R2, D5-D6, E1-E4, V1-V4): facts + curated
-// architecture + layout -> one static HTML file next to the dashboard file.
+// Project summary page: automatic facts plus the Code map card, which points to the
+// project's Floorplan map (spec 2026-11-28-floorplan-integration-design.md, decision 2).
+// One static HTML file next to the dashboard file.
 import { atomicWrite } from '../lib/atomic.js';
+import {
+  FLOORPLAN_INSTALL_COMMANDS,
+  FLOORPLAN_REPO_URL,
+  floorplanBuiltDate,
+  readFloorplanStatus,
+  type FloorplanStatus,
+} from '../lib/floorplan.js';
 import type { Phase } from '../lib/phase.js';
 import type { DashboardData } from './data.js';
 import { isDone } from './metrics.js';
 import { esc, fillTemplate, jsonIsland, readTemplate, tokensCss } from './render.js';
 import { collectSummaryFacts, type FactsDeps, type SummaryFacts } from './summary-facts.js';
-import {
-  detectDrift,
-  driftCount,
-  DRIFT_CODES,
-  summaryAgentPrompt,
-  type DriftCode,
-  type DriftDeps,
-} from './summary-drift.js';
-import { layoutArchitecture, type LayoutResult } from './summary-layout.js';
-import {
-  ARCHITECTURE_PATH,
-  loadArchitecture,
-  type Architecture,
-  type ArchitectureLoadResult,
-  type ArchStackEntry,
-} from './summary-schema.js';
-
-export const SUMMARY_DOCS_URL = 'https://adam-s-k-i.github.io/super-backlog/guide/project-summary';
-/** E2: the notice lists at most this many problems. */
-export const MAX_NOTICE_PROBLEMS = 20;
 
 export interface SummaryModel {
   facts: SummaryFacts;
-  load: ArchitectureLoadResult;
-  /** null unless the architecture file is valid (or when rendering fell back, E3) */
-  layout: LayoutResult | null;
-  /** E3: message of the error that stopped the full render */
+  /** null when the map status could not be read; the page then shows no Code map card. */
+  map: FloorplanStatus | null;
   renderError: string | null;
-  /** spec 2026-10-10: drift of a valid file for the banner; null when clean, not valid or not checkable */
-  drift: SummaryDrift | null;
 }
 
-export interface SummaryDrift {
-  count: number;
-  /** distinct finding codes in signal order */
-  codes: DriftCode[];
-  prompt: string;
-}
-
-/** Filled by buildSummaryModel as it goes, so the E3 fallback can reuse what was collected before an error. */
+/** Filled step by step by buildSummaryModel, so the error path can reuse what already succeeded. */
 export interface SummaryProgress {
   facts?: SummaryFacts;
-  load?: ArchitectureLoadResult;
+  map?: FloorplanStatus;
 }
 
 export interface SummaryDeps extends FactsDeps {
-  loadArchitecture?: typeof loadArchitecture;
-  layoutArchitecture?: typeof layoutArchitecture;
-  detectDrift?: typeof detectDrift;
+  /** Seam for tests; defaults to reading floorplan/graph.json. */
+  readFloorplanStatus?: (cwd: string) => FloorplanStatus;
 }
 
 export interface SummaryFact {
@@ -68,43 +44,32 @@ export interface SummaryTask {
   title: string;
   status: string;
   phase: Phase | null;
-  /** node id from `tasks:` in architecture.yml, or null when unmapped */
-  node: string | null;
 }
 
 export interface SummaryStackItem {
   name: string;
   group: string;
   version: string;
-  role: string;
-  nodes: string[];
 }
 
 /** The JSON island the client renders from (`#sbl-summary`). */
 export interface SummaryView {
   project: string;
-  /** escaped pitch; `**bold**` already turned into <b> (the only markup allowed) */
+  /** escaped project description */
   pitchHtml: string;
   /** package name from the manifest, shown as the pill next to the title */
   packageName: string | null;
   manifest: string | null;
   facts: SummaryFact[];
-  architecture: Pick<Architecture, 'kinds' | 'nodes' | 'edges' | 'flows' | 'highlights'> | null;
-  layout: LayoutResult | null;
   tasks: SummaryTask[];
   commands: { group: string; entries: { run: string; note?: string }[] }[];
   stack: SummaryStackItem[];
-  source: { auto: string[]; curated: string[]; warnings: string[]; file: string };
+  source: { auto: string[]; warnings: string[] };
 }
 
 /** `<dashboard file without .html>.summary.html` (R2). */
 export function summaryFileFor(dashboardFile: string): string {
   return `${dashboardFile.replace(/\.html$/i, '')}.summary.html`;
-}
-
-/** Escapes the pitch, then turns `**text**` into <b>text</b>. Nothing else becomes markup. */
-export function formatPitch(pitch: string): string {
-  return esc(pitch).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
 }
 
 /** 980 -> "980", 5234 -> "5.2k", 5000 -> "5k", 48213 -> "48k" */
@@ -118,6 +83,11 @@ function plural(n: number, one: string, many: string): string {
   return n === 1 ? one : many;
 }
 
+/** "1 file", "165 files" */
+function counted(n: number, one: string, many: string): string {
+  return `${n} ${plural(n, one, many)}`;
+}
+
 export function emptyFacts(): SummaryFacts {
   return {
     name: null,
@@ -128,7 +98,6 @@ export function emptyFacts(): SummaryFacts {
     dependencies: 0,
     devDependencies: 0,
     packages: [],
-    versions: {},
     extensions: [],
     fileSource: 'walk',
     sourceFiles: 0,
@@ -143,40 +112,15 @@ export function emptyFacts(): SummaryFacts {
   };
 }
 
-/** Collects facts, loads and lays out the architecture file. Throws only on unexpected errors. */
-export function buildSummaryModel(
-  cwd: string,
-  data: DashboardData,
-  deps: SummaryDeps = {},
-  progress: SummaryProgress = {},
-): SummaryModel {
+/** Collects the facts, then the map status. Throws only what its seams throw. */
+export function buildSummaryModel(cwd: string, deps: SummaryDeps = {}, progress: SummaryProgress = {}): SummaryModel {
   const facts = collectSummaryFacts(cwd, deps);
   progress.facts = facts;
-  const load = (deps.loadArchitecture ?? loadArchitecture)(cwd, { taskIds: data.tasks.map((t) => t.id) });
-  progress.load = load;
-  const layout = load.status === 'valid' ? (deps.layoutArchitecture ?? layoutArchitecture)(load.architecture) : null;
-  const drift = load.status === 'valid' ? summaryDrift(cwd, data, deps) : null;
-  return { facts, load, layout, renderError: null, drift };
-}
-
-/**
- * Drift for the banner (spec 2026-10-10). Loads the file a second time without
- * task ids, because the page load drops unknown ids and would hide unknown-task
- * findings. Never throws: the banner is optional.
- */
-function summaryDrift(cwd: string, data: DashboardData, deps: SummaryDeps): SummaryDrift | null {
-  try {
-    const raw = (deps.loadArchitecture ?? loadArchitecture)(cwd);
-    if (raw.status !== 'valid') return null;
-    const tasks = data.source === 'backlog-json' ? data.tasks.map((t) => ({ id: t.id, status: t.status })) : null;
-    const driftDeps: DriftDeps = deps.runCapture ? { runCapture: deps.runCapture } : {};
-    const { findings } = (deps.detectDrift ?? detectDrift)(cwd, raw.architecture, { tasks, deps: driftDeps });
-    if (findings.length === 0) return null;
-    const codes = DRIFT_CODES.filter((code) => findings.some((f) => f.code === code));
-    return { count: findings.length, codes, prompt: summaryAgentPrompt('drift') };
-  } catch {
-    return null;
-  }
+  const map = deps.readFloorplanStatus
+    ? deps.readFloorplanStatus(cwd)
+    : readFloorplanStatus(cwd, deps.runCapture ? { runCapture: deps.runCapture } : {});
+  progress.map = map;
+  return { facts, map, renderError: null };
 }
 
 function headerFacts(facts: SummaryFacts, openTasks: number): SummaryFact[] {
@@ -191,25 +135,7 @@ function headerFacts(facts: SummaryFacts, openTasks: number): SummaryFact[] {
   ];
 }
 
-/** Own-property lookup, so a package named `constructor` or `toString` never hits Object.prototype. */
-function ownVersion(versions: Record<string, string>, name: string): string {
-  return Object.hasOwn(versions, name) ? versions[name] : '';
-}
-
-function stackItems(arch: Architecture | null, facts: SummaryFacts): SummaryStackItem[] {
-  if (arch && arch.stack.length > 0) {
-    return arch.stack.map((s: ArchStackEntry) => ({
-      name: s.name,
-      group: s.group,
-      version: s.version ?? ownVersion(facts.versions, s.package ?? s.name),
-      role: s.role ?? '',
-      nodes: s.nodes,
-    }));
-  }
-  return facts.packages.map((p) => ({ name: p.name, group: p.group, version: p.version, role: '', nodes: [] }));
-}
-
-function autoSource(data: DashboardData, facts: SummaryFacts): string[] {
+function autoSource(data: DashboardData, facts: SummaryFacts, map: FloorplanStatus | null): string[] {
   const out: string[] = [];
   out.push(
     facts.manifest
@@ -218,7 +144,7 @@ function autoSource(data: DashboardData, facts: SummaryFacts): string[] {
   );
   const exts = facts.extensions.length > 0 ? ` (${facts.extensions.join(' ')})` : '';
   out.push(
-    `${facts.sourceFiles} ${plural(facts.sourceFiles, 'source file', 'source files')}${exts} from ${facts.fileSource === 'git' ? 'git ls-files' : 'a directory walk'}` +
+    `${counted(facts.sourceFiles, 'source file', 'source files')}${exts} from ${facts.fileSource === 'git' ? 'git ls-files' : 'a directory walk'}` +
       (facts.locApprox ? '; line count stopped at the 10 MB read budget' : ''),
   );
   const depNoun = plural(facts.dependencies + facts.devDependencies, 'dependency', 'dependencies');
@@ -226,82 +152,30 @@ function autoSource(data: DashboardData, facts: SummaryFacts): string[] {
   out.push(
     facts.releasesNote
       ? `Releases: ${facts.releasesNote}`
-      : `${facts.releases} ${plural(facts.releases, 'release', 'releases')} from git version tags`,
+      : `${counted(facts.releases, 'release', 'releases')} from git version tags`,
   );
   out.push(`${facts.workflows} GitHub Actions ${plural(facts.workflows, 'workflow', 'workflows')}`);
   out.push(data.source === 'backlog-json' ? 'Open work from backlog task list' : 'Open work: no backlog data');
+  if (map?.state === 'map') out.push('Code map from floorplan/graph.json (Floorplan)');
   return out;
 }
 
-function curatedSource(load: ArchitectureLoadResult, renderError: string | null): string[] {
-  if (load.status === 'missing') return ['No curated file yet; this page shows the automatic facts only.'];
-  if (renderError !== null) {
-    return [`${ARCHITECTURE_PATH} was not shown because the summary could not be rendered; see the notice above.`];
-  }
-  if (load.status === 'invalid') {
-    const n = load.problems.filter((p) => p.level === 'error').length;
-    return [`${ARCHITECTURE_PATH} has ${n} ${plural(n, 'problem', 'problems')}; see the notice above.`];
-  }
-  const a = load.architecture;
-  const count = (n: number, one: string, many: string): string => `${n} ${plural(n, one, many)}`;
-  const components = count(a.nodes.length, 'component', 'components');
-  const connections = count(a.edges.length, 'connection', 'connections');
-  const flows = count(a.flows.length, 'flow', 'flows');
-  const highlights = count(a.highlights.length, 'highlight', 'highlights');
-  const stack = count(a.stack.length, 'stack entry', 'stack entries');
-  const groups = count(Object.keys(a.commands).length, 'command group', 'command groups');
-  const mappings = count(Object.keys(a.tasks).length, 'task-to-component mapping', 'task-to-component mappings');
-  return [
-    `Pitch, ${components}, ${connections}, ${flows}`,
-    `${highlights}, ${stack}, ${groups}`,
-    `${mappings} (status comes from the backlog CLI)`,
-  ];
-}
-
-/** Builds the client view model; every string stays raw here and is escaped by the client (or jsonIsland). */
+/** Pure: dashboard data + model -> the view the client renders. */
 export function buildSummaryView(data: DashboardData, model: SummaryModel): SummaryView {
-  const { facts, load, layout } = model;
-  const arch = load.status === 'valid' && layout ? load.architecture : null;
+  const { facts } = model;
   const open = data.tasks.filter((t) => !isDone(t.status));
-  const tasks: SummaryTask[] = open.map((t) => ({
-    id: t.id,
-    title: t.title,
-    status: t.status,
-    phase: t.phase,
-    node: arch?.tasks[t.id.toUpperCase()] ?? null,
-  }));
-  const commands =
-    arch && Object.keys(arch.commands).length > 0
-      ? Object.entries(arch.commands).map(([group, entries]) => ({ group, entries }))
-      : facts.commands;
-  const warnings = [
-    ...(load.status === 'valid' ? load.problems.filter((p) => p.level === 'warning').map((p) => `${p.path}: ${p.message}`) : []),
-    ...(layout ? layout.warnings.map((w) => `layout ${w.code} ${w.edge}: ${w.message}`) : []),
-    ...facts.warnings,
-  ];
   return {
     project: data.project.name,
-    pitchHtml: arch ? formatPitch(arch.pitch) : esc(data.project.description),
+    pitchHtml: esc(data.project.description),
     packageName: facts.name,
     manifest: facts.manifest,
     facts: headerFacts(facts, open.length),
-    architecture: arch
-      ? { kinds: arch.kinds, nodes: arch.nodes, edges: arch.edges, flows: arch.flows, highlights: arch.highlights }
-      : null,
-    layout: arch ? layout : null,
-    tasks,
-    commands,
-    stack: stackItems(arch, facts),
-    source: { auto: autoSource(data, facts), curated: curatedSource(load, model.renderError), warnings, file: ARCHITECTURE_PATH },
+    tasks: open.map((t) => ({ id: t.id, title: t.title, status: t.status, phase: t.phase })),
+    commands: facts.commands,
+    stack: facts.packages.map((p) => ({ name: p.name, group: p.group, version: p.version })),
+    source: { auto: autoSource(data, facts, model.map), warnings: facts.warnings },
   };
 }
-
-const DRIFT_LABELS: Record<DriftCode, string> = {
-  'missing-path': 'missing paths',
-  'done-task': 'Done tasks',
-  'unknown-task': 'unknown tasks',
-  'stale-file': 'stale file',
-};
 
 /** Same icon as the client-side COPY_ICON in summary.html; the delegated click handler copies data-copy. */
 const COPY_ICON =
@@ -309,48 +183,47 @@ const COPY_ICON =
   '<rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/>' +
   '<path d="M10.5 5.5V3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg>';
 
-function copyPromptButton(prompt: string): string {
+/** Same markup as the client-side cmdHTML, so the card's commands look and copy like every other command. */
+function installCommandHtml(run: string): string {
   return (
-    `<button class="copy" type="button" data-copy="${esc(prompt)}" ` +
-    `aria-label="Copy the prompt for your agent" title="Copy the prompt for your agent">${COPY_ICON}</button>`
+    `<div class="cmd"><code>${esc(run)}</code>` +
+    `<button class="copy" type="button" data-copy="${esc(run)}" aria-label="Copy command: ${esc(run)}">${COPY_ICON}</button></div>`
   );
 }
 
-/** Server-rendered notice between header and canvas (D6, E2, E3, drift banner); empty for a clean valid file. */
+/**
+ * The Code map card (decision 2). Server-rendered, so it needs no client code. `null` means the
+ * status could not be read: no card, because neither "no map" nor "map" would be a true statement.
+ */
+export function codeMapHtml(status: FloorplanStatus | null): string {
+  if (!status) return '';
+  let body: string;
+  if (status.state === 'map') {
+    const since =
+      status.commitsSince !== null && status.commitsSince > 0
+        ? `, ${counted(status.commitsSince, 'commit', 'commits')} since`
+        : '';
+    body =
+      `<p>Floorplan map, built ${esc(floorplanBuiltDate(status.builtAt))}, ${counted(status.files, 'file', 'files')}, ` +
+      `${counted(status.nodes, 'part', 'parts')}${since}. <a class="maplink" href="../map/">Open map</a></p>`;
+  } else if (status.state === 'invalid') {
+    body = `<p>Floorplan map unreadable (${esc(status.reason)}). Ask your agent to update the floorplan.</p>`;
+  } else {
+    body =
+      `<p>No code map yet. <a href="${esc(FLOORPLAN_REPO_URL)}">Floorplan</a> draws an interactive map of the codebase. ` +
+      'Install the plugin in Claude Code, then ask your agent to "make a floorplan".</p>' +
+      `<div class="cmds">${FLOORPLAN_INSTALL_COMMANDS.map(installCommandHtml).join('')}</div>`;
+  }
+  return `<section class="codemap" aria-label="Code map"><h2>Code map</h2>${body}</section>`;
+}
+
+/** The only notice left: the page itself could not be rendered. */
 export function noticeHtml(model: SummaryModel): string {
-  if (model.renderError !== null) {
-    return (
-      '<div class="notice notice-error" role="alert"><p>Summary could not be rendered ' +
-      `(<code>${esc(model.renderError)}</code>). Showing the automatic facts only.</p></div>`
-    );
-  }
-  const { load } = model;
-  if (load.status === 'missing') {
-    return (
-      '<div class="notice"><p>No architecture file yet. Run the <code>architecture-summary</code> skill in your agent ' +
-      `or create <code>${ARCHITECTURE_PATH}</code> (schema: <a href="${SUMMARY_DOCS_URL}">docs</a>).` +
-      `${copyPromptButton(summaryAgentPrompt('missing'))}</p></div>`
-    );
-  }
-  if (load.status === 'invalid') {
-    const errors = load.problems.filter((p) => p.level === 'error');
-    const shown = errors.slice(0, MAX_NOTICE_PROBLEMS);
-    const more = errors.length - shown.length;
-    return (
-      '<div class="notice notice-error" role="alert">' +
-      `<p><code>${ARCHITECTURE_PATH}</code> has ${errors.length} ${plural(errors.length, 'problem', 'problems')}; ` +
-      `showing the automatic facts only (schema: <a href="${SUMMARY_DOCS_URL}">docs</a>).</p>` +
-      `<ul>${shown.map((p) => `<li><code>${esc(p.path)}</code>: ${esc(p.message)}</li>`).join('')}</ul>` +
-      (more > 0 ? `<p>… and ${more} more</p>` : '') +
-      '</div>'
-    );
-  }
-  if (model.drift !== null) {
-    const { count, codes, prompt } = model.drift;
-    const text = `${driftCount(count)} (${codes.map((c) => DRIFT_LABELS[c]).join(', ')}) – the diagram may be out of date`;
-    return `<div class="notice notice-drift" role="status"><p>${esc(text)}${copyPromptButton(prompt)}</p></div>`;
-  }
-  return '';
+  if (!model.renderError) return '';
+  return (
+    '<div class="notice notice-error" role="alert"><p>Summary could not be rendered ' +
+    `(<code>${esc(model.renderError)}</code>). Showing the automatic facts only.</p></div>`
+  );
 }
 
 /** Fills the summary template (V1). Pure apart from reading the two template files. */
@@ -360,6 +233,7 @@ export function renderSummary(data: DashboardData, model: SummaryModel): string 
     __SBL_TOKENS_CSS__: tokensCss,
     __PROJECT_NAME__: () => esc(data.project.name),
     __SUMMARY_NOTICE__: () => noticeHtml(model),
+    __SUMMARY_CODE_MAP__: () => codeMapHtml(model.map),
     __SBL_SUMMARY_JSON__: () => jsonIsland(view),
   });
 }
@@ -373,28 +247,19 @@ function minimalPage(data: DashboardData, message: string): string {
 }
 
 /**
- * Writes the summary page next to `dashboardFile` (R2). Never throws: a broken
- * architecture file or a render error degrades to the reduced view (E3), and a
- * failed write leaves the dashboard untouched.
+ * Writes the summary page next to the dashboard file and returns its path. Never throws:
+ * a failing step degrades to the facts with an error notice, then to a minimal page.
  */
 export function writeSummaryPage(cwd: string, data: DashboardData, dashboardFile: string, deps: SummaryDeps = {}): string {
   const file = summaryFileFor(dashboardFile);
   const progress: SummaryProgress = {};
   let html: string;
   try {
-    html = renderSummary(data, buildSummaryModel(cwd, data, deps, progress));
+    html = renderSummary(data, buildSummaryModel(cwd, deps, progress));
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     try {
-      // E3: reuse what was collected before the error. A throwing load means the
-      // file exists (a missing file returns 'missing'), so 'invalid' is honest.
-      html = renderSummary(data, {
-        facts: progress.facts ?? emptyFacts(),
-        load: progress.load ?? { status: 'invalid', path: ARCHITECTURE_PATH, problems: [] },
-        layout: null,
-        renderError: message,
-        drift: null,
-      });
+      html = renderSummary(data, { facts: progress.facts ?? emptyFacts(), map: progress.map ?? null, renderError: message });
     } catch {
       html = minimalPage(data, message);
     }

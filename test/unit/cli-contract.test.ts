@@ -34,10 +34,10 @@ describe('HELP', () => {
     expect(HELP).not.toContain('Backlog browser');
   });
 
-  it('lists sbl summary and its --check flag', () => {
-    expect(HELP).toMatch(/^\s+summary\s+Check backlog\/docs\/architecture\.yml for drift/m);
-    expect(HELP).toContain('summary options:');
-    expect(HELP).toMatch(/^\s+--check\s+Report only/m);
+  it('lists sbl summary as deprecated without an options block', () => {
+    expect(HELP).toMatch(/^\s+summary\s+Deprecated: prints the Floorplan map status$/m);
+    expect(HELP).not.toContain('summary options:');
+    expect(HELP).not.toMatch(/^\s+--check\s+Report only/m);
   });
 });
 

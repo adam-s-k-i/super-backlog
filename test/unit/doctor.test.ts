@@ -1,25 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { runDoctor, type DoctorDeps } from '../../src/commands/doctor.js';
-import { layoutArchitecture } from '../../src/dashboard/summary-layout.js';
-import { checkArchitectureText, loadArchitecture } from '../../src/dashboard/summary-schema.js';
-
-const ARCH_OK = [
-  'schema: 1',
-  'pitch: A **small** demo.',
-  'grid: { cols: 3, rows: 2 }',
-  'nodes:',
-  '  - { id: a, label: Alpha, kind: core, cell: [0, 0] }',
-  '  - { id: b, label: Beta, kind: output, cell: [2, 0] }',
-  '  - { id: c, label: Gamma, kind: external, cell: [2, 1] }',
-  'edges:',
-  '  - { from: a, to: b, label: calls }',
-  '  - { from: b, to: c, label: writes }',
-  '',
-].join('\n');
 
 interface DepsWithLines extends DoctorDeps {
   lines: string[];
@@ -34,8 +18,8 @@ function makeDeps(overrides: Partial<DepsWithLines> = {}): DepsWithLines {
     executor: () => ({ status: 0, stdout: 'RemoteSigned', stderr: '' }),
     resolveBacklog: () => 'C:\\proj\\node_modules\\.bin\\backlog.cmd',
     readTaskLabels: () => [],
-    loadArchitecture: () => checkArchitectureText(ARCH_OK, 'architecture.yml'),
-    detectDrift: () => ({ findings: [], notes: [] }),
+    readFloorplanStatus: () => ({ state: 'missing' }),
+    legacyArchitectureExists: () => false,
     log: (line: string) => lines.push(line),
     ...overrides,
   };
@@ -86,6 +70,8 @@ describe('runDoctor', () => {
   it('treats a failed detection as skip rather than warn', () => {
     const deps = makeDeps({
       executor: () => ({ status: null, stdout: '', stderr: 'powershell missing' }),
+      // a current map, so the policy line is the only skip
+      readFloorplanStatus: () => ({ state: 'map', builtAt: '2026-11-28T13:46:30.507Z', files: 1, nodes: 1, commitsSince: 0 }),
     });
     const code = runDoctor('C:\\proj', deps);
     expect(code).toBe(0);
@@ -167,173 +153,64 @@ describe('check 4: phase label hygiene', () => {
   });
 });
 
-describe('check 5: architecture.yml', () => {
-  it('passes on a clean file and reports its size', () => {
+describe('check 5: floorplan map', () => {
+  const map = { state: 'map', builtAt: '2026-11-28T13:46:30.507Z', files: 165, nodes: 11 } as const;
+
+  it('skips without a map', () => {
     const d = makeDeps();
     expect(runDoctor('/proj', d)).toBe(0);
-    expect(d.lines.some((l) => l.includes('[ok]') && l.includes('backlog/docs/architecture.yml valid (3 nodes, 2 edges, layout clean)'))).toBe(true);
+    expect(d.lines).toContain(
+      '[skip] no floorplan map (optional: install the Floorplan plugin and ask your agent to make a floorplan)',
+    );
   });
 
-  it('is skipped when the file is absent', () => {
-    const d = makeDeps({ loadArchitecture: () => ({ status: 'missing', path: '/proj/backlog/docs/architecture.yml' }) });
+  it('warns with the fix line for an unreadable graph.json (exit 4)', () => {
+    const d = makeDeps({ readFloorplanStatus: () => ({ state: 'invalid', reason: 'not valid JSON' }) });
+    expect(runDoctor('/proj', d)).toBe(4);
+    const at = d.lines.indexOf('[warn] floorplan map unreadable (not valid JSON)');
+    expect(at).toBeGreaterThan(-1);
+    expect(d.lines[at + 1]).toBe('        fix: ask your agent to update the floorplan');
+  });
+
+  it('is ok for a current map', () => {
+    const d = makeDeps({ readFloorplanStatus: () => ({ ...map, commitsSince: 0 }) });
     expect(runDoctor('/proj', d)).toBe(0);
-    expect(d.lines.some((l) => l.includes('[skip]') && l.includes('backlog/docs/architecture.yml not present'))).toBe(true);
+    expect(d.lines).toContain('[ok]   floorplan map current (built 2026-11-28, 165 files, 11 parts)');
   });
 
-  it('fails and lists every problem with its path', () => {
-    const broken = ARCH_OK.replace('kind: output', 'kind: robot').replace('cell: [2, 1]', 'cell: [9, 9]');
-    const d = makeDeps({ loadArchitecture: () => checkArchitectureText(broken, 'architecture.yml') });
-    expect(runDoctor('/proj', d)).toBe(1);
-    const out = d.lines.join('\n');
-    expect(d.lines.some((l) => l.includes('[fail]') && l.includes('backlog/docs/architecture.yml: 2 error(s)'))).toBe(true);
-    expect(out).toContain('error: nodes[1].kind:');
-    expect(out).toContain('error: nodes[2].cell:');
-    expect(out).toContain('fix: edit the file or run the architecture-summary skill');
+  it('is ok, not a warning, for a map behind HEAD (exit 0)', () => {
+    const d = makeDeps({ readFloorplanStatus: () => ({ ...map, commitsSince: 4 }) });
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines).toContain('[ok]   floorplan map built 2026-11-28, 4 commits behind HEAD (165 files, 11 parts)');
   });
 
-  it('reports a parse error with line and column', () => {
-    const d = makeDeps({ loadArchitecture: () => checkArchitectureText('schema: 1\n\tpitch: x\n', 'architecture.yml') });
-    expect(runDoctor('/proj', d)).toBe(1);
-    expect(d.lines.join('\n')).toMatch(/error: line 2, column 1: /);
+  it('is ok when the distance to HEAD is unknown', () => {
+    const d = makeDeps({ readFloorplanStatus: () => ({ ...map, commitsSince: null }) });
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines).toContain('[ok]   floorplan map built 2026-11-28 (165 files, 11 parts)');
   });
 
-  it('fails (does not throw) on a hostile file that nests "- -" 8000 levels deep', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'sbl-doctor-'));
+  it('reports a leftover architecture.yml as a skip line and keeps the exit code', () => {
+    const d = makeDeps({ legacyArchitectureExists: () => true });
+    expect(runDoctor('/proj', d)).toBe(0);
+    expect(d.lines).toContain(
+      '[skip] backlog/docs/architecture.yml is no longer used (Floorplan replaces it; safe to delete)',
+    );
+    expect(d.lines.slice(-1)[0]).toMatch(/^doctor summary: \d+ ok, 0 warn, 2 skip, 0 fail$/);
+  });
+
+  it('does not delete the leftover file (default seams, real directory)', () => {
+    const cwd = mkdtempSync(join(tmpdir(), 'sbl-doctor-legacy-'));
     try {
-      mkdirSync(join(dir, 'backlog', 'docs'), { recursive: true });
-      writeFileSync(join(dir, 'backlog', 'docs', 'architecture.yml'), `${'- '.repeat(8000)}x`);
-      const d = makeDeps({ loadArchitecture: (c) => loadArchitecture(c) });
-      expect(runDoctor(dir, d)).toBe(1);
-      expect(d.lines.some((l) => l.includes('[fail]') && l.includes('backlog/docs/architecture.yml: 1 error(s)'))).toBe(true);
-      expect(d.lines.join('\n')).toMatch(/error: line 1, column 65: nesting too deep/);
+      mkdirSync(join(cwd, 'backlog', 'docs'), { recursive: true });
+      const file = join(cwd, 'backlog', 'docs', 'architecture.yml');
+      writeFileSync(file, 'schema: 1\n');
+      const d = makeDeps({ readFloorplanStatus: undefined, legacyArchitectureExists: undefined });
+      runDoctor(cwd, d);
+      expect(existsSync(file)).toBe(true);
+      expect(d.lines.some((l) => l.startsWith('[skip] backlog/docs/architecture.yml is no longer used'))).toBe(true);
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(cwd, { recursive: true, force: true });
     }
-  });
-
-  it('warns on schema warnings and layout warnings', () => {
-    const withUnknownKey = `${ARCH_OK}colour: red\n`;
-    const d = makeDeps({
-      loadArchitecture: () => checkArchitectureText(withUnknownKey, 'architecture.yml'),
-      layoutArchitecture: (input) => ({
-        ...layoutArchitecture(input),
-        warnings: [{ code: 'route-fallback', edge: 'a>b', message: 'no straight or single-corner route from a to b; move one of the cells' }],
-      }),
-    });
-    expect(runDoctor('/proj', d)).toBe(4);
-    const out = d.lines.join('\n');
-    expect(d.lines.some((l) => l.includes('[warn]') && l.includes('valid with 2 warning(s)'))).toBe(true);
-    expect(out).toContain('warning: colour:');
-    expect(out).toContain('layout route-fallback a>b: no straight or single-corner route from a to b');
-  });
-
-  it('shows a port-overflow layout warning as a detail line of check 5', () => {
-    const load = checkArchitectureText(ARCH_OK, 'architecture.yml');
-    const d = makeDeps({
-      loadArchitecture: () => load,
-      layoutArchitecture: (a) => ({
-        ...layoutArchitecture(a),
-        warnings: [{ code: 'port-overflow', edge: 'a>b', message: '8 connections on the left side of b leave 5.7px between ports (minimum 6); move cells to spread the connections' }],
-      }),
-    });
-    runDoctor('/proj', d);
-    expect(d.lines.some((l) => l.includes('[warn] backlog/docs/architecture.yml valid with 1 warning(s)'))).toBe(true);
-    expect(d.lines.some((l) => l.includes('layout port-overflow a>b: 8 connections on the left side of b'))).toBe(true);
-  });
-
-  it('replaces the ok line with one drift warning that points to sbl summary', () => {
-    const d = makeDeps({
-      detectDrift: () => ({
-        findings: [
-          { code: 'missing-path', path: 'nodes.a.files', message: 'src/a.ts does not exist' },
-          { code: 'done-task', path: 'tasks.TASK-1', message: 'TASK-1 is Done' },
-        ],
-        notes: [],
-      }),
-    });
-    expect(runDoctor('/proj', d)).toBe(4);
-    expect(d.lines).toContain('[warn] architecture.yml valid, 2 drift findings – run sbl summary for details');
-    expect(d.lines.some((l) => l.includes('layout clean'))).toBe(false);
-    expect(d.lines.join('\n')).not.toContain('src/a.ts does not exist');
-  });
-
-  it('feeds the check-4 task rows into detectDrift', () => {
-    const rows = [{ id: 'TASK-1', status: 'Done', labels: [] }];
-    let seen: unknown;
-    const d = makeDeps({
-      readTaskLabels: () => rows,
-      detectDrift: (_cwd, _arch, opts) => {
-        seen = opts.tasks;
-        return { findings: [], notes: [] };
-      },
-    });
-    expect(runDoctor('/proj', d)).toBe(0);
-    expect(seen).toBe(rows);
-  });
-
-  it('passes null tasks when the task list is unreadable', () => {
-    let seen: unknown = 'unset';
-    const d = makeDeps({
-      readTaskLabels: () => null,
-      detectDrift: (_cwd, _arch, opts) => {
-        seen = opts.tasks;
-        return { findings: [], notes: [] };
-      },
-    });
-    runDoctor('/proj', d);
-    expect(seen).toBeNull();
-  });
-
-  it('prints both the schema-warning line and the drift line', () => {
-    const d = makeDeps({
-      loadArchitecture: () => checkArchitectureText(`${ARCH_OK}colour: red\n`, 'architecture.yml'),
-      detectDrift: () => ({ findings: [{ code: 'done-task', path: 'tasks.TASK-1', message: 'TASK-1 is Done' }], notes: [] }),
-    });
-    expect(runDoctor('/proj', d)).toBe(4);
-    expect(d.lines.some((l) => l.includes('[warn]') && l.includes('valid with 1 warning(s)'))).toBe(true);
-    expect(d.lines).toContain('[warn] architecture.yml valid, 1 drift finding – run sbl summary for details');
-  });
-
-  it('turns a throwing drift check into a warning', () => {
-    const d = makeDeps({
-      detectDrift: () => {
-        throw new Error('boom');
-      },
-    });
-    expect(runDoctor('/proj', d)).toBe(4);
-    expect(d.lines).toContain('[warn] architecture.yml drift check failed (boom)');
-  });
-
-  it('turns a throwing layout into a failure instead of crashing', () => {
-    const d = makeDeps({
-      layoutArchitecture: () => {
-        throw new Error('layout exploded');
-      },
-    });
-    expect(runDoctor('/proj', d)).toBe(1);
-    expect(d.lines).toContain('[fail] backlog/docs/architecture.yml layout failed (layout exploded)');
-  });
-
-  it('turns a throwing architecture load into a failure instead of crashing', () => {
-    const d = makeDeps({
-      loadArchitecture: () => {
-        throw new Error('load exploded');
-      },
-    });
-    expect(runDoctor('/proj', d)).toBe(1);
-    expect(d.lines).toContain('[fail] backlog/docs/architecture.yml check failed (load exploded)');
-  });
-
-  it('does not run the drift check for a missing file', () => {
-    let ran = false;
-    const d = makeDeps({
-      loadArchitecture: () => ({ status: 'missing', path: '/proj/backlog/docs/architecture.yml' }),
-      detectDrift: () => {
-        ran = true;
-        return { findings: [], notes: [] };
-      },
-    });
-    runDoctor('/proj', d);
-    expect(ran).toBe(false);
   });
 });

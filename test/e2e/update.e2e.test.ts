@@ -209,6 +209,23 @@ describe('sbl update (SBL_SKIP_INSTALL + SBL_FORCE_OFFLINE)', () => {
     expect(runUpdate(dir).out).not.toContain('removed legacy');
   });
 
+  it('removes the legacy architecture-summary skill directories and reports them', () => {
+    freshScaffold();
+    for (const rel of ['.claude/skills/architecture-summary', '.opencode/skill/architecture-summary']) {
+      mkdirSync(join(dir, rel), { recursive: true });
+      writeFileSync(join(dir, rel, 'SKILL.md'), '<!-- managed-by: super-backlog 1.10.3 -->\n# old\n');
+    }
+
+    const r = runUpdate(dir);
+
+    expect(r.status).toBe(4);
+    expect(r.out).toContain('removed legacy .claude/skills/architecture-summary');
+    expect(r.out).toContain('removed legacy .opencode/skill/architecture-summary');
+    expect(existsSync(join(dir, '.claude', 'skills', 'architecture-summary'))).toBe(false);
+    expect(existsSync(join(dir, '.opencode', 'skill', 'architecture-summary'))).toBe(false);
+    expect(runUpdate(dir).out).not.toContain('removed legacy');
+  });
+
   it('exits 1 naming opencode.json when it is malformed', () => {
     freshScaffold();
     writeFileSync(join(dir, 'opencode.json'), '{ not json');
